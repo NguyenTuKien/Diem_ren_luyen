@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  statuses: write
+
 jobs:
   # Stage: Test - Unit Test với JaCoCo Coverage
   unit_test_coverage:
@@ -51,11 +57,19 @@ jobs:
             backend/target/surefire-reports/
           retention-days: 7
           
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          files: backend/target/surefire-reports/TEST-*.xml
+          name: test-results
+          path: backend/target/surefire-reports/TEST-*.xml
+          
+      - name: Test Report Summary
+        if: always()
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- JaCoCo coverage report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          echo "- Test results available in artifacts" >> $GITHUB_STEP_SUMMARY
 
   # Stage: Tag - Tính toán Docker Tag
   tag_job:
