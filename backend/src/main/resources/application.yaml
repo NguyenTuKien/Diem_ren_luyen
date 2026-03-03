@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: backend
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:sslink}
+    username: ${POSTGRES_USER:group06}
+    password: ${POSTGRES_PASSWORD:nhomnimanh}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect

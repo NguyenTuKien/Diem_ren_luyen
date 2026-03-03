@@ -1,0 +1,32 @@
+services:
+  database:
+    image: postgres:alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mydatabase}
+      POSTGRES_USER: ${POSTGRES_USER:-myuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mypassword}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myuser} -d ${POSTGRES_DB:-mydatabase} -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  backend:
+    build: ./backend
+    image: ngtukien218/sslink-backend:${BACKEND_VERSION:-latest}
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+    depends_on:
+      database:
+        condition: service_healthy
