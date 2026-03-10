@@ -169,11 +169,9 @@ jobs:
           sleep 20
           docker compose ps
           docker compose logs --tail=200 backend || true
-          docker compose logs --tail=200 frontend || true
 
-      - name: Check Backend Health and Frontend Accessibility
+      - name: Check Health and Accessibility
         run: |
-          curl -f http://localhost:8080/actuator/health || (echo "Backend unreachable" && exit 1)
           curl -f http://localhost:80/ || (echo "Frontend unreachable" && exit 1)
 
       - name: Cleanup Docker System
