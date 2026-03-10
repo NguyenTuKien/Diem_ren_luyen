@@ -18,7 +18,7 @@ services:
   
   backend:
     build: ./backend
-    image: ${DOCKER_REGISTRY:-ngtukien218}/backend:${BACKEND_VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-ngtukien218}/sslink-backend:${BACKEND_VERSION:-latest}
     restart: always
     ports:
       - "8080:8080"
@@ -40,7 +40,7 @@ services:
 
   frontend:
     build: ./frontend
-    image: ${DOCKER_REGISTRY:-ngtukien218}/frontend:${FRONTEND_VERSION:-latest}
+    image: ${DOCKER_REGISTRY:-ngtukien218}/sslink-frontend:${FRONTEND_VERSION:-latest}
     restart: always
     ports:
       - "80:80"

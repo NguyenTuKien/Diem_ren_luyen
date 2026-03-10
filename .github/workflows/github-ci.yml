@@ -169,6 +169,7 @@ jobs:
           sleep 20
           docker compose ps
           docker compose logs --tail=200 backend || true
+          docker compose logs --tail=200 frontend || true
 
       - name: Check Backend Health and Frontend Accessibility
         run: |
