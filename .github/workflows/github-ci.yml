@@ -190,13 +190,12 @@ jobs:
       github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/tags/')
     continue-on-error: true  
-    env:
-      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 0 # Sonar cần lịch sử git đầy đủ để phân tích "blame" (ai viết dòng code nào)
+
       - name: Download JaCoCo Coverage Report & Classes
         uses: actions/download-artifact@v4
         with:
@@ -205,7 +204,7 @@ jobs:
       - name: Run SonarCloud Code Quality Scan
         uses: SonarSource/sonarqube-scan-action@v5.0.0 
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # Bắt buộc đặt ở đây
         with:
           projectBaseDir: './backend'
           args: >
@@ -213,6 +212,9 @@ jobs:
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
             -Dsonar.java.binaries=target/classes
+            -Dsonar.sources=src/main/java
+            -Dsonar.tests=src/test/java
+            -Dsonar.verbose=true
 
   security_scan:
     runs-on: ubuntu-latest
