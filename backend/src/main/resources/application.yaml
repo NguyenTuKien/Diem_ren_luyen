@@ -19,3 +19,9 @@ spring:
 logging:
   level:
     root: warn
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
