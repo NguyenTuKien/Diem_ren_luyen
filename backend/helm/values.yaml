@@ -1,0 +1,21 @@
+backend:
+  name: unipoint-backend
+  replicaCount: 1
+  image:
+    repository: ngtukien218/unipoint-backend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8080
+  environment:
+    COR_ALLOWED_ORIGINS: "*"
+
+database:
+  name: unipoint-database
+  service:
+    port: 5432
+  environment:
+    POSTGRES_DB: unipointdb
+    POSTGRES_USER: n06
+    POSTGRES_PASSWORD: Ttcs_2026
