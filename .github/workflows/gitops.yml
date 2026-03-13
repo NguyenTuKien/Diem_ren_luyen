@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   unit_test_job:
+    name: Run Unit Tests and Generate Coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -72,6 +73,7 @@ jobs:
           echo "- Test results available in artifacts" >> $GITHUB_STEP_SUMMARY
 
   tag_job:
+    name: Calculate Docker Tag
     runs-on: ubuntu-latest 
     if: >
       github.ref == 'refs/heads/dev' ||
@@ -94,6 +96,7 @@ jobs:
           fi
 
   build_job:
+    name: Build and Push Docker Images
     runs-on: ubuntu-latest 
     needs: [unit_test_job, tag_job]  
     if: >
@@ -128,6 +131,7 @@ jobs:
         run: docker system prune -af
 
   integration_test_job:
+    name: Run Integration Tests on Staging Environment
     runs-on: ubuntu-latest
     needs: [unit_test_job, tag_job, build_job]  
     if: >
@@ -181,6 +185,7 @@ jobs:
           docker system prune -a -f
 
   code_quality_scan:
+    name: Code Quality Scan with SonarCloud
     runs-on: ubuntu-latest
     needs: [unit_test_job]
     steps:
@@ -211,6 +216,7 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   security_scan:
+    name: Security Scan with Trivy
     runs-on: ubuntu-latest
     needs: [tag_job, build_job]
     if: >
@@ -283,7 +289,6 @@ jobs:
           git commit -m "CD: Update backend stag image tag to ${{ env.TAG }}" || echo "No changes to commit"
           git push origin main
 
-
   update_be_config_prod:
     name: Update Backend Config (Prod)
     needs: [tag_job, build_job, integration_test_job]
@@ -318,6 +323,7 @@ jobs:
           git push origin main
 
   notify_success:
+    name: Send Success Notification to Discord
     runs-on: ubuntu-latest
     needs: [ unit_test_job, tag_job, build_job, integration_test_job, code_quality_scan, security_scan, update_be_config_stag, update_be_config_prod ]
     # SỬA LẠI: Dùng always() để đảm bảo job luôn được xem xét chạy
@@ -335,6 +341,7 @@ jobs:
           ${{ secrets.DISCORD_WEBHOOK_URL }}
 
   notify_fail:
+    name: Send Failure Notification to Discord
     runs-on: ubuntu-latest
     needs: [ unit_test_job, tag_job, build_job, integration_test_job, code_quality_scan, security_scan, update_be_config_stag, update_be_config_prod ]
     # SỬA LẠI: Dùng always() và kiểm tra xem có ÍT NHẤT một job nào đó thất bại không
