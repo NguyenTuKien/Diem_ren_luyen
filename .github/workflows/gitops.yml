@@ -285,10 +285,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git pull --rebase origin main
-
           git add "$TARGET_FILE"
           git commit -m "CD: Update backend stag image tag to ${{ env.TAG }}" || echo "No changes to commit"
+          git pull --rebase origin main
           git push origin main
 
   update_be_config_prod:
@@ -320,10 +319,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git pull --rebase origin main
-
           git add "$TARGET_FILE"
           git commit -m "CD: Update backend prod image tag to ${{ env.TAG }}" || echo "No changes to commit"
+          git pull --rebase origin main
           git push origin main
 
 
@@ -360,10 +358,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git pull --rebase origin main
-
           git add "$TARGET_FILE"
           git commit -m "CD: Update frontend stag image tag to ${{ env.TAG }}" || echo "No changes to commit"
+          git pull --rebase origin main
           git push origin main
 
   update_fe_config_prod:
@@ -395,10 +392,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git pull --rebase origin main
-
           git add "$TARGET_FILE"
           git commit -m "CD: Update frontend prod image tag to ${{ env.TAG }}" || echo "No changes to commit"
+          git pull --rebase origin main
           git push origin main
 
   notify_success:
