@@ -3,25 +3,22 @@ spring:
     banner-mode: "off"
   application:
     name: backend
+
   datasource:
-    url: jdbc:postgresql://${DB_HOST:db.yqxkojuxhtsgwxhtlkzc.supabase.co}:${DB_PORT:5432}/${POSTGRES_DB:unipointdb}
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:TTCS_CT01_N06}
+    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+
+    username: ${POSTGRES_USER:postgres.xhuvxyfehnsxnwljwtwq}
+    password: ${POSTGRES_PASSWORD:Helloxinchao1@}
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: validate
 
 logging:
   level:
     root: warn
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
+server:
+  port: 8081
