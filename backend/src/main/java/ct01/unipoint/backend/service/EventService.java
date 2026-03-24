@@ -37,26 +37,26 @@ public class EventService {
 
     public final EventEntity createEvent(EventRequest eventRequest) {
         if (eventRequest == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu dữ liệu yêu cầu.");
         }
         if (eventRequest.getSemesterId() == null || eventRequest.getCriteriaId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "semesterId and criteriaId are required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu semesterId hoặc criteriaId.");
         }
         if (eventRequest.getTitle() == null || eventRequest.getTitle().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu tiêu đề sự kiện.");
         }
         if (eventRequest.getStartTime() == null || eventRequest.getEndTime() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startTime and endTime are required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu thời gian bắt đầu hoặc kết thúc.");
         }
         if (!eventRequest.getEndTime().isAfter(eventRequest.getStartTime())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thời gian kết thúc phải sau thời gian bắt đầu.");
         }
 
         EventEntity eventEntity = new EventEntity();
         eventEntity.setSemester(semesterDao.findById(eventRequest.getSemesterId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid semesterId")));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Học kỳ không hợp lệ.")));
         eventEntity.setCriteria(criteriaDao.findById(eventRequest.getCriteriaId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid criteriaId")));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí không hợp lệ.")));
         eventEntity.setTitle(eventRequest.getTitle().trim());
         eventEntity.setOrganizer(eventRequest.getOrganizer());
         eventEntity.setDescription(eventRequest.getDescription());
@@ -80,10 +80,15 @@ public class EventService {
         }
 
         if (eventRequest.getCreatedBy() != null && !eventRequest.getCreatedBy().isBlank()) {
-            return userDao.findById(eventRequest.getCreatedBy()).orElseThrow();
+            try {
+                Long createdById = Long.valueOf(eventRequest.getCreatedBy().trim());
+                return userDao.findById(createdById).orElseThrow();
+            } catch (NumberFormatException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "createdBy phải là số.");
+            }
         }
 
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Cannot resolve creator for event");
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được người tạo sự kiện.");
     }
 
     public final EventEntity updateEvent(Long eventId, EventRequest eventRequest) {

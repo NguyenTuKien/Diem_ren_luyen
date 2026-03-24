@@ -1,0 +1,642 @@
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiRequest } from "../../../shared/api/http";
+import { useAuth } from "../../auth/context/AuthContext";
+import "./LecturerStudentManagementPage.css";
+
+const PAGE_SIZE = 10;
+
+const STATUS_FILTERS = [
+  { value: "", label: "Tất cả trạng thái" },
+  { value: "ACTIVE", label: "Hoạt động" },
+  { value: "LOCKED", label: "Bị khóa" },
+  { value: "DELETED", label: "Đã xóa" },
+];
+
+const STATUS_LABEL = {
+  ACTIVE: "Hoạt động",
+  LOCKED: "Bị khóa",
+  DELETED: "Đã xóa",
+};
+
+const ROLE_LABEL = {
+  MONITOR: "Monitor",
+  STUDENT: "Student",
+};
+
+const DEFAULT_MANUAL_FORM = {
+  classId: "",
+  fullName: "",
+  email: "",
+  studentCode: "",
+  password: "",
+};
+
+function csvEscape(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+export default function LecturerStudentManagementPage() {
+  const { user, logout } = useAuth();
+  const fileInputRef = useRef(null);
+
+  const [options, setOptions] = useState({ faculties: [], classes: [] });
+  const [rows, setRows] = useState([]);
+  const [summary, setSummary] = useState({
+    totalStudents: 0,
+    activeStudents: 0,
+    lockedStudents: 0,
+    monitorStudents: 0,
+  });
+
+  const [filters, setFilters] = useState({
+    keyword: "",
+    facultyId: "",
+    classId: "",
+    status: "",
+  });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualForm, setManualForm] = useState(DEFAULT_MANUAL_FORM);
+  const [flash, setFlash] = useState({ type: "", message: "" });
+
+  const classOptions = useMemo(() => {
+    if (!filters.facultyId) {
+      return options.classes;
+    }
+
+    return options.classes.filter(
+      (item) => String(item.facultyId) === String(filters.facultyId),
+    );
+  }, [filters.facultyId, options.classes]);
+
+  const filteredCount = rows.length;
+  const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
+
+  const pageRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    return rows.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [currentPage, rows]);
+
+  const loadOptions = useCallback(async () => {
+    const data = await apiRequest(`/lecturer/students/options?lecturerId=${user.userId}`);
+    setOptions(data);
+    if (data.classes.length > 0) {
+      setManualForm((prev) => ({
+        ...prev,
+        classId: prev.classId || String(data.classes[0].id),
+      }));
+    }
+  }, [user.userId]);
+
+  const loadStudents = useCallback(async () => {
+    const params = new URLSearchParams();
+    params.set("lecturerId", user.userId);
+
+    if (filters.keyword.trim()) {
+      params.set("keyword", filters.keyword.trim());
+    }
+    if (filters.facultyId) {
+      params.set("facultyId", filters.facultyId);
+    }
+    if (filters.classId) {
+      params.set("classId", filters.classId);
+    }
+    if (filters.status) {
+      params.set("status", filters.status);
+    }
+
+    const data = await apiRequest(`/lecturer/students?${params.toString()}`);
+    setRows(data.students || []);
+    setSummary({
+      totalStudents: data.totalStudents || 0,
+      activeStudents: data.activeStudents || 0,
+      lockedStudents: data.lockedStudents || 0,
+      monitorStudents: data.monitorStudents || 0,
+    });
+  }, [filters.classId, filters.facultyId, filters.keyword, filters.status, user.userId]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function bootstrap() {
+      setLoading(true);
+      setFlash({ type: "", message: "" });
+      try {
+        await loadOptions();
+        await loadStudents();
+      } catch (err) {
+        if (!ignore) {
+          setFlash({ type: "error", message: err.message });
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    bootstrap();
+
+    return () => {
+      ignore = true;
+    };
+  }, [loadOptions, loadStudents]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const runAction = async (runner, successMessage) => {
+    setBusy(true);
+    setFlash({ type: "", message: "" });
+
+    try {
+      await runner();
+      setFlash({ type: "success", message: successMessage });
+      await loadStudents();
+    } catch (err) {
+      setFlash({ type: "error", message: err.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setBusy(true);
+    setFlash({ type: "", message: "" });
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await apiRequest(`/lecturer/students/import?lecturerId=${user.userId}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const baseMessage = `Import thành công ${result.importedCount}, bỏ qua ${result.skippedCount}.`;
+      const detailMessage = (result.errors || []).slice(0, 2).join(" ");
+      setFlash({
+        type: result.errors?.length ? "warning" : "success",
+        message: detailMessage ? `${baseMessage} ${detailMessage}` : baseMessage,
+      });
+
+      await loadStudents();
+    } catch (err) {
+      setFlash({ type: "error", message: err.message });
+    } finally {
+      event.target.value = "";
+      setBusy(false);
+    }
+  };
+
+  const handleExport = () => {
+    const headers = [
+      "MSSV",
+      "Họ tên",
+      "Email",
+      "Lớp",
+      "Vai trò",
+      "Trạng thái",
+      "Tổng điểm",
+      "Sự kiện bắt buộc",
+    ];
+
+    const lines = rows.map((row) =>
+      [
+        row.studentCode,
+        row.fullName,
+        row.email,
+        row.classCode,
+        ROLE_LABEL[row.role] || row.role,
+        STATUS_LABEL[row.accountStatus] || row.accountStatus,
+        row.totalPoint ?? 0,
+        row.mandatoryStatus,
+      ]
+        .map(csvEscape)
+        .join(","),
+    );
+
+    const csv = `\uFEFF${[headers.join(","), ...lines].join("\n")}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "danh-sach-sinh-vien.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleManualSubmit = async (event) => {
+    event.preventDefault();
+
+    await runAction(
+      () =>
+        apiRequest(`/lecturer/students/manual?lecturerId=${user.userId}`, {
+          method: "POST",
+          body: JSON.stringify({
+            classId: Number(manualForm.classId),
+            fullName: manualForm.fullName,
+            email: manualForm.email,
+            studentCode: manualForm.studentCode,
+            password: manualForm.password,
+          }),
+        }),
+      "Thêm sinh viên thành công.",
+    );
+
+    setShowManualModal(false);
+    setManualForm((prev) => ({
+      ...DEFAULT_MANUAL_FORM,
+      classId: prev.classId,
+    }));
+  };
+
+  if (loading) {
+    return <div className="page-state">Đang tải dữ liệu quản lý sinh viên...</div>;
+  }
+
+  return (
+    <div className="lecturer-layout">
+      <aside className="lecturer-sidebar">
+        <h2>EduManage</h2>
+
+        <div className="sidebar-group">
+          <p>Chính</p>
+          <button type="button" className="sidebar-link active">
+            Danh sách Sinh viên
+          </button>
+          <button type="button" className="sidebar-link">
+            Quản lý Lớp
+          </button>
+          <button type="button" className="sidebar-link" onClick={() => fileInputRef.current?.click()}>
+            Nhập dữ liệu Excel
+          </button>
+        </div>
+
+        <div className="sidebar-group">
+          <p>Hệ thống</p>
+          <button type="button" className="sidebar-link">
+            Lịch sử hoạt động
+          </button>
+          <button type="button" className="sidebar-link" onClick={logout}>
+            Đăng xuất
+          </button>
+        </div>
+
+
+      </aside>
+
+      <section className="lecturer-main">
+        <header className="lecturer-topbar">
+          <nav>
+            <button type="button" className="tab active">
+              Sinh viên
+            </button>
+            <button type="button" className="tab">
+              Lớp học
+            </button>
+            <button type="button" className="tab">
+              Khoa Đào tạo
+            </button>
+            <button type="button" className="tab">
+              Báo cáo
+            </button>
+          </nav>
+          <div className="topbar-user">
+            <strong>{user.displayName || "Giảng viên"}</strong>
+            <small>Vai trò: {user.effectiveRole}</small>
+          </div>
+        </header>
+
+        <section className="lecturer-section">
+          <div className="section-head">
+            <div>
+              <h1>Quản lý Sinh viên</h1>
+              <p>
+                Tổng số: <strong>{summary.totalStudents}</strong> sinh viên
+              </p>
+            </div>
+
+            <div className="head-actions">
+              <button type="button" className="btn-outline" onClick={handleExport}>
+                Xuất Excel
+              </button>
+              <button
+                type="button"
+                className="btn-outline danger"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Import Excel
+              </button>
+              <button type="button" className="btn-danger" onClick={() => setShowManualModal(true)}>
+                Thêm thủ công
+              </button>
+            </div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            accept=".xlsx,.xls"
+            onChange={handleImport}
+          />
+
+          <div className="summary-pills">
+            <span>Hoạt động: {summary.activeStudents}</span>
+            <span>Bị khóa: {summary.lockedStudents}</span>
+            <span>Monitor: {summary.monitorStudents}</span>
+          </div>
+
+          <div className="filter-row">
+            <input
+              type="search"
+              placeholder="Tên, MSSV hoặc Email..."
+              value={filters.keyword}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, keyword: event.target.value }))
+              }
+            />
+
+            <select
+              value={filters.facultyId}
+              onChange={(event) =>
+                setFilters((prev) => ({
+                  ...prev,
+                  facultyId: event.target.value,
+                  classId: "",
+                }))
+              }
+            >
+              <option value="">Tất cả Khoa</option>
+              {options.faculties.map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>
+                  {faculty.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.classId}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, classId: event.target.value }))
+              }
+            >
+              <option value="">Tất cả Lớp</option>
+              {classOptions.map((classItem) => (
+                <option key={classItem.id} value={classItem.id}>
+                  {classItem.classCode}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.status}
+              onChange={(event) =>
+                setFilters((prev) => ({ ...prev, status: event.target.value }))
+              }
+            >
+              {STATUS_FILTERS.map((status) => (
+                <option key={status.value || "all"} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {flash.message && <div className={`flash ${flash.type}`}>{flash.message}</div>}
+
+          <div className="table-panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sinh viên</th>
+                  <th>MSSV / Lớp</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                  <th>Điểm</th>
+                  <th>Sự kiện bắt buộc</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>Không có sinh viên phù hợp bộ lọc.</td>
+                  </tr>
+                ) : (
+                  pageRows.map((row) => (
+                    <tr key={row.studentId}>
+                      <td>
+                        <strong>{row.fullName}</strong>
+                        <small>{row.email}</small>
+                      </td>
+                      <td>
+                        <strong>{row.studentCode}</strong>
+                        <small>{row.classCode}</small>
+                      </td>
+                      <td>
+                        <span className={`pill role ${row.role.toLowerCase()}`}>
+                          {ROLE_LABEL[row.role] || row.role}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`pill status ${row.accountStatus.toLowerCase()}`}>
+                          {STATUS_LABEL[row.accountStatus] || row.accountStatus}
+                        </span>
+                      </td>
+                      <td>{row.totalPoint ?? 0}</td>
+                      <td>{row.mandatoryStatus}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            title="Gán lớp trưởng"
+                            onClick={() =>
+                              runAction(
+                                () =>
+                                  apiRequest(
+                                    `/lecturer/students/${row.studentId}/monitor?lecturerId=${user.userId}`,
+                                    { method: "PUT" },
+                                  ),
+                                `Đã gán ${row.fullName} làm lớp trưởng.`,
+                              )
+                            }
+                          >
+                            ☆
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            title={row.accountStatus === "LOCKED" ? "Mở khóa" : "Khóa"}
+                            onClick={() =>
+                              runAction(
+                                () =>
+                                  apiRequest(
+                                    `/lecturer/students/${row.studentId}/status?lecturerId=${user.userId}`,
+                                    {
+                                      method: "PUT",
+                                      body: JSON.stringify({
+                                        status: row.accountStatus === "LOCKED" ? "ACTIVE" : "LOCKED",
+                                      }),
+                                    },
+                                  ),
+                                row.accountStatus === "LOCKED"
+                                  ? `Đã mở khóa ${row.fullName}.`
+                                  : `Đã khóa ${row.fullName}.`,
+                              )
+                            }
+                          >
+                            {row.accountStatus === "LOCKED" ? "🔓" : "🔒"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="danger"
+                            title="Xóa mềm"
+                            onClick={() =>
+                              runAction(
+                                () =>
+                                  apiRequest(
+                                    `/lecturer/students/${row.studentId}?lecturerId=${user.userId}`,
+                                    { method: "DELETE" },
+                                  ),
+                                `Đã xóa mềm ${row.fullName}.`,
+                              )
+                            }
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <footer className="table-footer">
+              <span>
+                Hiển thị {(currentPage - 1) * PAGE_SIZE + (pageRows.length ? 1 : 0)} - {(currentPage - 1) * PAGE_SIZE + pageRows.length} trong tổng số {filteredCount} sinh viên
+              </span>
+              <div className="pagination">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ‹
+                </button>
+                <span>{currentPage}</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  ›
+                </button>
+              </div>
+            </footer>
+          </div>
+        </section>
+      </section>
+
+      {showManualModal && (
+        <div className="modal-mask">
+          <form className="modal-panel" onSubmit={handleManualSubmit}>
+            <h3>Thêm sinh viên thủ công</h3>
+
+            <label>
+              Họ và tên
+              <input
+                value={manualForm.fullName}
+                onChange={(event) =>
+                  setManualForm((prev) => ({ ...prev, fullName: event.target.value }))
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Mã sinh viên
+              <input
+                value={manualForm.studentCode}
+                onChange={(event) =>
+                  setManualForm((prev) => ({ ...prev, studentCode: event.target.value }))
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Email
+              <input
+                type="email"
+                value={manualForm.email}
+                onChange={(event) =>
+                  setManualForm((prev) => ({ ...prev, email: event.target.value }))
+                }
+                required
+              />
+            </label>
+
+            <label>
+              Lớp
+              <select
+                value={manualForm.classId}
+                onChange={(event) =>
+                  setManualForm((prev) => ({ ...prev, classId: event.target.value }))
+                }
+                required
+              >
+                <option value="">Chọn lớp</option>
+                {options.classes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.classCode}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Mật khẩu
+              <input
+                type="text"
+                placeholder="Để trống sẽ dùng UniPoint@123"
+                value={manualForm.password}
+                onChange={(event) =>
+                  setManualForm((prev) => ({ ...prev, password: event.target.value }))
+                }
+              />
+            </label>
+
+            <div className="modal-actions">
+              <button type="button" className="btn-outline" onClick={() => setShowManualModal(false)}>
+                Hủy
+              </button>
+              <button type="submit" className="btn-danger" disabled={busy}>
+                Lưu
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}

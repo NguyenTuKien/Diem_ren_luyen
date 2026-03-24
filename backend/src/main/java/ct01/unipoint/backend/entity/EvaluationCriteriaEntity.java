@@ -16,7 +16,7 @@ public class EvaluationCriteriaEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = CriteriaConstant.COL_ID)
-  private Integer id;
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = CriteriaConstant.COL_SEMESTER_ID)

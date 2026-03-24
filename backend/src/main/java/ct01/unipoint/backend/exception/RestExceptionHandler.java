@@ -19,7 +19,7 @@ public class RestExceptionHandler {
   public ResponseEntity<ErrorBody> handleGeneralException(Exception ex) {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(new ErrorBody(HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "Unexpected server error.",
+            "Lỗi hệ thống không mong muốn.",
             Instant.now().toString()));
   }
 

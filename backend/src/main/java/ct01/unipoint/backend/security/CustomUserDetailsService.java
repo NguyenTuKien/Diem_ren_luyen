@@ -23,7 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserEntity user = userDao.findByUsername(username)
                 .orElseGet(() -> userDao.findByEmail(username)
-                        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username)));
+                        .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + username)));
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),

@@ -14,7 +14,7 @@ export default function StudentDashboardPage() {
 
   useEffect(() => {
     let ignore = false;
-    apiRequest(`/student/dashboard?userId=${user.userId}`)
+    apiRequest("/student/dashboard")
       .then((payload) => {
         if (!ignore) {
           setDashboard(payload);

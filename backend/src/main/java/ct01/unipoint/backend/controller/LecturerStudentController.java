@@ -7,8 +7,19 @@ import ct01.unipoint.backend.dto.lecturer.LecturerStudentOptionsResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentRowResponse;
 import ct01.unipoint.backend.dto.lecturer.ManualCreateStudentRequest;
 import ct01.unipoint.backend.dto.lecturer.UpdateStudentStatusRequest;
+import ct01.unipoint.backend.entity.LecturerEntity;
+import ct01.unipoint.backend.entity.UserEntity;
+import ct01.unipoint.backend.entity.enums.Role;
+import ct01.unipoint.backend.exception.ApiException;
+import ct01.unipoint.backend.repository.LecturerRepository;
+import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.service.LecturerStudentService;
+import java.util.Objects;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,18 +33,27 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/lecturer/students")
+@RequestMapping("/lecturer/students")
 public class LecturerStudentController {
 
   private final LecturerStudentService lecturerStudentService;
+  private final UserRepository userRepository;
+  private final LecturerRepository lecturerRepository;
 
-  public LecturerStudentController(LecturerStudentService lecturerStudentService) {
+  public LecturerStudentController(
+      LecturerStudentService lecturerStudentService,
+      UserRepository userRepository,
+      LecturerRepository lecturerRepository
+  ) {
     this.lecturerStudentService = lecturerStudentService;
+    this.userRepository = userRepository;
+    this.lecturerRepository = lecturerRepository;
   }
 
   @GetMapping("/options")
   public LecturerStudentOptionsResponse options(@RequestParam Long lecturerId) {
-    return lecturerStudentService.getOptions(lecturerId);
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.getOptions(resolvedLecturerId);
   }
 
   @GetMapping
@@ -44,7 +64,8 @@ public class LecturerStudentController {
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String keyword
   ) {
-    return lecturerStudentService.getStudents(lecturerId, facultyId, classId, status, keyword);
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.getStudents(resolvedLecturerId, facultyId, classId, status, keyword);
   }
 
   @PostMapping("/manual")
@@ -52,7 +73,8 @@ public class LecturerStudentController {
       @RequestParam Long lecturerId,
       @RequestBody ManualCreateStudentRequest request
   ) {
-    return lecturerStudentService.createManualStudent(lecturerId, request);
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.createManualStudent(resolvedLecturerId, request);
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -60,7 +82,8 @@ public class LecturerStudentController {
       @RequestParam Long lecturerId,
       @RequestPart("file") MultipartFile file
   ) {
-    return lecturerStudentService.importStudents(lecturerId, file);
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.importStudents(resolvedLecturerId, file);
   }
 
   @PutMapping("/{studentId}/monitor")
@@ -68,7 +91,8 @@ public class LecturerStudentController {
       @RequestParam Long lecturerId,
       @PathVariable Long studentId
   ) {
-    return lecturerStudentService.assignMonitor(lecturerId, studentId);
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.assignMonitor(resolvedLecturerId, studentId);
   }
 
   @PutMapping("/{studentId}/status")
@@ -77,7 +101,8 @@ public class LecturerStudentController {
       @PathVariable Long studentId,
       @RequestBody UpdateStudentStatusRequest request
   ) {
-    return lecturerStudentService.updateStudentStatus(lecturerId, studentId, request.status());
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.updateStudentStatus(resolvedLecturerId, studentId, request.status());
   }
 
   @DeleteMapping("/{studentId}")
@@ -85,6 +110,56 @@ public class LecturerStudentController {
       @RequestParam Long lecturerId,
       @PathVariable Long studentId
   ) {
-    return lecturerStudentService.deleteStudent(lecturerId, studentId);
+    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    return lecturerStudentService.deleteStudent(resolvedLecturerId, studentId);
+  }
+
+  private Long ensureLecturerAccess(Long requestedLecturerId) {
+    UserEntity currentUser = resolveCurrentUser();
+    LecturerEntity lecturer = lecturerRepository.findByUserEntityId(currentUser.getId())
+        .orElseGet(() -> provisionLecturerProfile(currentUser));
+
+    boolean matchesLecturerId = Objects.equals(lecturer.getId(), requestedLecturerId);
+    boolean matchesUserId = Objects.equals(currentUser.getId(), requestedLecturerId);
+
+    if (!matchesLecturerId && !matchesUserId) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập dữ liệu này.");
+    }
+
+    return lecturer.getId();
+  }
+
+  private UserEntity resolveCurrentUser() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication == null || !authentication.isAuthenticated()) {
+      throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
+    }
+
+    String principal = authentication.getName();
+    UserEntity user = userRepository.findByUsernameIgnoreCase(principal)
+        .or(() -> userRepository.findByEmailIgnoreCase(principal))
+        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ."));
+
+    return user;
+  }
+
+  private LecturerEntity provisionLecturerProfile(UserEntity user) {
+    if (user.getRole() != Role.ROLE_LECTURER && user.getRole() != Role.ROLE_ADMIN) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền giảng viên.");
+    }
+
+    String displayName = StringUtils.hasText(user.getUsername())
+        ? user.getUsername()
+        : ("Giảng viên " + user.getId());
+    String lecturerCode = "LC" + user.getId();
+
+    LecturerEntity lecturer = LecturerEntity.builder()
+        .userEntity(user)
+        .lecturerCode(lecturerCode)
+        .fullName(displayName)
+        .build();
+
+    return lecturerRepository.save(lecturer);
   }
 }
+

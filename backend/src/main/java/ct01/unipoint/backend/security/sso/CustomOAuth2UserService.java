@@ -32,7 +32,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = new HashMap<>(delegate.getAttributes());
         String email = getEmail(attributes);
         if (email == null || email.isBlank()) {
-            throw new OAuth2AuthenticationException("Email not provided by provider");
+            throw new OAuth2AuthenticationException("Nhà cung cấp SSO chưa trả về email.");
         }
 
         String name = getDisplayName(attributes);
@@ -53,7 +53,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } catch (Exception ex) {
             throw new OAuth2AuthenticationException(
                 new OAuth2Error("user_provisioning_failed"),
-                "Cannot provision user from Microsoft account",
+                "Không thể tạo tài khoản từ Microsoft SSO.",
                 ex
             );
         }

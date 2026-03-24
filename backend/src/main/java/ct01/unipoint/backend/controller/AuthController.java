@@ -50,18 +50,18 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
         if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "refreshToken is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
         }
 
         String username;
         try {
             username = jwtService.extractUsername(request.getRefreshToken());
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token không hợp lệ.");
         }
 
         if (!jwtService.isRefreshTokenValid(request.getRefreshToken(), username)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is expired or revoked");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token đã hết hạn hoặc bị thu hồi.");
         }
 
         return ResponseEntity.ok(LoginResponse.builder()
@@ -85,7 +85,7 @@ public class AuthController {
     public ResponseEntity<UserInfoResponse> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
         }
 
         String role = authentication.getAuthorities().stream()

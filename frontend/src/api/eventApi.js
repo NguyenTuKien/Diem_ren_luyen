@@ -6,7 +6,7 @@ const API_ADMIN_URL = '/api/v1/admin/events';
 export const eventApi = {
   fetchEvents: async (page = 0, size = 10) => {
     const response = await authFetch(`${API_BASE_URL}?page=${page}&size=${size}`);
-    if (!response.ok) throw new Error('Failed to fetch events');
+    if (!response.ok) throw new Error('Không thể tải danh sách sự kiện.');
     return response.json();
   },
   
@@ -21,11 +21,11 @@ export const eventApi = {
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const errorJson = await response.json();
-        throw new Error(errorJson.message || errorJson.error || 'Failed to create event');
+        throw new Error(errorJson.message || errorJson.error || 'Không thể tạo sự kiện.');
       }
 
       const errorText = await response.text();
-      throw new Error(errorText || 'Failed to create event');
+      throw new Error(errorText || 'Không thể tạo sự kiện.');
     }
 
     return response.json();
@@ -42,11 +42,11 @@ export const eventApi = {
       const contentType = response.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const errorJson = await response.json();
-        throw new Error(errorJson.message || errorJson.error || 'Failed to update event');
+        throw new Error(errorJson.message || errorJson.error || 'Không thể cập nhật sự kiện.');
       }
 
       const errorText = await response.text();
-      throw new Error(errorText || 'Failed to update event');
+      throw new Error(errorText || 'Không thể cập nhật sự kiện.');
     }
 
     return response.json();
@@ -56,6 +56,6 @@ export const eventApi = {
     const response = await authFetch(`${API_ADMIN_URL}/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to delete event');
+    if (!response.ok) throw new Error('Không thể xóa sự kiện.');
   }
 };

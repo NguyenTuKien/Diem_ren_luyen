@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -37,8 +36,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
+    private final PasswordEncoder passwordEncoder;
 
-    @Value("${cors.allowed-origins:*}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}")
     private String allowedOrigins;
 
     @Bean
@@ -54,7 +54,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
             )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/oauth2/**", "/login/**", "/error", "/actuator/**").permitAll()
+                        .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/auth/**", "/oauth2/**", "/login/**", "/error", "/actuator/**").permitAll()
                     .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
@@ -89,7 +89,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 
@@ -97,10 +97,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration config) {
         return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }
