@@ -1,7 +1,7 @@
 import Pagination from './Pagination'
 import { eventApi } from '../api/eventApi'
 
-function EventTable({ events, onRefresh, onEdit }) {
+function EventTable({ events, onRefresh, onEdit, pagination, currentPage, onPageChange }) {
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa sự kiện này?')) {
       try {
@@ -45,7 +45,13 @@ function EventTable({ events, onRefresh, onEdit }) {
           </thead>
 
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-            {events.map((event) => (
+            {events.length === 0 ? (
+              <tr>
+                <td className="px-6 py-10 text-center text-slate-500" colSpan={7}>
+                  Không có sự kiện phù hợp.
+                </td>
+              </tr>
+            ) : events.map((event) => (
               <tr
                 className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${event.rowClassName}`}
                 key={event.id}
@@ -113,7 +119,13 @@ function EventTable({ events, onRefresh, onEdit }) {
         </table>
       </div>
 
-      <Pagination />
+      <Pagination
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        pageSize={pagination.size}
+        totalElements={pagination.totalElements}
+        totalPages={pagination.totalPages}
+      />
     </div>
   )
 }

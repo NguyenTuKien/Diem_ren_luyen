@@ -1,11 +1,13 @@
 package ct01.unipoint.backend.controller;
 
+import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.dto.request.LoginRequest;
 import ct01.unipoint.backend.dto.request.LogoutRequest;
 import ct01.unipoint.backend.dto.request.RefreshTokenRequest;
 import ct01.unipoint.backend.dto.response.LoginResponse;
 import ct01.unipoint.backend.dto.response.UserInfoResponse;
 import ct01.unipoint.backend.security.jwt.JwtService;
+import ct01.unipoint.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +33,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
@@ -88,15 +92,40 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
 
-        String role = authentication.getAuthorities().stream()
+        String principalIdentifier = resolvePrincipalIdentifier(authentication);
+        Optional<UserEntity> userEntityOptional = userService.findByUsernameOrEmail(principalIdentifier);
+
+        String role = userEntityOptional
+                .map(user -> user.getRole().name())
+                .orElseGet(() -> authentication.getAuthorities().stream()
                 .findFirst()
                 .map(Object::toString)
-                .orElse(null);
+                .orElse(null));
+
+        String username = userEntityOptional
+                .map(UserEntity::getUsername)
+                .orElse(principalIdentifier);
 
         return ResponseEntity.ok(UserInfoResponse.builder()
-                .username(authentication.getName())
+                .username(username)
                 .role(role)
                 .build());
+    }
+
+    private String resolvePrincipalIdentifier(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof OAuth2User oAuth2User) {
+            Object email = oAuth2User.getAttributes().get("email");
+            if (email == null) {
+                email = oAuth2User.getAttributes().get("preferred_username");
+            }
+            if (email != null && !email.toString().isBlank()) {
+                return email.toString();
+            }
+        }
+
+        return authentication.getName();
     }
 
     private Optional<String> extractBearerToken(HttpServletRequest request) {

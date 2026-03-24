@@ -12,7 +12,7 @@ function App() {
       <Route 
         path="/" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="ROLE_ADMIN">
             <EventDashboard />
           </ProtectedRoute>
         } 

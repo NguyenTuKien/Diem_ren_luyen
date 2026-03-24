@@ -100,6 +100,7 @@ public class DataInitialization {
     @Transactional
     CommandLineRunner initSemester(SemesterDao semesterDao) {
         return args -> {
+            if (semesterDao.count() > 0) return;
             List<SemesterEntity> semesters = List.of(
                     SemesterEntity.builder().name("HK1-2026").startDate(LocalDate.of(2026, 1, 6)).endDate(LocalDate.of(2026, 5, 31)).isActive(true).build(),
                     SemesterEntity.builder().name("HK2-2026").startDate(LocalDate.of(2026, 8, 15)).endDate(LocalDate.of(2026, 12, 31)).isActive(false).build(),
@@ -118,6 +119,7 @@ public class DataInitialization {
     @Transactional
     CommandLineRunner initCriteria(CriteriaDao criteriaDao) {
         return args -> {
+            if (criteriaDao.count() > 0) return;
             List<CriteriaEntity> criteriaList = List.of(
                     CriteriaEntity.builder().code("HD01").name("Tham gia hoạt động ngoại khóa").pointPerItem(BigDecimal.valueOf(2.0)).maxPoint(BigDecimal.valueOf(20.0)).requireEvidence(true).build(),
                     CriteriaEntity.builder().code("NCKH").name("Nghiên cứu khoa học").pointPerItem(BigDecimal.valueOf(5.0)).maxPoint(BigDecimal.valueOf(10.0)).requireEvidence(true).build(),
@@ -137,6 +139,7 @@ public class DataInitialization {
     @Transactional
     CommandLineRunner initEvent(EventDao eventDao, SemesterDao semesterDao, CriteriaDao criteriaDao, UserDao userDao) {
         return args -> {
+            if(eventDao.count() > 0) return;
             Optional<SemesterEntity> semesterOptional = semesterDao.findByName("HK1-2026");
             Optional<CriteriaEntity> criteriaOptional = criteriaDao.findByCode("HD01");
             Optional<UserEntity> createdByOptional = userDao.findByUsername("admin");

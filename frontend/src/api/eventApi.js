@@ -7,7 +7,22 @@ export const eventApi = {
   fetchEvents: async (page = 0, size = 10) => {
     const response = await authFetch(`${API_BASE_URL}?page=${page}&size=${size}`);
     if (!response.ok) throw new Error('Failed to fetch events');
-    return response.json();
+    const data = await response.json();
+
+    if (Array.isArray(data.content) && typeof data.totalPages === 'number') {
+      return data;
+    }
+
+    const springPage = data.page || {};
+    return {
+      content: data.content || [],
+      page: typeof springPage.number === 'number' ? springPage.number : page,
+      size: typeof springPage.size === 'number' ? springPage.size : size,
+      totalElements: typeof springPage.totalElements === 'number' ? springPage.totalElements : data.content?.length || 0,
+      totalPages: typeof springPage.totalPages === 'number' ? springPage.totalPages : 0,
+      hasNext: !!(springPage.totalPages && springPage.number + 1 < springPage.totalPages),
+      hasPrevious: !!(typeof springPage.number === 'number' && springPage.number > 0)
+    };
   },
   
   createEvent: async (eventData) => {
