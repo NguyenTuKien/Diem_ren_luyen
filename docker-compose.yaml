@@ -5,7 +5,7 @@ services:
     # ports:
     #   - "5432:5432"
     volumes:
-      - ./database:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-mydatabase}
       POSTGRES_USER: ${POSTGRES_USER:-myuser}
@@ -18,27 +18,47 @@ services:
     networks:
       - unipoint
   
+  cache:
+    image: redis:7-alpine
+    restart: always
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unipoint
+
   backend:
     build: ./backend
     image: ${DOCKER_REGISTRY:-ngtukien218}/unipoint-backend:${TAG:-latest}
     restart: always
-    # ports:
-    #   - "8080:8080"
+    ports:
+      - "8080:8080"
     env_file:
       - .env
     environment:
-      DB_HOST: database
-      DB_PORT: 5432
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      REDIS_HOST: cache
+      REDIS_PORT: 6379
     depends_on:
       database:
         condition: service_healthy
+      cache:
+        condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep UP" ]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/api/actuator/health | grep UP" ]
       interval: 30s
       timeout: 10s
       retries: 5
     volumes:
-      - ./backend/logs:/app/logs
+      - logs:/app/logs
     networks:
       - unipoint
 
@@ -53,7 +73,21 @@ services:
         condition: service_healthy
     networks:
       - unipoint
-    
+
+  # cloudflare:
+  #   image: cloudflare/cloudflared:2024.6.0
+  #   restart: always
+  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+  #   depends_on:
+  #     - frontend
+  #   networks:
+  #     - unipoint
+
+volumes:
+  logs:
+  pg_data:
+  redis_data:
+
 networks:
   unipoint:
     driver: bridge
