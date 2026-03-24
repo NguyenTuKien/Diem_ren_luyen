@@ -1,61 +1,24 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
-import { useAuth } from "./context/AuthContext";
-import "./App.css";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import AuthPage from "./pages/AuthPage";
-import LecturerStudentManagementPage from "./pages/LecturerStudentManagementPage";
-import MonitorClassPage from "./pages/MonitorClassPage";
-import StudentDashboardPage from "./pages/StudentDashboardPage";
+import { Routes, Route } from 'react-router-dom';
+import EventDashboard from './pages/EventDashboard';
+import Login from './pages/Login';
+import OAuthCallback from './pages/OAuthCallback';
+import ProtectedRoute from './components/ProtectedRoute';
 
-function HomeRedirect() {
-  const { user } = useAuth();
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  return <Navigate to={user.dashboardPath || "/auth"} replace />;
-}
-
-export default function App() {
+function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomeRedirect />} />
-      <Route path="/auth" element={<AuthPage />} />
-
-      <Route
-        path="/dashboard/student"
+      <Route path="/login" element={<Login />} />
+      <Route path="/oauth-success" element={<OAuthCallback />} />
+      <Route 
+        path="/" 
         element={
-          <ProtectedRoute roles={["STUDENT", "MONITOR"]}>
-            <StudentDashboardPage />
+          <ProtectedRoute>
+            <EventDashboard />
           </ProtectedRoute>
-        }
+        } 
       />
-      <Route
-        path="/dashboard/monitor/class"
-        element={
-          <ProtectedRoute roles={["MONITOR"]}>
-            <MonitorClassPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/lecturer/students"
-        element={
-          <ProtectedRoute roles={["LECTURER"]}>
-            <LecturerStudentManagementPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/dashboard/admin"
-        element={
-          <ProtectedRoute roles={["ADMIN"]}>
-            <AdminDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
+
+export default App;

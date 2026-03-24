@@ -1,16 +1,57 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { authFetch } from '../api/authFetch';
 
-export default function ProtectedRoute({ roles = [], children }) {
-  const { user } = useAuth();
+const ProtectedRoute = ({ children }) => {
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        if (isMounted) {
+          setIsAuthenticated(false);
+          setIsChecking(false);
+        }
+        return;
+      }
+
+      try {
+        const response = await authFetch('/api/v1/auth/me');
+        if (!isMounted) {
+          return;
+        }
+        setIsAuthenticated(response.ok);
+      } catch {
+        if (isMounted) {
+          setIsAuthenticated(false);
+        }
+      } finally {
+        if (isMounted) {
+          setIsChecking(false);
+        }
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (isChecking) {
+    return <div className="text-center py-10">Đang xác thực...</div>;
   }
 
-  if (roles.length > 0 && !roles.includes(user.effectiveRole)) {
-    return <Navigate to={user.dashboardPath || "/auth"} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
   return children;
-}
+};
+
+export default ProtectedRoute;

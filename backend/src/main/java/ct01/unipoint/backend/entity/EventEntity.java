@@ -40,7 +40,7 @@ public class EventEntity {
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = EventConstant.COL_CRITERIA_ID, nullable = false)
-  private EvaluationCriteriaEntity criteria;
+  private CriteriaEntity criteria;
 
   @Column(name = EventConstant.COL_TITLE, length = 200, nullable = false)
   private String title;

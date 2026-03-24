@@ -1,20 +1,64 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   main:
     banner-mode: "off"
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://${DB_HOST:aws-1-ap-southeast-1.pooler.supabase.com}:${DB_PORT:6543}/${POSTGRES_DB:postgres}
-    username: ${POSTGRES_USER:postgres.xhuvxyfehnsxnwljwtwq}
-    password: "${POSTGRES_PASSWORD:Matkhau@1234qwer!}"
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?prepareThreshold=0
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          microsoft:
+            client-id: ${MICROSOFT_CLIENT_ID}
+            client-secret: ${MICROSOFT_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - email
+              - profile
+              - User.Read
+            authorization-grant-type: authorization_code
+            client-name: Microsoft
+        provider:
+          microsoft:
+            authorization-uri: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+            token-uri: https://login.microsoftonline.com/common/oauth2/v2.0/token
+            jwk-set-uri: https://login.microsoftonline.com/common/discovery/v2.0/keys
+            user-info-uri: https://graph.microsoft.com/oidc/userinfo
+            user-name-attribute: sub
+
+  app:
+    oauth2:
+      redirect:
+        url: ${OAUTH2_REDIRECT_URL:http://localhost:3000/oauth-success}
+
+jwt:
+  secret: ${JWT_SECRET:VGhpc0lzQURldlNlY3JldEtleUZvckpXVFNpZ25pbmdPbmx5ISE=}
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+
+server:
+  servlet:
+    context-path: /api
+  port: 8080
 
 logging:
   level:
@@ -25,3 +69,7 @@ management:
     web:
       exposure:
         include: "*"
+  endpoint:
+    health:
+      show-details: always
+

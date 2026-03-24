@@ -2,7 +2,7 @@ package ct01.unipoint.backend.entity;
 
 import ct01.unipoint.backend.constant.NotificationConstant;
 import ct01.unipoint.backend.entity.base.BaseJpaAuditingEntity;
-import ct01.unipoint.backend.entity.enums.NotificationTargetType;
+import ct01.unipoint.backend.entity.enums.NotificationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -43,6 +43,6 @@ public class NotificationEntity extends BaseJpaAuditingEntity {
 
   @Enumerated(EnumType.STRING)
   @Column(name = NotificationConstant.COL_TARGET_TYPE, length = 20, nullable = false)
-  private NotificationTargetType targetType;
+  private NotificationType targetType;
 
 }

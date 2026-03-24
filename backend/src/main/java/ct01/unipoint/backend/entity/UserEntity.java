@@ -4,6 +4,7 @@ import ct01.unipoint.backend.constant.UserConstant;
 import ct01.unipoint.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.entity.enums.UserStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -28,14 +29,15 @@ import lombok.Setter;
 public class UserEntity extends BaseJpaAuditingEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = UserConstant.COL_ID)
-  private Long id;
+  private String id;
   @Column(name = UserConstant.COL_USERNAME, unique = true, nullable = false, length = 50)
   private String username;
   @Column(name = UserConstant.COL_EMAIL, unique = true, nullable = false, length = 100)
   private String email;
   @Column(name = UserConstant.COL_PASSWORD, unique = false, nullable = false, length = 255)
+  @JsonIgnore
   private String password;
   @Enumerated(EnumType.STRING)
   @Column(name = UserConstant.COL_ROLE, length = 20, nullable = false)

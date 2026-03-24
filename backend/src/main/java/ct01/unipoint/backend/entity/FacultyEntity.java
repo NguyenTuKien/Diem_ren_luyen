@@ -26,8 +26,10 @@ public class FacultyEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = FacultyConstant.COL_ID)
   private Long id;
+
   @Column(name = FacultyConstant.COL_CODE, length = 25, unique = true, nullable = false)
   private String code;
+
   @Column(name = FacultyConstant.COL_NAME, length = 100, nullable = false)
   private String name;
 }

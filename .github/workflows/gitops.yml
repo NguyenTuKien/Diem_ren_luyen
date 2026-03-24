@@ -176,7 +176,7 @@ jobs:
 
       - name: Check Health and Accessibility
         run: |
-          curl -f http://localhost:80/ || (echo "Frontend unreachable" && exit 1)
+          curl -f https://unipoint.ngtukien.id.vn || (echo "Frontend unreachable" && exit 1)
 
       - name: Cleanup Docker System
         if: always()

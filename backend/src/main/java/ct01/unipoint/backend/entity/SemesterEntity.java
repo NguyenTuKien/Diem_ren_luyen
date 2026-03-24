@@ -28,8 +28,8 @@ public class SemesterEntity {
   @Column(name = SemesterConstant.COL_ID)
   private Long id;
 
-  @Column(name = SemesterConstant.COL_CODE, length = 20, unique = true, nullable = false)
-  private String code;
+  @Column(name = SemesterConstant.COL_NAME, length = 20, unique = true, nullable = false)
+  private String name;
 
   @Column(name = SemesterConstant.COL_START_DATE, nullable = false)
   private LocalDate startDate;
