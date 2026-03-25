@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiRequest } from "../../../shared/api/http";
+import { API_BASE_URL, apiRequest } from "../../../shared/api/http";
 import { useAuth } from "../context/AuthContext";
 
 const DEFAULT_LOGIN_FORM = {
@@ -91,10 +91,45 @@ export default function AuthPage() {
     [classes, registerForm.classId],
   );
 
-  const applyAuthSuccess = (payload) => {
-    const dashboardPath = resolveDashboardPath(payload);
+  const syncSessionFromServer = async (payload) => {
+    if (!payload?.accessToken) {
+      return payload;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/session`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${payload.accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        return payload;
+      }
+
+      const serverPayload = await response.json();
+      if (!serverPayload || typeof serverPayload !== "object") {
+        return payload;
+      }
+
+      return {
+        ...payload,
+        ...serverPayload,
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+      };
+    } catch {
+      return payload;
+    }
+  };
+
+  const applyAuthSuccess = async (payload) => {
+    const syncedPayload = await syncSessionFromServer(payload);
+    const dashboardPath = resolveDashboardPath(syncedPayload);
     const sessionPayload = {
-      ...payload,
+      ...syncedPayload,
       dashboardPath,
     };
     login(sessionPayload);
@@ -111,7 +146,7 @@ export default function AuthPage() {
         method: "POST",
         body: JSON.stringify(loginForm),
       });
-      applyAuthSuccess(payload);
+      await applyAuthSuccess(payload);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -140,7 +175,7 @@ export default function AuthPage() {
           classId: Number(registerForm.classId),
         }),
       });
-      applyAuthSuccess(payload);
+      await applyAuthSuccess(payload);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -164,7 +199,7 @@ export default function AuthPage() {
           provider,
         }),
       });
-      applyAuthSuccess(payload);
+      await applyAuthSuccess(payload);
     } catch (err) {
       setError(err.message);
     } finally {

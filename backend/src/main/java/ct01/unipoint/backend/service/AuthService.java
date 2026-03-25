@@ -1,5 +1,15 @@
 package ct01.unipoint.backend.service;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import ct01.unipoint.backend.dto.auth.AuthResponse;
 import ct01.unipoint.backend.dto.auth.ClassOptionResponse;
 import ct01.unipoint.backend.dto.auth.LoginRequest;
@@ -16,14 +26,6 @@ import ct01.unipoint.backend.repository.ClassRepository;
 import ct01.unipoint.backend.repository.LecturerRepository;
 import ct01.unipoint.backend.repository.StudentRepository;
 import ct01.unipoint.backend.repository.UserRepository;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Service
 public class AuthService {
@@ -207,7 +209,7 @@ public class AuthService {
         displayName = lecturer.getFullName();
       }
     }
-    if (user.getRole() == Role.ROLE_STUDENT) {
+    if ("STUDENT".equals(effectiveRole) || "MONITOR".equals(effectiveRole)) {
       StudentEntity student = studentRepository.findByUserEntityId(user.getId()).orElse(null);
       if (student != null) {
         if (StringUtils.hasText(student.getFullName())) {

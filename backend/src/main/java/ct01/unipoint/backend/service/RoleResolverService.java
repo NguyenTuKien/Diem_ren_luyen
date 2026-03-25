@@ -1,13 +1,15 @@
 package ct01.unipoint.backend.service;
 
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
 import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.repository.ClassRepository;
 import ct01.unipoint.backend.repository.StudentRepository;
-import java.util.Optional;
-import org.springframework.stereotype.Service;
 
 @Service
 public class RoleResolverService {
@@ -26,6 +28,9 @@ public class RoleResolverService {
     }
     if (user.getRole() == Role.ROLE_LECTURER) {
       return "LECTURER";
+    }
+    if (user.getRole() == Role.ROLE_MONITOR) {
+      return "MONITOR";
     }
     if (user.getRole() == Role.ROLE_STUDENT) {
       Optional<StudentEntity> studentOpt = studentRepository.findByUserEntityId(user.getId());

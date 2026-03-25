@@ -11,17 +11,23 @@ function getTokenFromStorage() {
 
   try {
     const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.accessToken) {
-        return parsed.accessToken;
-      }
+    if (!raw) {
+      return null;
     }
-  } catch {
-    // Use fallback token key for backward compatibility.
-  }
 
-  return window.localStorage.getItem("accessToken");
+    const parsed = JSON.parse(raw);
+    if (parsed?.accessToken) {
+      return parsed.accessToken;
+    }
+
+    return null;
+  } catch {
+    // Invalid stored session: clear stale auth data to avoid sending wrong token.
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.localStorage.removeItem("accessToken");
+    window.localStorage.removeItem("refreshToken");
+    return null;
+  }
 }
 
 function buildMessage(payload, status) {

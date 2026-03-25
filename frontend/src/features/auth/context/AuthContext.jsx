@@ -20,26 +20,20 @@ function readStoredSession() {
     }
     return parsed;
   } catch {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.localStorage.removeItem("accessToken");
+    window.localStorage.removeItem("refreshToken");
     return null;
   }
 }
 
-function syncLegacyTokens(session) {
+function clearLegacyTokens() {
   if (typeof window === "undefined") {
     return;
   }
 
-  if (session?.accessToken) {
-    window.localStorage.setItem("accessToken", session.accessToken);
-  } else {
-    window.localStorage.removeItem("accessToken");
-  }
-
-  if (session?.refreshToken) {
-    window.localStorage.setItem("refreshToken", session.refreshToken);
-  } else {
-    window.localStorage.removeItem("refreshToken");
-  }
+  window.localStorage.removeItem("accessToken");
+  window.localStorage.removeItem("refreshToken");
 }
 
 function toUser(payload) {
@@ -71,7 +65,7 @@ export function AuthProvider({ children }) {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
     }
 
-    syncLegacyTokens(nextSession);
+    clearLegacyTokens();
   };
 
   const value = useMemo(
