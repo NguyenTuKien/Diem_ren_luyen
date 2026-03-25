@@ -1,7 +1,7 @@
 import Pagination from './Pagination'
 import { eventApi } from '../api/eventApi'
 
-function EventTable({ events, onRefresh, onEdit, pagination, currentPage, onPageChange }) {
+function EventTable({ events, onRefresh, onEdit, onGenerateQr, pagination, currentPage, onPageChange }) {
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa sự kiện này?')) {
       try {
@@ -107,10 +107,13 @@ function EventTable({ events, onRefresh, onEdit, pagination, currentPage, onPage
                     <span className="material-symbols-outlined text-xl">delete</span>
                   </button>
                   <button
-                    className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"
-                    title="Tạo QR"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Tạo QR Điểm danh"
+                    onClick={() => onGenerateQr && onGenerateQr(event)}
+                    type="button"
                   >
-                    <span className="material-symbols-outlined text-xl">qr_code_2</span>
+                    <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                    <span className="text-xs font-semibold">Tạo QR Điểm danh</span>
                   </button>
                 </td>
               </tr>

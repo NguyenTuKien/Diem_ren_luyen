@@ -2,6 +2,7 @@ package ct01.unipoint.backend.security;
 
 import ct01.unipoint.backend.security.jwt.JwtAuthenticationFilter;
 import ct01.unipoint.backend.security.sso.CustomOAuth2UserService;
+import ct01.unipoint.backend.security.sso.CustomOidcUserService;
 import ct01.unipoint.backend.security.sso.OAuth2LoginHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +45,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    CustomOAuth2UserService customOAuth2UserService,
+                                                   CustomOidcUserService customOidcUserService,
                                                    OAuth2LoginHandler oAuth2LoginHandler) {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -59,7 +61,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                    .userInfoEndpoint(userInfo -> userInfo
+                        .userService(customOAuth2UserService)
+                        .oidcUserService(customOidcUserService)
+                    )
                         .successHandler(oAuth2LoginHandler)
                         .failureHandler(oAuth2LoginHandler)
                 )

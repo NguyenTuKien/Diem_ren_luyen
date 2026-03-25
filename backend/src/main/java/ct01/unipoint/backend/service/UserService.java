@@ -13,11 +13,13 @@ public class UserService {
     private final UserDao userDao;
 
     public boolean isUserExist(String email) {
-        return userDao.existsByEmail(email);
+        return userDao.existsByEmailIgnoreCase(email);
     }
 
     public Optional<UserEntity> findByUsernameOrEmail(String principalIdentifier) {
-        return userDao.findByUsername(principalIdentifier)
+        return userDao.findByUsernameIgnoreCase(principalIdentifier)
+                .or(() -> userDao.findByEmailIgnoreCase(principalIdentifier))
+                .or(() -> userDao.findByUsername(principalIdentifier))
                 .or(() -> userDao.findByEmail(principalIdentifier));
     }
 }
