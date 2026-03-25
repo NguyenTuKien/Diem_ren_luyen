@@ -1,11 +1,10 @@
 package ct01.unipoint.backend.entity;
 
-import ch.qos.logback.core.joran.util.beans.BeanDescription;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import ct01.unipoint.backend.constant.UserConstant;
 import ct01.unipoint.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.entity.enums.UserStatus;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

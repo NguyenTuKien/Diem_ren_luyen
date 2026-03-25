@@ -9,7 +9,6 @@ import ct01.unipoint.backend.entity.LecturerEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
-import ct01.unipoint.backend.entity.enums.EventStatus;
 import ct01.unipoint.backend.entity.enums.Role;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

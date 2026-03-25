@@ -1,7 +1,6 @@
 package ct01.unipoint.backend.entity;
 
 import ct01.unipoint.backend.constant.LecturerConstant;
-import ct01.unipoint.backend.constant.UserConstant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,11 +18,11 @@ import lombok.Setter;
 public class LecturerEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  private String id;
 
   @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = LecturerConstant.COL_USER_ID, unique = true, nullable = false)
+  @JoinColumn(name = LecturerConstant.COL_ID)
+  @MapsId
   private UserEntity userEntity;
 
   @Column(name = LecturerConstant.COL_CODE, nullable = false, unique = true, length = 20)

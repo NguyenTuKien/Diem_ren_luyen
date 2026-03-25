@@ -18,12 +18,11 @@ import lombok.Setter;
 public class StudentEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = StudentConstant.COL_ID)
-  private Long id;
+  private String id;
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = StudentConstant.COL_USER_ID, unique = true, nullable = false)
+  @MapsId
+  @JoinColumn(name = StudentConstant.COL_ID)
   private UserEntity userEntity;
 
   @Column(name = StudentConstant.COL_STUDENT_CODE, length = 20, unique = true, nullable = false)
