@@ -65,22 +65,35 @@ function EventDashboard() {
     try {
       setLoading(true)
       const data = await eventApi.fetchEvents(page, PAGE_SIZE)
+      const now = new Date()
+
       const formattedEvents = data.content.map(backendEvent => {
         const startDate = new Date(backendEvent.startTime)
+        const endDate = new Date(backendEvent.endTime)
         const dateStr = startDate.toLocaleDateString('vi-VN')
         const timeStr = startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-        
-        let statusText = backendEvent.status || 'Chưa bắt đầu'
+
+        let statusKey = 'UPCOMING'
+        if (now < startDate) statusKey = 'UPCOMING'
+        else if (now >= startDate && now <= endDate) statusKey = 'ONGOING'
+        else statusKey = 'ENDED'
+
+        let statusText = 'Chưa bắt đầu'
         let statusClass = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide'
-        
-        if (statusText === 'Sắp diễn ra' || statusText === 'UPCOMING') {
+
+        if (statusKey === 'UPCOMING') {
           statusText = 'Sắp diễn ra'
           statusClass = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide'
-        } else if (statusText === 'Đang diễn ra' || statusText === 'ONGOING') {
+        } else if (statusKey === 'ONGOING') {
           statusText = 'Đang diễn ra'
           statusClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide'
+        } else if (statusKey === 'ENDED' || statusKey === 'DONE') {
+          statusText = 'Đã kết thúc'
+          statusClass = 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide'
         }
-        
+
+        const isOngoing = statusKey === 'ONGOING'
+
         return {
           id: backendEvent.id,
           title: backendEvent.title,
@@ -97,8 +110,9 @@ function EventDashboard() {
           type: backendEvent.criteria ? backendEvent.criteria.id : '1.1',
           status: statusText,
           statusClassName: statusClass,
-          disableEdit: statusText === 'Đang diễn ra',
-          rowClassName: statusText === 'Đang diễn ra' ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''
+          disableEdit: isOngoing,
+          canGenerateQr: isOngoing,
+          rowClassName: isOngoing ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''
         }
       })
       setEvents(formattedEvents)

@@ -8,7 +8,7 @@ const LoginHeader = () => (
       <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
         <span className="material-symbols-outlined text-2xl">school</span>
       </div>
-      <h2 className="text-xl font-bold leading-tight tracking-[-0.015em]">EduPoint</h2>
+      <h2 className="text-xl font-bold leading-tight tracking-[-0.015em]">Điểm rèn luyện</h2>
     </div>
     <div className="flex gap-4">
       <button className="hidden md:flex min-w-[84px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 border border-primary/20 text-primary dark:text-slate-100 text-sm font-bold" type="button">
@@ -22,15 +22,7 @@ const LoginHeader = () => (
 );
 
 const SocialProviders = ({ onMicrosoftLogin }) => (
-  <div className="grid grid-cols-2 gap-4">
-    <button className="flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" type="button">
-      <img
-        alt="Biểu tượng Google cho đăng nhập SSO"
-        className="w-5 h-5"
-        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdNzokGUAkT0Dn10wkBObXkpEsslt2BASQWt9jOjKxBd0XjCeC7_pWBim4VdKnyqmBYOnklLe9X-i2EFHRlrFAstthS_FkOKebcCUSmA-m65ejHRNvVeEnK48znjaNDTpdcHhfUQDtbFkxU69anZnJlivTmKykjyIgZbyPawdXSenerKCCyelw--Kvtjc9YAyAcC7-bwnzlYF6knaxzj25BJPbDL1v_OyY-Moho9upeC01UQsxHv3T6neTciURN7-LSHDvNK6QUAUJ"
-      />
-      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Google</span>
-    </button>
+  <div className="flex flex-col gap-4">
     <button
       className="flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
       onClick={onMicrosoftLogin}
@@ -42,7 +34,7 @@ const SocialProviders = ({ onMicrosoftLogin }) => (
         <path d="M1 12h10v10H1z" fill="#05a6f0" />
         <path d="M12 12h10v10H12z" fill="#ffba08" />
       </svg>
-      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Microsoft</span>
+      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Outlook</span>
     </button>
   </div>
 );
@@ -51,7 +43,6 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const location = useLocation();
@@ -79,10 +70,6 @@ const Login = () => {
   const handleStandardLogin = async (e) => {
     e.preventDefault();
 
-    if (authMode !== 'login') {
-      return;
-    }
-
     setError(null);
     setLoading(true);
 
@@ -107,34 +94,7 @@ const Login = () => {
             <div className="w-full max-w-[480px] bg-white dark:bg-slate-900 shadow-xl rounded-2xl p-8 border border-primary/5">
               <div className="text-center mb-8">
                 <h1 className="text-slate-900 dark:text-slate-100 text-3xl font-bold leading-tight mb-2">Chào mừng trở lại</h1>
-                <p className="text-slate-500 dark:text-slate-400 text-base font-normal">Tiếp tục hành trình tri thức cùng EduPoint</p>
-              </div>
-
-              <div className="flex mb-8">
-                <div className="flex h-12 flex-1 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
-                  <label className="flex cursor-pointer h-full grow items-center justify-center rounded-lg px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm text-slate-600 dark:text-slate-400 has-[:checked]:text-primary dark:has-[:checked]:text-white text-sm font-semibold transition-all">
-                    <span>Đăng nhập</span>
-                    <input
-                      checked={authMode === 'login'}
-                      className="hidden"
-                      name="auth-mode"
-                      onChange={() => setAuthMode('login')}
-                      type="radio"
-                      value="login"
-                    />
-                  </label>
-                  <label className="flex cursor-pointer h-full grow items-center justify-center rounded-lg px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-slate-700 has-[:checked]:shadow-sm text-slate-600 dark:text-slate-400 has-[:checked]:text-primary dark:has-[:checked]:text-white text-sm font-semibold transition-all">
-                    <span>Đăng ký</span>
-                    <input
-                      checked={authMode === 'register'}
-                      className="hidden"
-                      name="auth-mode"
-                      onChange={() => setAuthMode('register')}
-                      type="radio"
-                      value="register"
-                    />
-                  </label>
-                </div>
+                <p className="text-slate-500 dark:text-slate-400 text-base font-normal">Tiếp tục hành trình tri thức cùng Điểm rèn luyện</p>
               </div>
 
               {error && (
@@ -188,7 +148,7 @@ const Login = () => {
 
                 <button
                   className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
-                  disabled={loading || authMode !== 'login'}
+                  disabled={loading}
                   type="submit"
                 >
                   <span>{loading ? 'Đang đăng nhập...' : 'Đăng nhập ngay'}</span>
@@ -216,12 +176,12 @@ const Login = () => {
                 <a className="underline hover:text-[#d23232]" href="#">
                   Chính sách bảo mật
                 </a>{' '}
-                của EduPoint.
+                của Điểm rèn luyện.
               </p>
             </div>
           </main>
 
-          <footer className="py-6 text-center text-slate-400 dark:text-slate-500 text-sm">© 2024 EduPoint Ecosystem. All rights reserved.</footer>
+          <footer className="py-6 text-center text-slate-400 dark:text-slate-500 text-sm">© 2024 Điểm rèn luyện Ecosystem. All rights reserved.</footer>
         </div>
       </div>
     </div>

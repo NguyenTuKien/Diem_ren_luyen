@@ -53,10 +53,11 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
     const loadData = async () => {
       try {
         setError('')
+
         const [criteriaData, semesterData] = await Promise.all([
           criteriaApi.fetchCriterias(),
           semesterApi.fetchSemesters()
-        ]);
+        ])
         setCriterias(criteriaData);
         setSemesters(semesterData);
 

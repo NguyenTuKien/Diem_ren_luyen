@@ -30,13 +30,6 @@ function Header() {
           <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full" />
         </button>
 
-        <div className="h-6 w-px bg-slate-200 dark:border-slate-800" />
-
-        <button className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors">
-          <span className="material-symbols-outlined text-slate-500">translate</span>
-          <span className="text-sm font-medium">Tiếng Việt</span>
-        </button>
-
         <button
           className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors"
           onClick={handleLogout}

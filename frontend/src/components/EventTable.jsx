@@ -106,15 +106,27 @@ function EventTable({ events, onRefresh, onEdit, onGenerateQr, pagination, curre
                   >
                     <span className="material-symbols-outlined text-xl">delete</span>
                   </button>
-                  <button
-                    className="inline-flex items-center gap-1.5 px-2.5 py-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                    title="Tạo QR Điểm danh"
-                    onClick={() => onGenerateQr && onGenerateQr(event)}
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-lg">qr_code_2</span>
-                    <span className="text-xs font-semibold">Tạo QR Điểm danh</span>
-                  </button>
+                  {event.canGenerateQr ? (
+                    <button
+                      className="inline-flex items-center gap-1.5 px-2.5 py-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="Tạo QR Điểm danh"
+                      onClick={() => onGenerateQr && onGenerateQr(event)}
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                      <span className="text-xs font-semibold">Tạo QR Điểm danh</span>
+                    </button>
+                  ) : (
+                    <button
+                      className="inline-flex items-center gap-1.5 px-2.5 py-2 text-slate-300 dark:text-slate-600 cursor-not-allowed rounded-lg"
+                      title="Chỉ bật khi sự kiện đang diễn ra"
+                      disabled
+                      type="button"
+                    >
+                      <span className="material-symbols-outlined text-lg">qr_code_2</span>
+                      <span className="text-xs font-semibold">Tạo QR Điểm danh</span>
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

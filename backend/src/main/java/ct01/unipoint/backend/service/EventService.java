@@ -6,13 +6,17 @@ import ct01.unipoint.backend.dao.SemesterDao;
 import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.dto.request.EventRequest;
 import ct01.unipoint.backend.entity.EventEntity;
+import ct01.unipoint.backend.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import static ct01.unipoint.backend.service.AuthService.resolveCreator;
+
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -51,6 +55,19 @@ public class EventService {
         eventEntity.setStartTime(eventRequest.getStartTime());
         eventEntity.setEndTime(eventRequest.getEndTime());
         return eventDao.save(eventEntity);
+    }
+
+    public UserEntity resolveCreator() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
+        String username = authentication.getName();
+        Optional<UserEntity> userOpt = userDao.findByUsernameIgnoreCase(username)
+                .or(() -> userDao.findByEmailIgnoreCase(username))
+                .or(() -> userDao.findByUsername(username))
+                .or(() -> userDao.findByEmail(username));
+        return userOpt.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
     public final void deleteEvent(Long eventId) {

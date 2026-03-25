@@ -1,4 +1,36 @@
+import { useEffect, useState } from 'react'
+import { fetchCurrentUser, getStoredUserInfo } from '../api/authApi'
+
 function Sidebar() {
+  const [user, setUser] = useState(() => getStoredUserInfo())
+
+  useEffect(() => {
+    const ensureUser = async () => {
+      const cached = user || getStoredUserInfo()
+      const needsFetch = !cached || !cached.id || !cached.userId || !cached.fullName
+
+      if (!needsFetch && cached) {
+        setUser(cached)
+        return
+      }
+
+      const fetched = await fetchCurrentUser()
+      if (fetched) {
+        setUser({
+          id: fetched.id,
+          userId: fetched.userId,
+          fullName: fetched.fullName,
+          role: fetched.role,
+        })
+      }
+    }
+    ensureUser()
+  }, [user])
+
+  const roleLabel = user?.role || '---'
+  const userIdLabel = user?.userId || user?.id || '---'
+  const fullNameLabel = user?.fullName || '---'
+
   return (
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col">
       <div className="p-6 flex items-center gap-3">
@@ -12,7 +44,7 @@ function Sidebar() {
           className="text-xl font-bold tracking-tight text-primary"
           style={{ color: '#d23232' }}
         >
-          EventHub
+          Điểm rèn luyện
         </h1>
       </div>
 
@@ -78,8 +110,8 @@ function Sidebar() {
             <span className="material-symbols-outlined text-primary">account_circle</span>
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-sm font-bold truncate">Admin Panel</p>
-            <p className="text-xs text-slate-500 truncate">Quản trị viên</p>
+            <p className="text-sm font-bold truncate">{fullNameLabel}</p>
+            <p className="text-xs text-slate-500 truncate">{userIdLabel} • {roleLabel}</p>
           </div>
         </div>
       </div>

@@ -29,7 +29,7 @@ export const eventApi = {
     const response = await authFetch(API_ADMIN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(eventData),
+      body: JSON.stringify(eventData || {}),
     });
 
     if (!response.ok) {
@@ -50,7 +50,7 @@ export const eventApi = {
     const response = await authFetch(`${API_ADMIN_URL}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(eventData),
+      body: JSON.stringify(eventData || {}),
     });
 
     if (!response.ok) {
