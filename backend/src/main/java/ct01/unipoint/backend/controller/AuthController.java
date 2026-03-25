@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/v1/auth")
@@ -32,7 +31,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
         if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "refreshToken is required");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
         }
         return ResponseEntity.ok(authFacade.refreshTokens(request.getRefreshToken()));
     }
@@ -52,7 +51,7 @@ public class AuthController {
     public ResponseEntity<UserInfoResponse> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
         }
 
         return ResponseEntity.ok(authFacade.getCurrentUserInfo(authentication));

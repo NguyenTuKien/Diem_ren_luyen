@@ -18,7 +18,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -36,9 +35,14 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+<<<<<<< HEAD
     private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+=======
+    private final UserDetailsService userDetailsService;
+    private final PasswordEncoder passwordEncoder;
+>>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
 
-    @Value("${cors.allowed-origins:*}")
+    @Value("${cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}")
     private String allowedOrigins;
 
     private final UserDetailsService userDetailsService;
@@ -57,9 +61,14 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .authorizeHttpRequests(auth -> auth
+<<<<<<< HEAD
                         // Mở khóa các endpoint cần thiết
                         .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/oauth2/**", "/login/**", "/error", "/actuator/**").permitAll()
                         .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
+=======
+                        .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/auth/**", "/oauth2/**", "/login/**", "/error", "/actuator/**").permitAll()
+                    .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
+>>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
@@ -98,17 +107,12 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }

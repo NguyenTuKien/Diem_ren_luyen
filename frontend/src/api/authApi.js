@@ -86,7 +86,7 @@ export const login = async ({ username, password }) => {
   });
 
   if (!response.ok) {
-    throw new Error('Invalid username or password');
+    throw new Error('Tên đăng nhập hoặc mật khẩu không đúng.');
   }
 
   return response.json();
@@ -102,7 +102,7 @@ export const refreshTokens = async (refreshToken) => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to refresh token');
+    throw new Error('Không thể làm mới phiên đăng nhập.');
   }
 
   return response.json();
