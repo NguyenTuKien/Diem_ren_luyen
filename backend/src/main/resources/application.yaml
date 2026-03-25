@@ -8,22 +8,13 @@ spring:
     name: backend
 
   datasource:
-<<<<<<< HEAD
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?prepareThreshold=0
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
-=======
-    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
-
-    username: ${POSTGRES_USER:postgres.xhuvxyfehnsxnwljwtwq}
-    password: ${POSTGRES_PASSWORD:Helloxinchao1@}
->>>>>>> ba0542582644f08d9f9734a34f7c30ef7454adfd
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    open-in-view: false
     hibernate:
-<<<<<<< HEAD
       ddl-auto: update
     open-in-view: true
     properties:
@@ -76,15 +67,11 @@ server:
     context-path: /api
   port: 8080
   forward-headers-strategy: framework
-=======
-      ddl-auto: validate
->>>>>>> ba0542582644f08d9f9734a34f7c30ef7454adfd
 
 logging:
   level:
     root: warn
 
-<<<<<<< HEAD
 management:
   endpoints:
     web:
@@ -94,7 +81,3 @@ management:
     health:
       show-details: always
 
-=======
-server:
-  port: 8081
->>>>>>> ba0542582644f08d9f9734a34f7c30ef7454adfd
