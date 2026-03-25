@@ -1,7 +1,6 @@
 package ct01.unipoint.backend.controller;
 
-import ct01.unipoint.backend.dto.request.LoginRequest;
-import ct01.unipoint.backend.dto.request.RefreshTokenRequest;
+import ct01.unipoint.backend.dto.auth.LoginRequest;
 import ct01.unipoint.backend.dto.response.LoginResponse;
 import ct01.unipoint.backend.dto.response.UserInfoResponse;
 import ct01.unipoint.backend.facade.AuthFacade;
@@ -29,11 +28,11 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
-        if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isBlank()) {
+    public ResponseEntity<LoginResponse> refresh(@RequestBody Map<String, String> request) {
+        if (request == null || request.get("refreshToken") == null || request.get("refreshToken").isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
         }
-        return ResponseEntity.ok(authFacade.refreshTokens(request.getRefreshToken()));
+        return ResponseEntity.ok(authFacade.refreshTokens(request.get("refreshToken").replace("Bearer ", "")));
     }
 
     @PostMapping("/logout")

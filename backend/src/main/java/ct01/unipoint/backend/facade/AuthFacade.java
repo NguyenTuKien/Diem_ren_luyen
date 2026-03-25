@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.facade;
 
-import ct01.unipoint.backend.dto.request.LoginRequest;
+import ct01.unipoint.backend.dto.auth.LoginRequest;
 import ct01.unipoint.backend.dto.response.LoginResponse;
 import ct01.unipoint.backend.dto.response.UserInfoResponse;
 import ct01.unipoint.backend.entity.LecturerEntity;
@@ -34,7 +34,7 @@ public class AuthFacade {
 
     public LoginResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.username(), request.password())
         );
         String subject = authentication.getName();
         UserEntity userEntity = userService.findByUsername(subject);

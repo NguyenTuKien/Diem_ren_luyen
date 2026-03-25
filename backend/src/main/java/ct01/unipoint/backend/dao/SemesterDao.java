@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SemesterDao extends JpaRepository<SemesterEntity, Long> {
   Optional<SemesterEntity> findByName(String name);
+
+  Optional<SemesterEntity> findFirstByIsActiveTrueOrderByStartDateDesc();
 }

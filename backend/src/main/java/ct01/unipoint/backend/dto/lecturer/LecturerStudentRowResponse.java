@@ -1,7 +1,7 @@
 package ct01.unipoint.backend.dto.lecturer;
 
 public record LecturerStudentRowResponse(
-    Long studentId,
+    String studentId,
     String fullName,
     String email,
     String studentCode,

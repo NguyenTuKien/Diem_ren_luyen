@@ -1,5 +1,7 @@
 package ct01.unipoint.backend.controller;
 
+import ct01.unipoint.backend.dao.LecturerDao;
+import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.dto.common.SimpleMessageResponse;
 import ct01.unipoint.backend.dto.lecturer.ImportStudentsResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentListResponse;
@@ -11,8 +13,6 @@ import ct01.unipoint.backend.entity.LecturerEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.repository.LecturerRepository;
-import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.service.LecturerStudentService;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
@@ -37,13 +37,13 @@ import org.springframework.web.multipart.MultipartFile;
 public class LecturerStudentController {
 
   private final LecturerStudentService lecturerStudentService;
-  private final UserRepository userRepository;
-  private final LecturerRepository lecturerRepository;
+  private final UserDao userRepository;
+  private final LecturerDao lecturerRepository;
 
   public LecturerStudentController(
       LecturerStudentService lecturerStudentService,
-      UserRepository userRepository,
-      LecturerRepository lecturerRepository
+      UserDao userRepository,
+      LecturerDao lecturerRepository
   ) {
     this.lecturerStudentService = lecturerStudentService;
     this.userRepository = userRepository;
@@ -51,70 +51,70 @@ public class LecturerStudentController {
   }
 
   @GetMapping("/options")
-  public LecturerStudentOptionsResponse options(@RequestParam Long lecturerId) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+  public LecturerStudentOptionsResponse options(@RequestParam String lecturerId) {
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.getOptions(resolvedLecturerId);
   }
 
   @GetMapping
   public LecturerStudentListResponse list(
-      @RequestParam Long lecturerId,
+      @RequestParam String lecturerId,
       @RequestParam(required = false) Long facultyId,
       @RequestParam(required = false) Long classId,
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String keyword
   ) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.getStudents(resolvedLecturerId, facultyId, classId, status, keyword);
   }
 
   @PostMapping("/manual")
   public LecturerStudentRowResponse createManual(
-      @RequestParam Long lecturerId,
+      @RequestParam String lecturerId,
       @RequestBody ManualCreateStudentRequest request
   ) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.createManualStudent(resolvedLecturerId, request);
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ImportStudentsResponse importExcel(
-      @RequestParam Long lecturerId,
+      @RequestParam String lecturerId,
       @RequestPart("file") MultipartFile file
   ) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.importStudents(resolvedLecturerId, file);
   }
 
   @PutMapping("/{studentId}/monitor")
   public LecturerStudentRowResponse assignMonitor(
-      @RequestParam Long lecturerId,
-      @PathVariable Long studentId
+      @RequestParam String lecturerId,
+      @PathVariable String studentId
   ) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.assignMonitor(resolvedLecturerId, studentId);
   }
 
   @PutMapping("/{studentId}/status")
   public LecturerStudentRowResponse updateStatus(
-      @RequestParam Long lecturerId,
-      @PathVariable Long studentId,
+      @RequestParam String lecturerId,
+      @PathVariable String studentId,
       @RequestBody UpdateStudentStatusRequest request
   ) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.updateStudentStatus(resolvedLecturerId, studentId, request.status());
   }
 
   @DeleteMapping("/{studentId}")
   public SimpleMessageResponse delete(
-      @RequestParam Long lecturerId,
-      @PathVariable Long studentId
+      @RequestParam String lecturerId,
+      @PathVariable String studentId
   ) {
-    Long resolvedLecturerId = ensureLecturerAccess(lecturerId);
+    String resolvedLecturerId = ensureLecturerAccess(lecturerId);
     return lecturerStudentService.deleteStudent(resolvedLecturerId, studentId);
   }
 
-  private Long ensureLecturerAccess(Long requestedLecturerId) {
+  private String ensureLecturerAccess(String requestedLecturerId) {
     UserEntity currentUser = resolveCurrentUser();
     LecturerEntity lecturer = lecturerRepository.findByUserEntityId(currentUser.getId())
         .orElseGet(() -> provisionLecturerProfile(currentUser));

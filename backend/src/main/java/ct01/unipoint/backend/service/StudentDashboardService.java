@@ -3,17 +3,17 @@ package ct01.unipoint.backend.service;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse.ActivityHistoryItem;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse.UpcomingEventItem;
-import ct01.unipoint.backend.entity.ActivityRecordEntity;
+import ct01.unipoint.backend.dao.EventDao;
+import ct01.unipoint.backend.dao.RecordDao;
+import ct01.unipoint.backend.dao.SemesterDao;
+import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.dao.StudentSemesterDao;
 import ct01.unipoint.backend.entity.EventEntity;
+import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
-import ct01.unipoint.backend.entity.SemesterEvaluationEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
+import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.repository.ActivityRecordRepository;
-import ct01.unipoint.backend.repository.EventRepository;
-import ct01.unipoint.backend.repository.SemesterEvaluationRepository;
-import ct01.unipoint.backend.repository.SemesterRepository;
-import ct01.unipoint.backend.repository.StudentRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -29,52 +29,52 @@ public class StudentDashboardService {
   private static final DateTimeFormatter UI_TIME_FORMAT = DateTimeFormatter.ofPattern(
       "dd/MM/yyyy HH:mm");
 
-  private final StudentRepository studentRepository;
-  private final SemesterRepository semesterRepository;
-  private final SemesterEvaluationRepository semesterEvaluationRepository;
-  private final ActivityRecordRepository activityRecordRepository;
-  private final EventRepository eventRepository;
+  private final StudentDao studentDao;
+  private final SemesterDao semesterDao;
+  private final StudentSemesterDao studentSemesterDao;
+  private final RecordDao recordDao;
+  private final EventDao eventDao;
 
   public StudentDashboardService(
-      StudentRepository studentRepository,
-      SemesterRepository semesterRepository,
-      SemesterEvaluationRepository semesterEvaluationRepository,
-      ActivityRecordRepository activityRecordRepository,
-      EventRepository eventRepository
+      StudentDao studentDao,
+      SemesterDao semesterDao,
+      StudentSemesterDao studentSemesterDao,
+      RecordDao recordDao,
+      EventDao eventDao
   ) {
-    this.studentRepository = studentRepository;
-    this.semesterRepository = semesterRepository;
-    this.semesterEvaluationRepository = semesterEvaluationRepository;
-    this.activityRecordRepository = activityRecordRepository;
-    this.eventRepository = eventRepository;
+    this.studentDao = studentDao;
+    this.semesterDao = semesterDao;
+    this.studentSemesterDao = studentSemesterDao;
+    this.recordDao = recordDao;
+    this.eventDao = eventDao;
   }
 
   @Transactional(readOnly = true)
-  public StudentDashboardResponse getDashboard(Long userId) {
-    StudentEntity student = studentRepository.findByUserEntityId(userId)
+  public StudentDashboardResponse getDashboard(String userId) {
+    StudentEntity student = studentDao.findByUserEntityId(userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin sinh viên."));
 
-    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
+    Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
     Integer totalScore = 0;
     int joinedActivities = 0;
     if (activeSemesterOpt.isPresent()) {
       Long semesterId = activeSemesterOpt.get().getId();
-      totalScore = semesterEvaluationRepository.findBySemester_IdAndStudent_Id(semesterId, student.getId())
-          .map(SemesterEvaluationEntity::getFinalScore)
+      totalScore = studentSemesterDao.findBySemester_IdAndStudent_Id(semesterId, student.getId())
+          .map(StudentSemesterEntity::getFinalScore)
           .orElse(0);
-      joinedActivities = (int) activityRecordRepository.countByStudent_IdAndSemester_Id(student.getId(),
+      joinedActivities = (int) recordDao.countByStudent_IdAndSemester_Id(student.getId(),
           semesterId);
     }
 
     List<UpcomingEventItem> upcomingEvents = activeSemesterOpt
-        .map(semester -> eventRepository.findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(
+        .map(semester -> eventDao.findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(
                 semester.getId(), LocalDateTime.now())
             .stream()
             .map(this::toUpcomingItem)
             .toList())
         .orElse(List.of());
 
-    List<ActivityHistoryItem> history = activityRecordRepository.findTop10ByStudent_IdOrderByCreatedAtDesc(
+    List<ActivityHistoryItem> history = recordDao.findTop10ByStudent_IdOrderByCreatedAtDesc(
             student.getId())
         .stream()
         .map(this::toHistoryItem)
@@ -103,7 +103,7 @@ public class StudentDashboardService {
     );
   }
 
-  private ActivityHistoryItem toHistoryItem(ActivityRecordEntity record) {
+  private ActivityHistoryItem toHistoryItem(RecordEntity record) {
     String title = null;
     if (record.getEvent() != null && StringUtils.hasText(record.getEvent().getTitle())) {
       title = record.getEvent().getTitle();
