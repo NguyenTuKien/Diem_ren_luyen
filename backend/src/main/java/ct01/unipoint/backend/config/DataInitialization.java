@@ -1,16 +1,13 @@
 package ct01.unipoint.backend.config;
 
-import ct01.unipoint.backend.dao.CriteriaDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.FacultyDao;
-import ct01.unipoint.backend.dao.LecturerDao;
-import ct01.unipoint.backend.dao.SemesterDao;
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.dao.*;
+import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.CriteriaEntity;
 import ct01.unipoint.backend.entity.EventEntity;
 import ct01.unipoint.backend.entity.FacultyEntity;
 import ct01.unipoint.backend.entity.LecturerEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
+import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.entity.enums.EventStatus;
 import ct01.unipoint.backend.entity.enums.Role;
@@ -29,7 +26,6 @@ import java.util.Optional;
 
 @Configuration
 public class DataInitialization {
-
     @Bean
     @Order(1)
     @Transactional
@@ -71,8 +67,86 @@ public class DataInitialization {
         };
     }
 
-    @Bean // Đã thêm @Bean
+    @Bean
     @Order(3)
+    @Transactional
+    CommandLineRunner initStudent(StudentDao studentDao,
+                                  UserDao userDao,
+                                  FacultyDao facultyDao,
+                                  LecturerDao lecturerDao,
+                                  ClassDao classDao,
+                                  PasswordEncoder passwordEncoder) {
+        return args -> {
+            FacultyEntity faculty = facultyDao.findByCode("CNTT").orElseThrow();
+
+            UserEntity lecturerUser = userDao.findByEmailIgnoreCase("longdh@ptit.edu.vn")
+                    .orElseGet(() -> userDao.save(UserEntity.builder()
+                            .username("longdh")
+                            .email("longdh@ptit.edu.vn")
+                            .password(passwordEncoder.encode("LongDH@123"))
+                            .role(Role.ROLE_LECTURER)
+                            .build()));
+
+            LecturerEntity lecturer = lecturerDao.findByUserEntity_EmailIgnoreCase("longdh@ptit.edu.vn")
+                    .orElseGet(() -> lecturerDao.save(LecturerEntity.builder()
+                            .userEntity(lecturerUser)
+                            .lecturerCode("LONGDH")
+                            .fullName("Thay Long")
+                            .facultyEntity(faculty)
+                            .build()));
+
+            ClassEntity classEntity = classDao.findByClassCode("d23ctcn01-b")
+                    .orElseGet(() -> classDao.save(ClassEntity.builder()
+                            .classCode("d23ctcn01-b")
+                            .facultyEntity(faculty)
+                            .lecturerEntity(lecturer)
+                            .build()));
+
+            if (classEntity.getLecturerEntity() == null || !classEntity.getLecturerEntity().getId().equals(lecturer.getId())) {
+                classEntity.setLecturerEntity(lecturer);
+                classDao.save(classEntity);
+            }
+
+            List<StudentSeed> students = List.of(
+                    new StudentSeed("B23CN465", "kiennt.b23cn465", "kiennt.b23cn465@stu.ptit.edu.vn", "Kien NT"),
+                    new StudentSeed("B23CN832", "toannm.b23cn832", "toannm.b23cn832@stu.ptit.edu.vn", "Toan NM"),
+                    new StudentSeed("B23CN873", "tunb.b23cn873", "tunb.b23cn873@stu.ptit.edu.vn", "Tu NB")
+            );
+
+            for (StudentSeed seed : students) {
+                UserEntity studentUser = userDao.findByEmailIgnoreCase(seed.email())
+                        .orElseGet(() -> userDao.save(UserEntity.builder()
+                                .username(seed.username())
+                                .email(seed.email())
+                                .password(passwordEncoder.encode("Student@123"))
+                                .role(Role.ROLE_STUDENT)
+                                .build()));
+
+                Optional<StudentEntity> existingStudent = studentDao.findByStudentCode(seed.studentCode());
+                if (existingStudent.isPresent()) {
+                    StudentEntity student = existingStudent.get();
+                    student.setUserEntity(studentUser);
+                    student.setFullName(seed.fullName());
+                    student.setClassEntity(classEntity);
+                    studentDao.save(student);
+                    continue;
+                }
+
+                studentDao.save(StudentEntity.builder()
+                        .userEntity(studentUser)
+                        .studentCode(seed.studentCode())
+                        .fullName(seed.fullName())
+                        .classEntity(classEntity)
+                        .build());
+            }
+        };
+    }
+
+    private record StudentSeed(String studentCode, String username, String email, String fullName) {
+    }
+
+    @Bean // Đã thêm @Bean
+    @Order(4)
     @Transactional
     CommandLineRunner initLecturer(LecturerDao lecturerDao, UserDao userDao, FacultyDao facultyDao, PasswordEncoder passwordEncoder) {
         return args -> {
@@ -96,7 +170,7 @@ public class DataInitialization {
     }
 
     @Bean
-    @Order(4)
+    @Order(5)
     @Transactional
     CommandLineRunner initSemester(SemesterDao semesterDao) {
         return args -> {
@@ -115,7 +189,7 @@ public class DataInitialization {
     }
 
     @Bean
-    @Order(5)
+    @Order(6)
     @Transactional
     CommandLineRunner initCriteria(CriteriaDao criteriaDao) {
         return args -> {
@@ -135,7 +209,7 @@ public class DataInitialization {
     }
 
     @Bean
-    @Order(6)
+    @Order(7)
     @Transactional
     CommandLineRunner initEvent(EventDao eventDao, SemesterDao semesterDao, CriteriaDao criteriaDao, UserDao userDao) {
         return args -> {
@@ -163,7 +237,6 @@ public class DataInitialization {
                             .startTime(LocalDateTime.of(2026, 4, 10, 8, 0))
                             .endTime(LocalDateTime.of(2026, 4, 10, 11, 30))
                             .createdBy(createdBy)
-                            .status(EventStatus.UPCOMING)
                             .build(),
                     EventEntity.builder()
                             .semester(semester)
@@ -175,7 +248,6 @@ public class DataInitialization {
                             .startTime(LocalDateTime.of(2026, 4, 18, 7, 30))
                             .endTime(LocalDateTime.of(2026, 4, 18, 11, 0))
                             .createdBy(createdBy)
-                            .status(EventStatus.UPCOMING)
                             .build(),
                     EventEntity.builder()
                             .semester(semester)
@@ -187,7 +259,6 @@ public class DataInitialization {
                             .startTime(LocalDateTime.of(2026, 5, 5, 13, 30))
                             .endTime(LocalDateTime.of(2026, 5, 5, 17, 0))
                             .createdBy(createdBy)
-                            .status(EventStatus.UPCOMING)
                             .build()
             );
 

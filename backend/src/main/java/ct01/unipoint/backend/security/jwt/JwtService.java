@@ -2,6 +2,7 @@ package ct01.unipoint.backend.security.jwt;
 
 import java.util.Date;
 
+import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,8 +14,8 @@ public class JwtService {
     private final JwtUtil jwtUtil;
     private final TokenBlacklistService tokenBlacklistService;
 
-    public String generateAccessToken(String username) {
-        return jwtUtil.generateAccessToken(username);
+    public String generateAccessToken(UserEntity userEntity) {
+        return jwtUtil.generateAccessToken(userEntity);
     }
 
     public String generateRefreshToken(String username) {

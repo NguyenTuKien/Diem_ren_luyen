@@ -1,18 +1,12 @@
 package ct01.unipoint.backend.entity;
 
+import ch.qos.logback.core.joran.util.beans.BeanDescription;
 import ct01.unipoint.backend.constant.UserConstant;
 import ct01.unipoint.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.entity.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

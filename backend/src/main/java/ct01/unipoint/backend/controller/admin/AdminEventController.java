@@ -16,6 +16,7 @@ public class AdminEventController {
 
     @PostMapping("")
     public EventEntity createEvent(@RequestBody EventRequest request) {
+
         return eventService.createEvent(request);
     }
 

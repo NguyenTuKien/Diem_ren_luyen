@@ -1,7 +1,6 @@
 package ct01.unipoint.backend.entity;
 
 import ct01.unipoint.backend.constant.EventConstant;
-import ct01.unipoint.backend.entity.enums.EventStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -63,8 +62,4 @@ public class EventEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = EventConstant.COL_CREATED_BY)
   private UserEntity createdBy;
-
-  @Enumerated(EnumType.STRING)
-  @Column(name = EventConstant.COL_STATUS, length = 20)
-  private EventStatus status;
 }

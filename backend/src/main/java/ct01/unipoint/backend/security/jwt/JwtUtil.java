@@ -1,10 +1,15 @@
 package ct01.unipoint.backend.security.jwt;
 
+import ct01.unipoint.backend.dao.LecturerDao;
+import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.entity.UserEntity;
+import ct01.unipoint.backend.entity.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +20,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
+
+    private final LecturerDao lecturerDao;
+    private final StudentDao studentDao;
 
     @Value("${jwt.secret}")
     private String secret;
@@ -43,10 +52,25 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    public String generateAccessToken(String username) {
+    public String generateAccessToken(UserEntity userEntity) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "access");
-        return buildToken(claims, username, expirationMs);
+        claims.put("role", userEntity.getRole().name());
+
+        if (userEntity.getRole() == Role.ROLE_LECTURER) {
+            lecturerDao.findByUserEntity(userEntity).ifPresent(lecturer -> {
+                claims.put("fullname", lecturer.getFullName());
+                claims.put("lecture_id", lecturer.getId()); // Ghi đúng ID của bảng Lecturer
+            });
+        }
+        else if (userEntity.getRole() == Role.ROLE_STUDENT || userEntity.getRole() == Role.ROLE_MONITOR) {
+            studentDao.findByUserEntity(userEntity).ifPresent(student -> {
+                claims.put("fullname", student.getFullName());
+                claims.put("student_id", student.getId()); // Ghi đúng ID của bảng Student
+            });
+        }
+
+        return buildToken(claims, userEntity.getUsername(), expirationMs);
     }
 
     public String generateRefreshToken(String username) {

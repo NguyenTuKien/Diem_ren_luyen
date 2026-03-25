@@ -1,6 +1,8 @@
 package ct01.unipoint.backend.security.sso;
 
+import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.security.jwt.JwtService;
+import ct01.unipoint.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +26,10 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2LoginHandler implements AuthenticationSuccessHandler, AuthenticationFailureHandler {
 
     private final JwtService jwtService;
+    private final UserService userService; // THÊM: Tiêm UserService vào đây
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
-    @Value("${spring.app.oauth2.redirect.url:http://localhost:5173}")
+    @Value("${spring.app.oauth2.redirect.url:http://localhost:5173/oauth-success}")
     private String frontendRedirectUrl;
 
     @Override
@@ -34,9 +37,11 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         Object principal = authentication.getPrincipal();
-        String username = extractUsername(principal, authentication);
-        String accessToken = jwtService.generateAccessToken(username);
-        String refreshToken = jwtService.generateRefreshToken(username);
+        String principalIdentifier = extractUsername(principal, authentication);
+        UserEntity userEntity = userService.findByUsernameOrEmail(principalIdentifier)
+                .orElseThrow(() -> new RuntimeException("User not found: " + principalIdentifier));
+        String accessToken = jwtService.generateAccessToken(userEntity);
+        String refreshToken = jwtService.generateRefreshToken(userEntity.getUsername());
         String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
@@ -71,4 +76,3 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
         return authentication.getName();
     }
 }
-

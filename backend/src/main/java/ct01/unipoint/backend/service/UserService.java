@@ -12,6 +12,11 @@ import java.util.Optional;
 public class UserService {
     private final UserDao userDao;
 
+    public UserEntity findByUsername(String username) {
+        return userDao.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+    }
+
     public boolean isUserExist(String email) {
         return userDao.existsByEmailIgnoreCase(email);
     }

@@ -14,5 +14,4 @@ public class EventRequest {
     private String location;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String createdBy;
 }
