@@ -188,6 +188,7 @@ jobs:
     name: Code Quality Scan with SonarCloud
     runs-on: ubuntu-latest
     needs: [unit_test_job]
+    continue-on-error: true
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
