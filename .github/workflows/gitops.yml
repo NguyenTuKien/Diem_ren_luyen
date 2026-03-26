@@ -17,6 +17,23 @@ jobs:
   unit_test_job:
     name: Run Unit Tests and Generate Coverage
     runs-on: ubuntu-latest
+
+    # 1. TẠO DATABASE ẢO TRÊN GITHUB ACTIONS
+    services:
+      postgres:
+        image: postgres:15 # Hoặc phiên bản PG bạn đang dùng
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -30,21 +47,30 @@ jobs:
           
       - name: Run Unit Tests with Maven
         working-directory: ./backend
-        run: mvn -B clean test
-        
-      - name: Generate JaCoCo Coverage Report
-        if: always()
-        working-directory: ./backend
-        run: mvn jacoco:report
+        # 2. BƠM BIẾN MÔI TRƯỜNG VÀO CHO SPRING BOOT KẾT NỐI
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          JWT_SECRET: "VGhpc0lzQURldlNlY3JldEtleUZvckpXVFNpZ25pbmdPbmx5ISE=" # Thêm nếu Security đòi hỏi
+        # Gộp lệnh test và gen report cho an toàn
+        run: mvn -B clean test jacoco:report
         
       - name: Calculate Coverage Percentage
         if: always()
         working-directory: ./backend
         run: |
           if [ -f target/site/jacoco/jacoco.csv ]; then
-            awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions "% covered" }' target/site/jacoco/jacoco.csv
+            # Tính toán và đưa vào biến môi trường GITHUB_ENV
+            COVERAGE=$(awk -F"," '{ instructions += $4 + $5; covered += $5 } END { printf "%.2f", 100*covered/instructions }' target/site/jacoco/jacoco.csv)
+            echo "COVERAGE_PERCENTAGE=$COVERAGE" >> $GITHUB_ENV
           else
-            echo "No JaCoCo report generated (no tests ran)"
+            echo "COVERAGE_PERCENTAGE=N/A" >> $GITHUB_ENV
           fi
         
       - name: Upload JaCoCo Coverage Report & Classes for Sonar
@@ -68,9 +94,13 @@ jobs:
       - name: Test Report Summary
         if: always()
         run: |
-          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- JaCoCo coverage report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
-          echo "- Test results available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Báo cáo Test & Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Code Coverage** | **${{ env.COVERAGE_PERCENTAGE }}%** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Báo cáo JaCoCo đã được tải lên phần Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kết quả Test (XML) đã được lưu lại" >> $GITHUB_STEP_SUMMARY
 
   tag_job:
     name: Calculate Docker Tag
