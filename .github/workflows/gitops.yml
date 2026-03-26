@@ -318,7 +318,7 @@ jobs:
           git add "$TARGET_FILE"
           git commit -m "CD: Update backend stag image tag to ${{ env.TAG }}" || echo "No changes to commit"
           git pull --rebase origin main
-          git push origin main
+          git push origin main --force
 
   update_be_config_prod:
     name: Update Backend Config (Prod)
