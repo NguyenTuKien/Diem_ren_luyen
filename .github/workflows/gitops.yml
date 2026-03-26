@@ -400,7 +400,7 @@ jobs:
   notify_success:
     name: Send Success Notification to Discord
     runs-on: ubuntu-latest
-    needs: [ unit_test_job, tag_job, build_job, integration_test_job, code_quality_scan, security_scan, update_be_config_stag, update_be_config_prod, update_fe_config_stag, update_fe_config_prod ]
+    needs: [ unit_test_job, tag_job, build_job, integration_test_job, update_be_config_stag, update_be_config_prod, update_fe_config_stag, update_fe_config_prod ]
     # SỬA LẠI: Dùng always() để đảm bảo job luôn được xem xét chạy
     # Kiểm tra không có job nào thất bại (nhưng cho phép skipped)
     if: |
@@ -418,7 +418,7 @@ jobs:
   notify_fail:
     name: Send Failure Notification to Discord
     runs-on: ubuntu-latest
-    needs: [ unit_test_job, tag_job, build_job, integration_test_job, code_quality_scan, security_scan, update_be_config_stag, update_be_config_prod, update_fe_config_stag, update_fe_config_prod ]
+    needs: [ unit_test_job, tag_job, build_job, integration_test_job, update_be_config_stag, update_be_config_prod, update_fe_config_stag, update_fe_config_prod ]
     # SỬA LẠI: Dùng always() và kiểm tra xem có ÍT NHẤT một job nào đó thất bại không
     if: |
       always() &&
