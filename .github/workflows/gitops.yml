@@ -210,7 +210,7 @@ jobs:
       - name: Run SonarCloud Scan with Maven
         working-directory: ./backend
         run: |
-          mvn sonar:sonar \
+          mvn compile sonar:sonar \
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }} \
             -Dsonar.host.url=https://sonarcloud.io \
