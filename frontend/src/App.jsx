@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { Navigate, Routes, Route } from 'react-router-dom';
 import AuthLoginPages from './pages/AuthLoginPage'
 import OAuthCallback from './pages/OAuthCallback'
@@ -14,8 +13,5 @@ function App() {
     </Routes>
   );
 }
-=======
-﻿import App from "./app/App";
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
 
 export default App;

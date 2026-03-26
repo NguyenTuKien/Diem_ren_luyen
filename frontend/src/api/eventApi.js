@@ -6,7 +6,6 @@ const API_ADMIN_URL = '/api/v1/admin/events';
 export const eventApi = {
   fetchEvents: async (page = 0, size = 10) => {
     const response = await authFetch(`${API_BASE_URL}?page=${page}&size=${size}`);
-<<<<<<< HEAD
     if (!response.ok) throw new Error('Failed to fetch events');
     const data = await response.json();
 
@@ -24,10 +23,6 @@ export const eventApi = {
       hasNext: !!(springPage.totalPages && springPage.number + 1 < springPage.totalPages),
       hasPrevious: !!(typeof springPage.number === 'number' && springPage.number > 0)
     };
-=======
-    if (!response.ok) throw new Error('Không thể tải danh sách sự kiện.');
-    return response.json();
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
   },
   
   createEvent: async (eventData) => {

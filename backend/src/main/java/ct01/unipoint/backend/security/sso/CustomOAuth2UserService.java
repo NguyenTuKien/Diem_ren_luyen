@@ -34,7 +34,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String name = getDisplayName(attributes);
         attributes.putIfAbsent("email", email);
         attributes.putIfAbsent("name", name);
-<<<<<<< HEAD
         // LOGIC MỚI Ở ĐÂY: Tìm user, nếu không thấy thì ném lỗi ngay lập tức
         UserEntity userEntity = userDao.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new OAuth2AuthenticationException(
@@ -45,27 +44,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // if (userEntity.getStatus() != UserStatus.ACTIVE) {
         //     throw new OAuth2AuthenticationException(new OAuth2Error("user_locked"), "Tài khoản của bạn đã bị khóa!");
         // }
-=======
-
-        UserEntity userEntity;
-        try {
-            userEntity = userDao.findByEmail(email)
-                .orElseGet(() -> userDao.save(UserEntity.builder()
-                    .username(generateUniqueUsername(email))
-                    .email(email)
-                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                    .role(Role.ROLE_STUDENT)
-                    .status(UserStatus.ACTIVE)
-                    .build()));
-        } catch (Exception ex) {
-            throw new OAuth2AuthenticationException(
-                new OAuth2Error("user_provisioning_failed"),
-                "Không thể tạo tài khoản từ Microsoft SSO.",
-                ex
-            );
-        }
-
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
         Collection<? extends GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(userEntity.getRole().name()));
         return new DefaultOAuth2User(authorities, attributes, "email");
     }
@@ -85,40 +63,5 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
         return name != null ? name.toString() : "";
     }
-<<<<<<< HEAD
 }
-=======
 
-    private String generateUniqueUsername(String email) {
-        String localPart = email;
-        int atIndex = email.indexOf('@');
-        if (atIndex > 0) {
-            localPart = email.substring(0, atIndex);
-        }
-
-        String normalized = localPart.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9._-]", "_")
-                .replaceAll("_+", "_")
-                .replaceAll("^[._-]+|[._-]+$", "");
-
-        if (normalized.isBlank()) {
-            normalized = "user";
-        }
-
-        String base = normalized.length() > 40 ? normalized.substring(0, 40) : normalized;
-        String candidate = base;
-        int suffix = 1;
-
-        while (userDao.findByUsername(candidate).isPresent()) {
-            String suffixText = "_" + suffix;
-            int maxBaseLength = Math.max(1, 50 - suffixText.length());
-            String trimmedBase = base.length() > maxBaseLength ? base.substring(0, maxBaseLength) : base;
-            candidate = trimmedBase + suffixText;
-            suffix++;
-        }
-
-        return candidate;
-    }
-
-}
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956

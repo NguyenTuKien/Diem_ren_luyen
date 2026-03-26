@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { authFetch } from '../api/authFetch'
@@ -230,6 +229,3 @@ const ProtectedRouter = () => {
 }
 
 export default ProtectedRouter
-=======
-﻿export { default } from "../shared/components/ProtectedRoute";
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956

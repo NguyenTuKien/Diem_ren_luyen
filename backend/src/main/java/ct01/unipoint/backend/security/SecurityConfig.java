@@ -35,17 +35,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-<<<<<<< HEAD
     private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
-=======
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
 
     @Value("${cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}")
     private String allowedOrigins;
-
-    private final UserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -61,14 +56,10 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .authorizeHttpRequests(auth -> auth
-<<<<<<< HEAD
                         // Mở khóa các endpoint cần thiết
                         .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/oauth2/**", "/login/**", "/error", "/actuator/**").permitAll()
                         .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
-=======
-                        .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/auth/**", "/oauth2/**", "/login/**", "/error", "/actuator/**").permitAll()
-                    .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")
->>>>>>> 5f6b687e64570063f6f6e8eb6ff7f9e390eb9956
+
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
