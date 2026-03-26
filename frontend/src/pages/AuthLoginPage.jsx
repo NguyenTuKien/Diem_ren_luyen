@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { login, setTokens, startMicrosoftOAuthLogin } from '../api/authApi';
+import { login as loginApi, startMicrosoftOAuthLogin } from '../api/authApi';
+import { useAuth } from '../context/AuthContext';
 
 const LoginHeader = () => (
   <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 px-6 md:px-20 py-4 bg-white dark:bg-slate-900">
@@ -47,6 +48,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleMicrosoftLogin = () => {
     startMicrosoftOAuthLogin();
@@ -74,8 +76,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const data = await login({ username, password });
-      setTokens(data);
+      const data = await loginApi({ username, password });
+      await login(data);
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);

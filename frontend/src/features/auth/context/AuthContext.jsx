@@ -1,92 +1,115 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  clearTokens,
+  fetchCurrentUser,
+  getAccessToken,
+  getRefreshToken,
+  getStoredUserInfo,
+  logout as logoutApi,
+  setTokens,
+} from "../../../api/authApi";
 
-export const AUTH_STORAGE_KEY = "unipoint_auth";
 const AuthContext = createContext(null);
 
-function readStoredSession() {
-  if (typeof window === "undefined") {
+const toUser = (payload = {}) => ({
+  userId: payload.userId ?? payload.id ?? null,
+  email: payload.email ?? payload.username ?? null,
+  role: payload.role ?? payload.effectiveRole ?? "",
+  effectiveRole: payload.effectiveRole ?? payload.role ?? "",
+  displayName: payload.displayName ?? payload.fullName ?? payload.fullname ?? payload.name ?? "",
+  dashboardPath: payload.dashboardPath ?? "/",
+  classCode: payload.classCode ?? payload.class ?? "",
+  status: payload.status ?? "",
+});
+
+const readSessionFromStorage = async () => {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  if (!accessToken || !refreshToken) {
     return null;
   }
 
-  try {
-    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.user) {
-      return null;
-    }
-    return parsed;
-  } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    window.localStorage.removeItem("accessToken");
-    window.localStorage.removeItem("refreshToken");
+  const storedUser = getStoredUserInfo();
+  if (storedUser) {
+    return { user: toUser(storedUser), accessToken, refreshToken };
+  }
+
+  const fetchedUser = await fetchCurrentUser();
+  if (!fetchedUser) {
     return null;
   }
-}
 
-function clearLegacyTokens() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.removeItem("accessToken");
-  window.localStorage.removeItem("refreshToken");
-}
-
-function toUser(payload) {
-  return {
-    userId: payload.userId,
-    email: payload.email,
-    role: payload.role,
-    effectiveRole: payload.effectiveRole,
-    displayName: payload.displayName,
-    dashboardPath: payload.dashboardPath,
-    classCode: payload.classCode,
-    status: payload.status,
-  };
-}
+  return { user: toUser(fetchedUser), accessToken, refreshToken };
+};
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(readStoredSession);
+  const seedSession = () => {
+    const accessToken = getAccessToken();
+    const refreshToken = getRefreshToken();
+    const storedUser = getStoredUserInfo();
 
-  const persistSession = (nextSession) => {
-    setSession(nextSession);
-
-    if (typeof window === "undefined") {
-      return;
+    if (accessToken && refreshToken && storedUser) {
+      return {
+        loading: false,
+        session: { user: toUser(storedUser), accessToken, refreshToken },
+      };
     }
 
-    if (nextSession) {
-      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
-    } else {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
-    }
+    return { loading: true, session: null };
+  };
 
-    clearLegacyTokens();
+  const [state, setState] = useState(seedSession);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      try {
+        const session = await readSessionFromStorage();
+        if (cancelled) return;
+        setState({ loading: false, session });
+      } catch {
+        if (!cancelled) {
+          clearTokens();
+          setState({ loading: false, session: null });
+        }
+      }
+    };
+
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const setSessionFromTokens = async (tokens) => {
+    setTokens(tokens || {});
+    const session = await readSessionFromStorage();
+    setState({ loading: false, session });
+    return session;
+  };
+
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } finally {
+      clearTokens();
+      setState({ loading: false, session: null });
+    }
   };
 
   const value = useMemo(
     () => ({
-      session,
-      user: session?.user ?? null,
-      accessToken: session?.accessToken ?? null,
-      refreshToken: session?.refreshToken ?? null,
-      login: (payload) => {
-        const nextSession = {
-          user: toUser(payload),
-          accessToken: payload.accessToken ?? null,
-          refreshToken: payload.refreshToken ?? null,
-        };
-        persistSession(nextSession);
-      },
-      logout: () => {
-        persistSession(null);
-      },
+      loading: state.loading,
+      session: state.session,
+      user: state.session?.user ?? null,
+      accessToken: state.session?.accessToken ?? null,
+      refreshToken: state.session?.refreshToken ?? null,
+      login: setSessionFromTokens,
+      logout,
     }),
-    [session],
+    [state],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
