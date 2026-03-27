@@ -1,4 +1,4 @@
-**/database
-**/.env
-**/logs
 **/.idea
+**/.env
+**/thanh-nien-ptit-api
+./.gitignore

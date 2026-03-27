@@ -2,29 +2,28 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
 import { fetchCurrentUser, getStoredUserInfo, logout } from '../api/authApi'
+import { qrcodeApi } from '../api/qrcodeApi'
 
 const SCANNER_REGION_ID = 'unipoint-qr-reader'
 
-const parseEventIdFromQr = (decodedText) => {
-  try {
-    const parsedUrl = new URL(decodedText)
-    return parsedUrl.searchParams.get('eventId')
-  } catch {
-    const matched = decodedText.match(/[?&]eventId=([^&]+)/i)
-    return matched ? decodeURIComponent(matched[1]) : null
-  }
-}
-
-const handleCheckinSubmit = async (eventId, pinCode = null) => {
-  await new Promise((resolve) => setTimeout(resolve, 1300))
-
-  if (!eventId && !pinCode) {
-    throw new Error('Không tìm thấy sự kiện hợp lệ để điểm danh.')
+const handleCheckinSubmit = async (qrData, pinCode = null) => {
+  if (!qrData && !pinCode) {
+    throw new Error('Vui lòng cung cấp mã QR hoặc mã PIN.')
   }
 
-  return {
-    success: true,
-    message: `Điểm danh thành công cho sự kiện. Vừa nhận được +5 điểm rèn luyện!`,
+  if (qrData) {
+    const response = await qrcodeApi.scanQRCode(qrData)
+    return {
+      success: true,
+      message: response.message || 'Điểm danh QR thành công!'
+    }
+  } else if (pinCode) {
+    // PIN implementation placeholder
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    return {
+      success: true,
+      message: 'Điểm danh bằng PIN thành công!'
+    }
   }
 }
 
@@ -96,19 +95,23 @@ function QRScannerPage() {
     }
 
     if (scannerRef.current) {
-      await scannerRef.current.clear().catch(() => undefined)
+      try {
+        scannerRef.current.clear()
+      } catch (e) {
+        // Ignore clear errors
+      }
       scannerRef.current = null
     }
 
     setIsScanning(false)
   }, [])
 
-  const processCheckin = useCallback(async (resolvedEventId, pin = null) => {
+  const processCheckin = useCallback(async (qrDataOrEventId, pin = null) => {
     setIsProcessing(true)
     setNotice({ type: '', message: '' })
 
     try {
-      const result = await handleCheckinSubmit(resolvedEventId, pin)
+      const result = await handleCheckinSubmit(qrDataOrEventId, pin)
       setNotice({ type: 'success', message: result.message })
       setToastMessage('Đã điểm danh thành công!')
 
@@ -116,10 +119,6 @@ function QRScannerPage() {
         clearTimeout(toastTimerRef.current)
       }
       toastTimerRef.current = setTimeout(() => setToastMessage(''), 3500)
-
-      if (!pin) {
-        setEventId(resolvedEventId)
-      }
     } catch (error) {
       setNotice({ type: 'error', message: error.message || 'Điểm danh thất bại.' })
     } finally {
@@ -128,15 +127,13 @@ function QRScannerPage() {
   }, [])
 
   const onScanSuccess = useCallback(async (decodedText) => {
-    const extractedEventId = parseEventIdFromQr(decodedText)
-
-    if (!extractedEventId) {
-      setNotice({ type: 'error', message: 'QR không hợp lệ. Vui lòng quét lại.' })
+    if (!decodedText) {
+      setNotice({ type: 'error', message: 'Mã QR không hợp lệ. Vui lòng quét lại.' })
       return
     }
 
     await stopScanner()
-    processCheckin(extractedEventId)
+    processCheckin(decodedText)
   }, [processCheckin, stopScanner])
 
   const startScanner = useCallback(async () => {

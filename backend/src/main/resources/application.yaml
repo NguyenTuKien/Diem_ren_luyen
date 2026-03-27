@@ -28,6 +28,12 @@ spring:
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
   security:
     oauth2:
       client:
@@ -72,7 +78,8 @@ cors:
 
 logging:
   level:
-    root: warn
+    root: info
+    ct01.unipoint.backend: info
 
 management:
   endpoints:
