@@ -1,19 +1,25 @@
 package ct01.unipoint.backend.dao;
 
-import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.EventEntity;
+import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
+import ct01.unipoint.backend.entity.enums.RecordStatus;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RecordDao extends JpaRepository<RecordEntity, Long> {
+
   Optional<RecordEntity> findByStudentAndSemesterAndEvent(
       StudentEntity student,
       SemesterEntity semester,
       EventEntity event
   );
+
+  List<RecordEntity> findByStudent_IdAndSemester_IdAndStatus(Long studentId, Long semesterId,
+      RecordStatus status);
 }
 

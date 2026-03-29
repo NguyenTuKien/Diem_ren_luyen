@@ -6,9 +6,9 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?prepareThreshold=0
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://${POSTGRES_HOST:aws-1-ap-southeast-1.pooler.supabase.com}:${POSTGRES_PORT:6543}/${POSTGRES_DB:test1}?prepareThreshold=0
+    username: ${POSTGRES_USER:postgres.xhuvxyfehnsxnwljwtwq}
+    password: ${POSTGRES_PASSWORD:Matkhau@1234qwer!}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -18,9 +18,9 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
+      host: ${REDIS_HOST:redis-18097.c276.us-east-1-2.ec2.cloud.redislabs.com}
+      port: ${REDIS_PORT:18097}
+      password: ${REDIS_PASSWORD:VFzqHirkG4WP7UzBFTI5Vwbqj0mUHo1F}
 
   security:
     oauth2:
@@ -58,12 +58,12 @@ jwt:
 server:
   servlet:
     context-path: /api
-  port: 8080
+  port: 8081
   forward-headers-strategy: framework
 
 logging:
   level:
-    root: warn
+    root: info
 
 management:
   endpoints:

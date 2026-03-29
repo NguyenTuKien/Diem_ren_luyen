@@ -1,0 +1,56 @@
+package ct01.unipoint.backend.controller;
+
+import ct01.unipoint.backend.dto.ResponseGeneral;
+import ct01.unipoint.backend.dto.request.MonitorReviewRequest;
+import ct01.unipoint.backend.dto.response.EvaluationFormResponse;
+import ct01.unipoint.backend.dto.response.StudentEvaluationSummaryResponse;
+import ct01.unipoint.backend.facade.interfaces.MonitorEvaluationFacade;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/v1/monitor/evaluations")
+@RequiredArgsConstructor
+public class MonitorEvaluationController {
+
+  private final MonitorEvaluationFacade facade;
+
+  @PostMapping("/review")
+  public ResponseGeneral<Void> review(
+      @RequestBody final MonitorReviewRequest request,
+      final Authentication auth) {
+
+    request.validateAndThrow();
+    this.facade.reviewEvaluation(auth.getName(), request);
+
+    return ResponseGeneral.ofSuccess("Monitor review submitted successfully", null);
+  }
+
+  @GetMapping("/class-list")
+  public ResponseGeneral<List<StudentEvaluationSummaryResponse>> getClassList(
+      @RequestParam final Long semesterId,
+      final Authentication auth) {
+
+    final List<StudentEvaluationSummaryResponse> response = this.facade.getClassEvaluations(
+        auth.getName(), semesterId);
+    return ResponseGeneral.ofSuccess("Get class evaluations successfully", response);
+  }
+
+  @GetMapping("/{evaluationId}")
+  public ResponseGeneral<EvaluationFormResponse> getDetail(
+      @PathVariable final Long evaluationId,
+      final Authentication auth) {
+
+    final EvaluationFormResponse response = this.facade.getStudentEvaluationDetail(auth.getName(),
+        evaluationId);
+    return ResponseGeneral.ofSuccess("Get evaluation detail successfully", response);
+  }
+}
