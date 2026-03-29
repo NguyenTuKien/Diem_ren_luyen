@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface AttendenceDao extends JpaRepository<AttendenceEntity, Long> {
     Optional<AttendenceEntity> findByEventIdAndStudentId(Long eventId, String studentId);
+
+    boolean existsByEventIdAndStudentId(Long eventId, String studentId);
 }
