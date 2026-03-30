@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { authFetch } from '../api/authFetch'
 import EventDashboard from '../pages/EventDashboard'
 import QRScannerPage from '../pages/QRScannerPage'
+import LecturerStudentManagement from '../pages/LecturerStudentManagementPage'
 
 const normalizeRole = (role = '') => {
   const normalized = role.toString().trim().toUpperCase();
@@ -221,7 +222,7 @@ const ProtectedRouter = () => {
   return (
     <Routes>
       <Route path="/admin" element={guard(['ROLE_ADMIN'], <EventDashboard />)} />
-      <Route path="/lecturer" element={guard(['ROLE_LECTURER'], <EventDashboard />)} />
+      <Route path="/lecturer" element={guard(['ROLE_LECTURER'], <LecturerStudentManagement />)} />
       <Route path="/" element={guard(['ROLE_STUDENT', 'ROLE_MONITOR'], <QRScannerPage />)} />
       <Route path="*" element={<Navigate to={landing} replace />} />
     </Routes>

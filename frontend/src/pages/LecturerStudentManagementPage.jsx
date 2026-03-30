@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+  import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../api/http";
 import { useAuth } from "../context/AuthContext";
 
@@ -20,7 +20,7 @@ const MANUAL_DEFAULT = {
 
 export default function LecturerStudentManagementPage() {
   const { user, logout } = useAuth();
-  const lecturerId = user.userId;
+  const lecturerId = user?.userId;
   const fileInputRef = useRef(null);
 
   const [options, setOptions] = useState({ faculties: [], classes: [] });
@@ -41,6 +41,10 @@ export default function LecturerStudentManagementPage() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState({ type: "", message: "" });
+
+  if (!user) {
+    return <div className="text-center py-10">Đang tải thông tin người dùng...</div>;
+  }
 
   const classOptions = useMemo(() => {
     if (!filters.facultyId) {

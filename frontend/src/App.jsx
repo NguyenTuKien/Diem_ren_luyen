@@ -8,7 +8,6 @@ function App() {
     <Routes>
       <Route path="/login" element={<AuthLoginPages />} />
       <Route path="/oauth-success" element={<OAuthCallback />} />
-
       <Route path="/*" element={<ProtectedRouter />} />
     </Routes>
   );
