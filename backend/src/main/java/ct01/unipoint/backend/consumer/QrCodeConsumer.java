@@ -44,7 +44,7 @@ public class QrCodeConsumer {
                 .setIfAbsent(lockKey, lockValue, Duration.ofSeconds(10));
 
         if (Boolean.FALSE.equals(lockAcquired)) {
-            log.warn("Duplicate request bị chặn bởi Redis lock: studentId={}, eventId={}", studentId, eventId);
+            log.warn("Duplicate event bị chặn bởi Redis lock: studentId={}, eventId={}", studentId, eventId);
             return;
         }
 

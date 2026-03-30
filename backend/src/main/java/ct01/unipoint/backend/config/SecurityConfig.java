@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.security;
+package ct01.unipoint.backend.config;
 
 import ct01.unipoint.backend.security.jwt.JwtAuthenticationFilter;
 import ct01.unipoint.backend.security.sso.CustomOidcUserService;
@@ -65,7 +65,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/v1/monitor/**").hasAuthority("ROLE_MONITOR")
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth -> oauth
-                                                // 2. QUAN TRỌNG: Lưu request vào Cookie để tránh lỗi
+                                                // 2. QUAN TRỌNG: Lưu event vào Cookie để tránh lỗi
                                                 // [authorization_request_not_found]
                                                 .authorizationEndpoint(auth -> auth
                                                                 .authorizationRequestRepository(

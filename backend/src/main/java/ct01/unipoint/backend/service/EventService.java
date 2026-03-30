@@ -4,7 +4,7 @@ import ct01.unipoint.backend.dao.CriteriaDao;
 import ct01.unipoint.backend.dao.EventDao;
 import ct01.unipoint.backend.dao.SemesterDao;
 import ct01.unipoint.backend.dao.UserDao;
-import ct01.unipoint.backend.dto.request.EventRequest;
+import ct01.unipoint.backend.dto.event.EventRequest;
 import ct01.unipoint.backend.entity.EventEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import lombok.AllArgsConstructor;

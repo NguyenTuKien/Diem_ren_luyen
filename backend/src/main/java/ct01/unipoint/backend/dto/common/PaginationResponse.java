@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dto.response;
+package ct01.unipoint.backend.dto.common;
 
 import java.util.List;
 import lombok.AllArgsConstructor;

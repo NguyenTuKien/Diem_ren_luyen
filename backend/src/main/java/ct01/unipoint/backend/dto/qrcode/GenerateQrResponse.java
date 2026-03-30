@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dto.response;
+package ct01.unipoint.backend.dto.qrcode;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

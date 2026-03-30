@@ -1,10 +1,10 @@
-package ct01.unipoint.backend.controller;
+package ct01.unipoint.backend.controller.student;
 
-import ct01.unipoint.backend.dto.monitor.MonitorClassListResponse;
+import ct01.unipoint.backend.dto.student.StudentDashboardResponse;
 import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.service.MonitorClassService;
+import ct01.unipoint.backend.service.StudentDashboardService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,21 +14,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/monitor")
-public class MonitorController {
+@RequestMapping("/student")
+public class StudentDashboardController {
 
-  private final MonitorClassService monitorClassService;
+  private final StudentDashboardService studentDashboardService;
   private final UserDao userDao;
 
-  public MonitorController(MonitorClassService monitorClassService, UserDao userDao) {
-    this.monitorClassService = monitorClassService;
+  public StudentDashboardController(
+      StudentDashboardService studentDashboardService,
+      UserDao userDao
+  ) {
+    this.studentDashboardService = studentDashboardService;
     this.userDao = userDao;
   }
 
-  @GetMapping("/class-members")
-  public MonitorClassListResponse classMembers(@RequestParam(required = false) String monitorUserId) {
+  @GetMapping("/dashboard")
+  public StudentDashboardResponse dashboard(@RequestParam(required = false) String userId) {
     String currentUserId = resolveCurrentUserId();
-    return monitorClassService.getManagedClassMembers(currentUserId);
+    return studentDashboardService.getDashboard(currentUserId);
   }
 
   private String resolveCurrentUserId() {

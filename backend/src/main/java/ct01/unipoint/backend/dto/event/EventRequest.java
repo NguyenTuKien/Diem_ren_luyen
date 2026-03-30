@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dto.request;
+package ct01.unipoint.backend.dto.event;
 
 import lombok.Data;
 

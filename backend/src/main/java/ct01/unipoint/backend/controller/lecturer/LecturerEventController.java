@@ -1,11 +1,9 @@
 package ct01.unipoint.backend.controller.lecturer;
 
 import ct01.unipoint.backend.entity.EventEntity;
-import ct01.unipoint.backend.dto.request.EventRequest;
+import ct01.unipoint.backend.dto.event.EventRequest;
 import ct01.unipoint.backend.service.EventService;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
