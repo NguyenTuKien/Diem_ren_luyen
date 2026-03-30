@@ -1,8 +1,8 @@
 package ct01.unipoint.backend.controller;
 
 import ct01.unipoint.backend.dto.auth.LoginRequest;
-import ct01.unipoint.backend.dto.response.LoginResponse;
-import ct01.unipoint.backend.dto.response.UserInfoResponse;
+import ct01.unipoint.backend.dto.auth.LoginResponse;
+import ct01.unipoint.backend.dto.auth.UserInfoResponse;
 import ct01.unipoint.backend.facade.AuthFacade;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

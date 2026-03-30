@@ -1,7 +1,7 @@
 package ct01.unipoint.backend.controller;
 
-import ct01.unipoint.backend.dto.request.ScanQrRequest;
-import ct01.unipoint.backend.dto.response.GenerateQrResponse;
+import ct01.unipoint.backend.dto.qrcode.ScanQrRequest;
+import ct01.unipoint.backend.dto.qrcode.GenerateQrResponse;
 import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.exception.ApiException;

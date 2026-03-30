@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.controller;
+package ct01.unipoint.backend.controller.lecturer;
 
 import ct01.unipoint.backend.dao.LecturerDao;
 import ct01.unipoint.backend.dao.UserDao;

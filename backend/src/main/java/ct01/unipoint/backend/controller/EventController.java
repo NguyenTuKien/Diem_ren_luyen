@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.controller;
 
-import ct01.unipoint.backend.dto.response.PaginationResponse;
+import ct01.unipoint.backend.dto.common.PaginationResponse;
 import ct01.unipoint.backend.entity.EventEntity;
 import ct01.unipoint.backend.service.EventService;
 import lombok.AllArgsConstructor;

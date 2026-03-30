@@ -23,12 +23,13 @@ src/main/java/ct01/unipoint/backend/
 ├── constant/         # CHÚ Ý: Nơi chứa toàn bộ Hằng Số của dự án (VD: EventConstant.java, UserConstant.java)
 ├── consumer/         # Các listener nhận message từ RabbitMQ/Kafka (VD: QrCodeConsumer.java)
 ├── controller/       # Rest Api endpoints (*Controller.java). Gọi xuống Facade hoặc Service.
-├── dao/              # Các interface truy suất Repo (Hậu tố *Dao.java thay cho *Repository)
-├── dto/              
-│   ├── request/      # Các DTO nhận data Inbound chung
-│   ├── response/     # Các DTO trả data Outbound chung
-│   ├── auth/         # Phân nhánh DTO theo Domain riêng biệt (auth, event, student...)
-│   └── common/       # DTO dùng chung
+    ├── admin         # Các API dành riêng cho Admin
+    ├── lecturer      # Các API dành riêng cho Giảng Viên
+    ├── monitor       # Các API dành riêng cho Lớp Trưởng
+    └── student       # Các API dành riêng cho Sinh Viên
+    ...               # Các API không yêu cầu phân quyền (AuthController, ...)
+├── dao/              # Các interface truy suất Repo (Hậu tố *Dao.java)
+├── dto/              # Các class DTO (Data Transfer Object) dùng để nhận request và trả response. Chia theo domain (EventDto, UserDto,...)
 ├── entity/           # Bảng DB Model (Hậu tố *Entity.java)
 │   ├── base/         # Chứa BaseEntity (id, createdAt, updatedAt)
 │   └── enums/        # Các Enum dùng trong DB

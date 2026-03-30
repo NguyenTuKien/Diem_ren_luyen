@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dto.request;
+package ct01.unipoint.backend.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ScanQrRequest {
-    private String qrData;
+public class LoginResponse {
+    private String accessToken;
+    private String refreshToken;
 }

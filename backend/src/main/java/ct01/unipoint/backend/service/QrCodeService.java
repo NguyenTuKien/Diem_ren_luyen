@@ -4,8 +4,8 @@ import ct01.unipoint.backend.dao.AttendenceDao;
 import ct01.unipoint.backend.dao.EventDao;
 import ct01.unipoint.backend.dao.QrCodeDao;
 import ct01.unipoint.backend.dao.StudentDao;
-import ct01.unipoint.backend.dto.request.ScanQrRequest;
-import ct01.unipoint.backend.dto.response.GenerateQrResponse;
+import ct01.unipoint.backend.dto.qrcode.ScanQrRequest;
+import ct01.unipoint.backend.dto.qrcode.GenerateQrResponse;
 import ct01.unipoint.backend.config.RabbitMQConfig;
 import ct01.unipoint.backend.dto.qrcode.QrCheckinMessage;
 import ct01.unipoint.backend.entity.AttendenceEntity;
@@ -19,7 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 

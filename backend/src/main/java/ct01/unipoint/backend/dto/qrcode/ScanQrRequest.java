@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dto.response;
+package ct01.unipoint.backend.dto.qrcode;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserInfoResponse {
-    private String userId;
-    private String fullName;
-    private String role;
+public class ScanQrRequest {
+    private String qrData;
 }
-
