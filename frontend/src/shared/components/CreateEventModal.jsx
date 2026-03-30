@@ -350,8 +350,7 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
               Hủy bỏ
             </button>
             <button
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-primary/20 transition-all"
-              style={{ backgroundColor: '#d23232' }}
+              className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-[#d23232]/20 transition-all"
               type="submit"
               disabled={loading}
             >

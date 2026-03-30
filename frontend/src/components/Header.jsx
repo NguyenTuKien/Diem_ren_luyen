@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../api/authApi'
+import { logout } from '../shared/api/authApi'
 
 function Header() {
   const navigate = useNavigate()

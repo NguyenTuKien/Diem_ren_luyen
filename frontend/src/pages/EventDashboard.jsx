@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Layout from '../components/Layout'
-import EventStats from '../components/EventStats'
-import FilterBar from '../components/FilterBar'
-import EventTable from '../components/EventTable'
-import CreateEventModal from '../components/CreateEventModal'
-import { eventApi } from '../api/eventApi'
+import EventStats from '../shared/components/EventStats'
+import FilterBar from '../shared/components/FilterBar'
+import EventTable from '../shared/components/EventTable'
+import CreateEventModal from '../shared/components/CreateEventModal'
+import { eventApi } from '../shared/api/eventApi'
+import { qrcodeApi } from '../shared/api/qrcodeApi'
 import { QRCodeSVG } from 'qrcode.react'
 
 const toComparableText = (value = '') =>
@@ -29,6 +30,9 @@ function EventDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
   const [qrEvent, setQrEvent] = useState(null)
+  const [currentQrValue, setCurrentQrValue] = useState('')
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false)
+  const qrIntervalRef = useRef(null)
   const [notice, setNotice] = useState({ type: '', message: '' })
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -158,13 +162,39 @@ function EventDashboard() {
     setIsModalOpen(true)
   }
 
-  const handleOpenQrModal = (event) => {
+  const handleOpenQrModal = async (event) => {
     setQrEvent(event)
+    setIsGeneratingQr(true)
+    setCurrentQrValue('')
+    try {
+      const response = await qrcodeApi.generateQr(event.id)
+      setCurrentQrValue(response.qrToken)
+      
+      qrIntervalRef.current = setInterval(async () => {
+        try {
+          const res = await qrcodeApi.generateQr(event.id)
+          setCurrentQrValue(res.qrToken)
+        } catch (err) {
+          console.error('Failed to update QR code:', err)
+          clearInterval(qrIntervalRef.current)
+          setCurrentQrValue('')
+          setNotice({ type: 'error', message: 'Mất kết nối mạng khi tải mã QR' })
+        }
+      }, (response.timeToLive || 5) * 1000)
+    } catch (error) {
+      setNotice({ type: 'error', message: error.message || 'Không thể tạo mã QR' })
+    } finally {
+      setIsGeneratingQr(false)
+    }
   }
 
-  const qrValue = qrEvent
-    ? `https://unipoint.ngtukien.id.vn/checkin?eventId=${encodeURIComponent(qrEvent.id)}`
-    : ''
+  const handleCloseQrModal = () => {
+    if (qrIntervalRef.current) clearInterval(qrIntervalRef.current)
+    setQrEvent(null)
+    setCurrentQrValue('')
+  }
+
+  const qrValue = currentQrValue
 
   const handleDownloadQr = () => {
     try {
@@ -358,15 +388,26 @@ function EventDashboard() {
               <button
                 type="button"
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                onClick={() => setQrEvent(null)}
+                onClick={handleCloseQrModal}
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <div className="mt-6 flex flex-col items-center rounded-xl border border-slate-200 p-4 dark:border-slate-700" ref={qrContainerRef}>
-              <QRCodeSVG value={qrValue} size={280} bgColor="#ffffff" fgColor="#111827" level="H" includeMargin />
-              <p className="mt-4 text-xs text-center text-slate-500 break-all">{qrValue}</p>
+            <div className="mt-6 flex flex-col items-center justify-center rounded-xl border border-slate-200 p-4 dark:border-slate-700 min-h-[320px]" ref={qrContainerRef}>
+              {isGeneratingQr ? (
+                <div className="flex flex-col items-center text-primary py-10">
+                  <span className="material-symbols-outlined text-4xl animate-spin mb-4">sync</span>
+                  <span className="text-sm font-medium">Đang khởi tạo mã QR...</span>
+                </div>
+              ) : currentQrValue ? (
+                <>
+                  <QRCodeSVG value={currentQrValue} size={280} bgColor="#ffffff" fgColor="#111827" level="H" includeMargin />
+                  <p className="mt-4 text-xs text-center text-slate-500 break-all max-w-[280px] line-clamp-2" title={currentQrValue}>{currentQrValue}</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 py-10">Mã QR đã hết hạn hoặc có lỗi xảy ra.</p>
+              )}
             </div>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">

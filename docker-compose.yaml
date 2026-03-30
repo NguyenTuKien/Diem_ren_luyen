@@ -34,6 +34,25 @@ services:
     networks:
       - unipoint
 
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    restart: always
+    ports:
+      - "5672:5672"    # Cổng AMQP
+      - "15672:15672"  # Cổng UI Management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - unipoint
+
   backend:
     build: ./backend
     image: ${DOCKER_REGISTRY:-ngtukien218}/unipoint-backend:${TAG:-latest}
@@ -47,10 +66,16 @@ services:
       POSTGRES_PORT: 5432
       REDIS_HOST: cache
       REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
     depends_on:
       database:
         condition: service_healthy
       cache:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/api/actuator/health | grep UP" ]
@@ -87,6 +112,7 @@ volumes:
   logs:
   pg_data:
   redis_data:
+  rabbitmq_data:
 
 networks:
   unipoint:
