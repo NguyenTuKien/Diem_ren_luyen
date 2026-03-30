@@ -1,6 +1,6 @@
-﻿import { useAuth } from "../../auth/context/AuthContext";
+import { useAuth } from "../../../context/AuthContext";
 
-export default function AdminDashboardPage() {
+export default function AdminDashboard() {
   const { user, logout } = useAuth();
 
   return (

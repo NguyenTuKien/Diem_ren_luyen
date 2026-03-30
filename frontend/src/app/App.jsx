@@ -1,11 +1,13 @@
-﻿import { Navigate, Route, Routes } from "react-router-dom";
-import AdminDashboardPage from "../features/admin/pages/AdminDashboardPage";
-import AuthPage from "../features/auth/pages/AuthPage";
-import LecturerStudentManagementPage from "../features/lecturer/pages/LecturerStudentManagementPage";
-import MonitorClassPage from "../features/monitor/pages/MonitorClassPage";
-import StudentDashboardPage from "../features/student/pages/StudentDashboardPage";
+import { Navigate, Route, Routes } from "react-router-dom";
+import AdminDashboardPage from "../pages/AdminDashboardPage";
+import AuthLoginPage from "../pages/AuthLoginPage";
+import EventDashboard from "../pages/EventDashboard";
+import LecturerStudentManagementPage from "../pages/LecturerStudentManagementPage";
+import MonitorClassPage from "../pages/MonitorClassPage";
+import StudentDashboardPage from "../pages/StudentDashboardPage";
+import OAuthCallback from "../pages/OAuthCallback";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
-import { useAuth } from "../features/auth/context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -21,15 +23,24 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
-      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/auth" element={<AuthLoginPage />} />
       <Route path="/login" element={<Navigate to="/auth" replace />} />
-      <Route path="/oauth-success" element={<Navigate to="/auth" replace />} />
+      <Route path="/oauth-success" element={<OAuthCallback />} />
 
       <Route
         path="/dashboard/admin"
         element={
           <ProtectedRoute allowedRoles={["ADMIN"]}>
             <AdminDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/events"
+        element={
+          <ProtectedRoute allowedRoles={["LECTURER", "ADMIN"]}>
+            <EventDashboard />
           </ProtectedRoute>
         }
       />

@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Layout from '../components/Layout'
-import EventStats from '../components/EventStats'
-import FilterBar from '../components/FilterBar'
-import EventTable from '../components/EventTable'
-import CreateEventModal from '../components/CreateEventModal'
-import { eventApi } from '../api/eventApi'
-import { qrcodeApi } from '../api/qrcodeApi'
+import EventStats from '../shared/components/EventStats'
+import FilterBar from '../shared/components/FilterBar'
+import EventTable from '../shared/components/EventTable'
+import CreateEventModal from '../shared/components/CreateEventModal'
+import { eventApi } from '../shared/api/eventApi'
+import { qrcodeApi } from '../shared/api/qrcodeApi'
 import { QRCodeSVG } from 'qrcode.react'
 
 const toComparableText = (value = '') =>

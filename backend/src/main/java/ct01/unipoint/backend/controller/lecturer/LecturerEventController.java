@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.controller.admin;
+package ct01.unipoint.backend.controller.lecturer;
 
 import ct01.unipoint.backend.entity.EventEntity;
 import ct01.unipoint.backend.dto.request.EventRequest;
@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/v1/admin/events")
-public class AdminEventController {
+@RequestMapping("/v1/lecturer/events")
+public class LecturerEventController {
     private final EventService eventService;
 
     @PostMapping("")

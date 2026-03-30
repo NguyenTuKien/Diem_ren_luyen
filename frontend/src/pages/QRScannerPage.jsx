@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
-import { fetchCurrentUser, getStoredUserInfo, logout } from '../api/authApi'
-import { qrcodeApi } from '../api/qrcodeApi'
+import { fetchCurrentUser, getStoredUserInfo, logout } from '../shared/api/authApi'
+import { qrcodeApi } from '../shared/api/qrcodeApi'
 
 const SCANNER_REGION_ID = 'unipoint-qr-reader'
 

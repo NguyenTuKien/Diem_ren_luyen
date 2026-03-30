@@ -2,6 +2,21 @@ import { authFetch } from './authFetch';
 
 const API_BASE_URL = '/api/v1/events';
 const API_ADMIN_URL = '/api/v1/admin/events';
+const API_LECTURER_URL = '/api/v1/lecturer/events';
+
+const AUTH_STORAGE_KEY = 'unipoint_auth';
+
+function getMutationBase() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    const session = raw ? JSON.parse(raw) : null;
+    const role = session?.user?.role ?? '';
+    const normalized = role.startsWith('ROLE_') ? role.slice(5) : role;
+    return normalized === 'ADMIN' ? API_ADMIN_URL : API_LECTURER_URL;
+  } catch {
+    return API_LECTURER_URL;
+  }
+}
 
 export const eventApi = {
   fetchEvents: async (page = 0, size = 10) => {
@@ -26,7 +41,8 @@ export const eventApi = {
   },
   
   createEvent: async (eventData) => {
-    const response = await authFetch(API_ADMIN_URL, {
+    const base = getMutationBase();
+    const response = await authFetch(base, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(eventData || {}),
@@ -47,7 +63,8 @@ export const eventApi = {
   },
   
   updateEvent: async (id, eventData) => {
-    const response = await authFetch(`${API_ADMIN_URL}/${id}`, {
+    const base = getMutationBase();
+    const response = await authFetch(`${base}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(eventData || {}),
@@ -68,9 +85,11 @@ export const eventApi = {
   },
   
   deleteEvent: async (id) => {
-    const response = await authFetch(`${API_ADMIN_URL}/${id}`, {
+    const base = getMutationBase();
+    const response = await authFetch(`${base}/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Không thể xóa sự kiện.');
   }
 };
+

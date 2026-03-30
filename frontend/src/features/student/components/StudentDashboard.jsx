@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiRequest } from "../../../shared/api/http";
-import { useAuth } from "../../auth/context/AuthContext";
-import "./StudentDashboardPage.css";
+import { useAuth } from "../../../context/AuthContext";
+import { useStudentDashboard } from "../hooks/useStudentDashboard";
+import "../../../styles/StudentDashboard.css";
 
 const NAV_ITEMS = [
   { label: "Dashboard", icon: "dashboard" },
@@ -83,40 +84,9 @@ function getHistoryHint(status) {
   }
 }
 
-export default function StudentDashboardPage() {
+export default function StudentDashboard() {
   const { user, logout } = useAuth();
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function fetchDashboard() {
-      setLoading(true);
-      setError("");
-      try {
-        const payload = await apiRequest("/student/dashboard");
-        if (!ignore) {
-          setDashboard(payload);
-        }
-      } catch (err) {
-        if (!ignore) {
-          setError(err.message);
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchDashboard();
-
-    return () => {
-      ignore = true;
-    };
-  }, [user.userId]);
+  const { dashboard, loading, error } = useStudentDashboard(user?.userId);
 
   if (loading) {
     return <div className="page-state">Đang tải dashboard sinh viên...</div>;

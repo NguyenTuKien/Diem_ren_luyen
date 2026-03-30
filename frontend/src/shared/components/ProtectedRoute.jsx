@@ -1,5 +1,11 @@
-﻿import { Navigate } from "react-router-dom";
-import { useAuth } from "../../features/auth/context/AuthContext";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+
+function normalizeRole(role) {
+  if (!role) return "";
+  // Strip ROLE_ prefix so "ROLE_ADMIN" matches "ADMIN"
+  return role.startsWith("ROLE_") ? role.slice(5) : role;
+}
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth();
@@ -8,12 +14,11 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (
-    Array.isArray(allowedRoles) &&
-    allowedRoles.length > 0 &&
-    !allowedRoles.includes(user.effectiveRole)
-  ) {
-    return <Navigate to={user.dashboardPath || "/dashboard/student"} replace />;
+  if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
+    const userRole = normalizeRole(user.effectiveRole || user.role);
+    if (!allowedRoles.includes(userRole)) {
+      return <Navigate to={user.dashboardPath || "/dashboard/student"} replace />;
+    }
   }
 
   return children;

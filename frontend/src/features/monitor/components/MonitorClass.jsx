@@ -1,7 +1,8 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../../../shared/api/http";
-import { useAuth } from "../../auth/context/AuthContext";
-import "./MonitorClassPage.css";
+import { useAuth } from "../../../context/AuthContext";
+import { useMonitorData } from "../hooks/useMonitorData";
+import "../../../styles/MonitorClass.css";
 
 const STATUS_LABEL = {
   ACTIVE: "Hoạt động",
@@ -43,45 +44,14 @@ function parseMandatoryStatus(text) {
   return { passed: true, ratio: text };
 }
 
-export default function MonitorClassPage() {
+export default function MonitorClass() {
   const { user, logout } = useAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data, loading, error } = useMonitorData(user?.userId);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [mandatoryFilter, setMandatoryFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("NAME_ASC");
   const [notice, setNotice] = useState("");
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function fetchMembers() {
-      setLoading(true);
-      setError("");
-      try {
-        const payload = await apiRequest(`/monitor/class-members?monitorUserId=${user.userId}`);
-        if (!ignore) {
-          setData(payload);
-        }
-      } catch (err) {
-        if (!ignore) {
-          setError(err.message);
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchMembers();
-
-    return () => {
-      ignore = true;
-    };
-  }, [user.userId]);
 
   const members = useMemo(() => (Array.isArray(data?.members) ? data.members : []), [data?.members]);
 

@@ -1,7 +1,8 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../../../shared/api/http";
-import { useAuth } from "../../auth/context/AuthContext";
-import "./LecturerStudentManagementPage.css";
+import { useAuth } from "../../../context/AuthContext";
+import { useLecturerData } from "../hooks/useLecturerData";
+import "../../../styles/LecturerStudentManagement.css";
 
 const PAGE_SIZE = 10;
 
@@ -35,18 +36,9 @@ function csvEscape(value) {
   return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
-export default function LecturerStudentManagementPage() {
+export default function LecturerStudentManagement() {
   const { user, logout } = useAuth();
   const fileInputRef = useRef(null);
-
-  const [options, setOptions] = useState({ faculties: [], classes: [] });
-  const [rows, setRows] = useState([]);
-  const [summary, setSummary] = useState({
-    totalStudents: 0,
-    activeStudents: 0,
-    lockedStudents: 0,
-    monitorStudents: 0,
-  });
 
   const [filters, setFilters] = useState({
     keyword: "",
@@ -55,18 +47,17 @@ export default function LecturerStudentManagementPage() {
     status: "",
   });
 
+  const { options, rows, summary, loading, flash, setFlash, loadStudents } = useLecturerData(user?.userId, filters);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualForm, setManualForm] = useState(DEFAULT_MANUAL_FORM);
-  const [flash, setFlash] = useState({ type: "", message: "" });
 
   const classOptions = useMemo(() => {
     if (!filters.facultyId) {
       return options.classes;
     }
-
     return options.classes.filter(
       (item) => String(item.facultyId) === String(filters.facultyId),
     );
@@ -80,70 +71,15 @@ export default function LecturerStudentManagementPage() {
     return rows.slice(startIndex, startIndex + PAGE_SIZE);
   }, [currentPage, rows]);
 
-  const loadOptions = useCallback(async () => {
-    const data = await apiRequest(`/lecturer/students/options?lecturerId=${user.userId}`);
-    setOptions(data);
-    if (data.classes.length > 0) {
+  // Sync default class option
+  useEffect(() => {
+    if (options.classes.length > 0 && !manualForm.classId) {
       setManualForm((prev) => ({
         ...prev,
-        classId: prev.classId || String(data.classes[0].id),
+        classId: prev.classId || String(options.classes[0].id),
       }));
     }
-  }, [user.userId]);
-
-  const loadStudents = useCallback(async () => {
-    const params = new URLSearchParams();
-    params.set("lecturerId", user.userId);
-
-    if (filters.keyword.trim()) {
-      params.set("keyword", filters.keyword.trim());
-    }
-    if (filters.facultyId) {
-      params.set("facultyId", filters.facultyId);
-    }
-    if (filters.classId) {
-      params.set("classId", filters.classId);
-    }
-    if (filters.status) {
-      params.set("status", filters.status);
-    }
-
-    const data = await apiRequest(`/lecturer/students?${params.toString()}`);
-    setRows(data.students || []);
-    setSummary({
-      totalStudents: data.totalStudents || 0,
-      activeStudents: data.activeStudents || 0,
-      lockedStudents: data.lockedStudents || 0,
-      monitorStudents: data.monitorStudents || 0,
-    });
-  }, [filters.classId, filters.facultyId, filters.keyword, filters.status, user.userId]);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function bootstrap() {
-      setLoading(true);
-      setFlash({ type: "", message: "" });
-      try {
-        await loadOptions();
-        await loadStudents();
-      } catch (err) {
-        if (!ignore) {
-          setFlash({ type: "error", message: err.message });
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-
-    bootstrap();
-
-    return () => {
-      ignore = true;
-    };
-  }, [loadOptions, loadStudents]);
+  }, [options.classes]);
 
   useEffect(() => {
     setCurrentPage(1);

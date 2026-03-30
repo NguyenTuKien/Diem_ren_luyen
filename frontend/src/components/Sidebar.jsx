@@ -1,49 +1,19 @@
-import { useEffect, useState } from 'react'
-import { fetchCurrentUser, getStoredUserInfo } from '../api/authApi'
+import { useAuth } from '../context/AuthContext'
 
 function Sidebar() {
-  const [user, setUser] = useState(() => getStoredUserInfo())
+  const { user } = useAuth()
 
-  useEffect(() => {
-    const ensureUser = async () => {
-      const cached = user || getStoredUserInfo()
-      const needsFetch = !cached || !cached.id || !cached.userId || !cached.fullName
-
-      if (!needsFetch && cached) {
-        setUser(cached)
-        return
-      }
-
-      const fetched = await fetchCurrentUser()
-      if (fetched) {
-        setUser({
-          id: fetched.id,
-          userId: fetched.userId,
-          fullName: fetched.fullName,
-          role: fetched.role,
-        })
-      }
-    }
-    ensureUser()
-  }, [user])
-
-  const roleLabel = user?.role || '---'
-  const userIdLabel = user?.userId || user?.id || '---'
-  const fullNameLabel = user?.fullName || '---'
+  const roleLabel = user?.role ? (user.role.startsWith('ROLE_') ? user.role.slice(5) : user.role) : '---'
+  const userIdLabel = user?.userId || '---'
+  const fullNameLabel = user?.displayName || '---'
 
   return (
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col">
       <div className="p-6 flex items-center gap-3">
-        <div
-          className="bg-primary p-2 rounded-lg text-white"
-          style={{ backgroundColor: '#d23232' }}
-        >
+        <div className="bg-[#d23232] p-2 rounded-lg text-white">
           <span className="material-symbols-outlined">event_available</span>
         </div>
-        <h1
-          className="text-xl font-bold tracking-tight text-primary"
-          style={{ color: '#d23232' }}
-        >
+        <h1 className="text-xl font-bold tracking-tight text-[#d23232]">
           Điểm rèn luyện
         </h1>
       </div>
@@ -61,9 +31,8 @@ function Sidebar() {
             <span className="font-medium">Tổng quan</span>
           </a>
           <a
-            className="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg transition-colors"
+            className="flex items-center gap-3 px-3 py-2 bg-[#d23232]/10 text-[#d23232] rounded-lg transition-colors"
             href="#"
-            style={{ backgroundColor: 'rgba(210, 50, 50, 0.1)', color: '#d23232' }}
           >
             <span className="material-symbols-outlined text-xl">calendar_today</span>
             <span className="font-medium">Sự kiện</span>
