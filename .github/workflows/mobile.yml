@@ -100,7 +100,7 @@ jobs:
           APPLE_DEVELOPMENT_TEAM: "1234567890"
         run: |
           npx tauri ios init
-          npx tauri ios build --target aarch64-sim -- --no-sign
+          npx tauri ios build --target aarch64-sim
 
       - name: Upload iOS App
         uses: actions/upload-artifact@v4
