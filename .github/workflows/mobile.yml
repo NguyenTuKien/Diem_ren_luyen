@@ -106,7 +106,7 @@ jobs:
         # Thêm cờ bỏ qua bước ký chứng chỉ (Code Signing) để tránh lỗi nếu chưa có tài khoản Apple Dev
         run: |
           npx tauri ios init
-          npx tauri ios build
+          npx tauri ios build --no-sign
 
       - name: Upload iOS App
         uses: actions/upload-artifact@v4
