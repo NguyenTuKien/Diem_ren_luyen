@@ -1,6 +1,5 @@
 name: Build Tauri Mobile App
 
-# Chạy workflow khi có code mới đẩy lên nhánh main hoặc chạy thủ công bằng tay
 on:
   push:
     branches: [ "main" ]
@@ -12,7 +11,6 @@ jobs:
   # ==========================================
   build-android:
     runs-on: ubuntu-24.04
-    # Bắt buộc mọi lệnh run phải chạy bên trong thư mục frontend
     defaults:
       run:
         working-directory: ./frontend
@@ -24,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24' # Khớp với phiên bản Node bạn đang dùng
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -35,12 +33,11 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' # JDK 17 là "chân ái" của Gradle/Tauri như ta đã fix hôm trước
+          java-version: '17'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Thêm các target Rust để build cho chip điện thoại Android
           targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
 
       - name: Cache Rust Build
@@ -49,10 +46,8 @@ jobs:
           workspaces: frontend/src-tauri
 
       - name: Build Android APK
-        # Gán NDK_HOME bằng biến có sẵn của GitHub Actions runner
         env:
           NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
-          # Truyền các biến môi trường của bạn vào đây (Lấy từ GitHub Secrets)
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: |
           npx tauri android init
@@ -62,55 +57,52 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-android-apk
-          # Tìm tất cả các file .apk được sinh ra
           path: frontend/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-
 
   # ==========================================
   # 🍎 JOB 2: BUILD IOS (Bắt buộc chạy trên macOS)
   # ==========================================
   build-ios:
-  runs-on: macos-latest
-  defaults:
-    run:
-      working-directory: ./frontend
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24'
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+      - name: Install Frontend Dependencies
+        run: npm ci
 
-    - name: Install Frontend Dependencies
-      run: npm ci
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios, x86_64-apple-ios, aarch64-apple-ios-sim
 
-    - name: Setup Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: aarch64-apple-ios, x86_64-apple-ios, aarch64-apple-ios-sim
+      - name: Cache Rust Build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/src-tauri
 
-    - name: Cache Rust Build
-      uses: Swatinem/rust-cache@v2
-      with:
-        workspaces: frontend/src-tauri
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
 
-    - name: Select Xcode
-      run: sudo xcode-select -switch /Applications/Xcode.app
+      - name: Build iOS App (Simulator)
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'http://localhost:3000' }}
+        run: |
+          npx tauri ios init --force
+          npx tauri ios build --target aarch64-apple-ios-sim -- --no-sign
 
-    - name: Build iOS App for Simulator
-      env:
-        VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'http://localhost:3000' }}
-      run: |
-        npx tauri ios init
-        npx tauri ios build --target aarch64-apple-ios-sim -- --no-sign
-
-    - name: Upload iOS App
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-ios-build
-        path: frontend/src-tauri/gen/ios/build/Release-iphonesimulator/*.app
+      - name: Upload iOS App
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-ios-build
+          path: frontend/src-tauri/gen/ios/build/Release-iphonesimulator/**/*.app
