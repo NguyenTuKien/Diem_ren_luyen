@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -20,17 +21,22 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginHandler implements AuthenticationSuccessHandler, AuthenticationFailureHandler {
 
     private final JwtService jwtService;
-    private final UserService userService; // THÊM: Tiêm UserService vào đây
+    private final UserService userService;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
     @Value("${spring.app.oauth2.redirect.url:http://localhost:5173/oauth-success}")
     private String frontendRedirectUrl;
+
+    @Value("${jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -42,6 +48,16 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
                 .orElseThrow(() -> new RuntimeException("User not found: " + principalIdentifier));
         String accessToken = jwtService.generateAccessToken(userEntity);
         String refreshToken = jwtService.generateRefreshToken(userEntity.getUsername());
+
+        // Lưu access token vào Redis để đảm bảo 1 thiết bị/1 thời điểm
+        String redisKey = "user:" + userEntity.getUsername() + ":session";
+        redisTemplate.opsForValue().set(
+                redisKey,
+                accessToken,
+                refreshExpirationMs,
+                TimeUnit.MILLISECONDS
+        );
+
         String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)

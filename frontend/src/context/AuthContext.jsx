@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, useState } from "react";
 
-export const AUTH_STORAGE_KEY = "unipoint_auth";
+export const AUTH_STORAGE_KEY = "drl_auth";
 const AuthContext = createContext(null);
 
 function readStoredSession() {

@@ -12,6 +12,8 @@ import ct01.unipoint.backend.service.LecturerService;
 import ct01.unipoint.backend.service.StudentService;
 import ct01.unipoint.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,16 +23,22 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.concurrent.TimeUnit;
+
 
 @Service
 @RequiredArgsConstructor
 public class AuthFacade {
+
+    @Value("${jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserService userService;
     private final LecturerService lecturerService;
     private final StudentService studentService;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     public LoginResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
@@ -39,11 +47,25 @@ public class AuthFacade {
         String subject = authentication.getName();
         UserEntity userEntity = userService.findByUsername(subject);
 
+        // 1. Tạo Token cho thiết bị mới (Device B)
+        String accessToken = jwtService.generateAccessToken(userEntity);
+        String refreshToken = jwtService.generateRefreshToken(subject);
+
+        String redisKey = "user:" + subject + ":session";
+
+        redisTemplate.opsForValue().set(
+                redisKey,
+                accessToken,
+                refreshExpirationMs,
+                TimeUnit.MILLISECONDS
+        );
+
         return LoginResponse.builder()
-                .accessToken(jwtService.generateAccessToken(userEntity))
-                .refreshToken(jwtService.generateRefreshToken(subject))
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
+
 
     public LoginResponse refreshTokens(String refreshToken) {
         String username;
@@ -60,9 +82,21 @@ public class AuthFacade {
         UserEntity userEntity = userService.findByUsernameOrEmail(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
+        String newAccessToken = jwtService.generateAccessToken(userEntity);
+        String newRefreshToken = jwtService.generateRefreshToken(username);
+
+        // 2. PHẢI CẬP NHẬT LẠI ACCESS TOKEN MỚI VÀO REDIS
+        String redisKey = "user:" + username + ":session";
+        redisTemplate.opsForValue().set(
+                redisKey,
+                newAccessToken,
+                refreshExpirationMs,
+                TimeUnit.MILLISECONDS
+        );
+
         return LoginResponse.builder()
-                .accessToken(jwtService.generateAccessToken(userEntity))
-                .refreshToken(jwtService.generateRefreshToken(username))
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .build();
     }
 
@@ -97,8 +131,16 @@ public class AuthFacade {
 
     public void logout(String accessToken, String refreshToken) {
         if (accessToken != null && !accessToken.isBlank()) {
+            try {
+                String username = jwtService.extractUsername(accessToken);
+                String redisKey = "user:" + username + ":session";
+                redisTemplate.delete(redisKey); // XÓA REDIS
+            } catch (Exception e) {
+            }
+
             jwtService.blacklist(accessToken);
         }
+
         if (refreshToken != null && !refreshToken.isBlank()) {
             jwtService.blacklist(refreshToken);
         }

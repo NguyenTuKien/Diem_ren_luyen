@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +23,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final CustomUserDetailsService userDetailsService;
 
     @Override
@@ -55,8 +57,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        if (username != null) {
+        // THÊM ĐIỀU KIỆN KIỂM TRA SecurityContextHolder ĐỂ TỐI ƯU
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
+                // ==========================================
+                // 1. CHỐT CHẶN REDIS (KIỂM TRA 1 THIẾT BỊ)
+                // ==========================================
+                String redisKey = "user:" + username + ":session";
+                String tokenInRedis = (String) redisTemplate.opsForValue().get(redisKey);
+
+                // Nếu Redis không có token HOẶC token gửi lên khác với token trong Redis -> Bị đá!
+                if (tokenInRedis == null || !tokenInRedis.equals(jwt)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"error\": \"Tài khoản đã được đăng nhập ở một thiết bị khác hoặc phiên đã hết hạn.\"}");
+                    return; // DỪNG LUỒNG CHẠY NGAY LẬP TỨC
+                }
+                // ==========================================
+
+
+                // 2. NẾU QUA ĐƯỢC REDIS -> TIẾP TỤC XÁC THỰC NHƯ BÌNH THƯỜNG
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
