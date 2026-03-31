@@ -3,14 +3,12 @@ function Sidebar() {
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col">
       <div className="p-6 flex items-center gap-3">
         <div
-          className="bg-primary p-2 rounded-lg text-white"
-          style={{ backgroundColor: '#d23232' }}
+          className="bg-[#d23232] p-2 rounded-lg text-white"
         >
           <span className="material-symbols-outlined">event_available</span>
         </div>
         <h1
-          className="text-xl font-bold tracking-tight text-primary"
-          style={{ color: '#d23232' }}
+          className="text-xl font-bold tracking-tight text-[#d23232]"
         >
           EventHub
         </h1>
@@ -29,9 +27,8 @@ function Sidebar() {
             <span className="font-medium">Tổng quan</span>
           </a>
           <a
-            className="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg transition-colors"
+            className="flex items-center gap-3 px-3 py-2 bg-[rgba(210,50,50,0.1)] text-[#d23232] rounded-lg transition-colors"
             href="#"
-            style={{ backgroundColor: 'rgba(210, 50, 50, 0.1)', color: '#d23232' }}
           >
             <span className="material-symbols-outlined text-xl">calendar_today</span>
             <span className="font-medium">Sự kiện</span>

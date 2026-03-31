@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL, apiRequest } from "../../../shared/api/http";
+import { fetchAuthSession } from "../../../api/authApi";
+import { apiRequest } from "../../../shared/api/http";
 import { useAuth } from "../context/AuthContext";
 
 const DEFAULT_LOGIN_FORM = {
@@ -97,20 +98,8 @@ export default function AuthPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/session`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${payload.accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        return payload;
-      }
-
-      const serverPayload = await response.json();
-      if (!serverPayload || typeof serverPayload !== "object") {
+      const serverPayload = await fetchAuthSession(payload.accessToken);
+      if (!serverPayload) {
         return payload;
       }
 

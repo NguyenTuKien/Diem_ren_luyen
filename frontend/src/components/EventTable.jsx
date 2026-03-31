@@ -66,8 +66,7 @@ function EventTable({ events, onRefresh, onEdit }) {
                 </td>
                 <td className="px-6 py-5">
                   <span
-                    className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded"
-                    style={{ backgroundColor: 'rgba(210, 50, 50, 0.1)', color: '#d23232' }}
+                    className="bg-[rgba(210,50,50,0.1)] text-[#d23232] text-xs font-bold px-2 py-1 rounded"
                   >
                     {event.type}
                   </span>

@@ -7,8 +7,7 @@ function Pagination() {
           Trước
         </button>
         <button
-          className="px-3 py-1 text-sm bg-primary text-white rounded shadow-sm"
-          style={{ backgroundColor: '#d23232' }}
+          className="px-3 py-1 text-sm bg-[#d23232] text-white rounded shadow-sm"
         >
           1
         </button>

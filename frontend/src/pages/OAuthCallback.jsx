@@ -27,7 +27,7 @@ const OAuthCallback = () => {
   }, [location, navigate]);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px' }}>
+    <div className="flex justify-center mt-[50px]">
       <h2>Authenticating...</h2>
     </div>
   );
