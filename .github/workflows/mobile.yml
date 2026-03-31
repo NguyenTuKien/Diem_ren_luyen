@@ -98,7 +98,7 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'http://localhost:3000' }}
         run: |
-          npx tauri ios init --force
+          npx tauri ios init
           npx tauri ios build --target aarch64-apple-ios-sim -- --no-sign
 
       - name: Upload iOS App
