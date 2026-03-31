@@ -97,6 +97,7 @@ jobs:
       - name: Build iOS App (Simulator)
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'http://localhost:3000' }}
+          APPLE_DEVELOPMENT_TEAM: "1234567890"
         run: |
           npx tauri ios init
           npx tauri ios build --target aarch64-sim -- --no-sign
