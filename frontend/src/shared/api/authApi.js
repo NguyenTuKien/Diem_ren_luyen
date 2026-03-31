@@ -1,4 +1,6 @@
-const AUTH_API_BASE = '/api/v1/auth';
+import { API_BASE_URL } from './http';
+
+const AUTH_API_BASE = `${API_BASE_URL}/v1/auth`;
 const USER_INFO_KEY = 'currentUserInfo';
 
 const decodeJwtPayload = (token) => {
@@ -148,7 +150,7 @@ export const logout = async () => {
 };
 
 export const startMicrosoftOAuthLogin = () => {
-  const backendBaseUrl = (import.meta.env.VITE_BACKEND_BASE_URL || '').replace(/\/$/, '');
-  const oauthPath = '/api/oauth2/authorization/microsoft';
-  window.location.href = backendBaseUrl ? `${backendBaseUrl}${oauthPath}` : oauthPath;
+  // Luôn dùng API_BASE_URL để đảm bảo đúng domain
+  const oauthPath = '/oauth2/authorization/microsoft';
+  window.location.href = `${API_BASE_URL}${oauthPath}`;
 };
