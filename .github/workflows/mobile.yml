@@ -1,0 +1,111 @@
+name: Build Tauri Mobile App
+
+# Chạy workflow khi có code mới đẩy lên nhánh main hoặc chạy thủ công bằng tay
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  # ==========================================
+  # 🤖 JOB 1: BUILD ANDROID (Chạy trên Ubuntu)
+  # ==========================================
+  build-android:
+    runs-on: ubuntu-24.04
+    # Bắt buộc mọi lệnh run phải chạy bên trong thư mục frontend
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24' # Khớp với phiên bản Node bạn đang dùng
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Setup Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' # JDK 17 là "chân ái" của Gradle/Tauri như ta đã fix hôm trước
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Thêm các target Rust để build cho chip điện thoại Android
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
+
+      - name: Cache Rust Build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/src-tauri
+
+      - name: Build Android APK
+        # Gán NDK_HOME bằng biến có sẵn của GitHub Actions runner
+        env:
+          NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+          # Truyền các biến môi trường của bạn vào đây (Lấy từ GitHub Secrets)
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+        run: npx tauri android build
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-android-apk
+          # Tìm tất cả các file .apk được sinh ra
+          path: frontend/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+
+
+  # ==========================================
+  # 🍎 JOB 2: BUILD IOS (Bắt buộc chạy trên macOS)
+  # ==========================================
+  build-ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Target cho iPhone thật và iPhone giả lập
+          targets: aarch64-apple-ios, x86_64-apple-ios, aarch64-apple-ios-sim
+
+      - name: Cache Rust Build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/src-tauri
+
+      - name: Build iOS App
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+        # Thêm cờ bỏ qua bước ký chứng chỉ (Code Signing) để tránh lỗi nếu chưa có tài khoản Apple Dev
+        run: npx tauri ios build --no-sign
+
+      - name: Upload iOS App
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-ios-build
+          path: frontend/src-tauri/gen/ios/build/Release-iphoneos/*.app
