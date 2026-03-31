@@ -54,7 +54,9 @@ jobs:
           NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
           # Truyền các biến môi trường của bạn vào đây (Lấy từ GitHub Secrets)
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-        run: npx tauri android build
+        run: |
+          npx tauri android init
+          npx tauri android build
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -102,7 +104,9 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         # Thêm cờ bỏ qua bước ký chứng chỉ (Code Signing) để tránh lỗi nếu chưa có tài khoản Apple Dev
-        run: npx tauri ios build --no-sign
+        run: |
+          npx tauri ios init
+          npx tauri ios build
 
       - name: Upload iOS App
         uses: actions/upload-artifact@v4
