@@ -37,6 +37,8 @@ src/main/java/ct01/unipoint/backend/
 ├── facade/           # CHÚ Ý: Bộ điều phối gom logic chéo của nhiều Service (VD: AuthFacade.java)
 ├── security/         # Provider và Filter cho cấu trúc JWT
 └── service/          # Các class Core Logic (Hậu tố *Service.java). Không tách rời Interface và Impl.
+    ├── impl          # Nếu có logic phức tạp cần tách riêng, nhưng ưu tiên viết trực tiếp trong Service nếu đơn giản.
+    ...               # Interface Service (VD: AuthService.java)
 ```
 
 ## 3. Kiến Trúc Lõi Bắt Buộc Tuân Thủ

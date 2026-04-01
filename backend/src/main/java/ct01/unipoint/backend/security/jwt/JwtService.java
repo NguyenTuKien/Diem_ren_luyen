@@ -4,6 +4,7 @@ import java.util.Date;
 
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.security.TokenBlacklistService;
+import ct01.unipoint.backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;

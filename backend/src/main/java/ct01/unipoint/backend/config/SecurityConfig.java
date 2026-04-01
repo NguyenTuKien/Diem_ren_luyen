@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.config;
 
-import ct01.unipoint.backend.security.jwt.JwtAuthenticationFilter;
+import ct01.unipoint.backend.filter.JwtAuthenticationFilter;
 import ct01.unipoint.backend.security.sso.CustomOidcUserService;
 import ct01.unipoint.backend.security.sso.HttpCookieOAuth2AuthorizationRequestRepository;
 import ct01.unipoint.backend.security.sso.OAuth2LoginHandler;

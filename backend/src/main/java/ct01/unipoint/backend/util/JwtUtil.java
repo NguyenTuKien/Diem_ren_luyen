@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.security.jwt;
+package ct01.unipoint.backend.util;
 
 import ct01.unipoint.backend.dao.LecturerDao;
 import ct01.unipoint.backend.dao.StudentDao;
