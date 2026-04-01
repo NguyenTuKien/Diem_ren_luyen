@@ -17,4 +17,6 @@ public interface AuthService {
   AuthResponse ssoLogin(SsoLoginRequest request);
 
   List<ClassOptionResponse> getRegisterClassOptions();
+
+  String resolveTokenSubjectByEmail(String email);
 }

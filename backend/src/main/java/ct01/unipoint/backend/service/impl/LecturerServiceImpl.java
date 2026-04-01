@@ -36,6 +36,7 @@ import ct01.unipoint.backend.dto.lecturer.ManualCreateStudentRequest;
 import ct01.unipoint.backend.entity.ActivityRecordEntity;
 import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.FacultyEntity;
+import ct01.unipoint.backend.entity.LecturerEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
 import ct01.unipoint.backend.entity.SemesterEvaluationEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
@@ -52,10 +53,11 @@ import ct01.unipoint.backend.repository.SemesterEvaluationRepository;
 import ct01.unipoint.backend.repository.SemesterRepository;
 import ct01.unipoint.backend.repository.StudentRepository;
 import ct01.unipoint.backend.repository.UserRepository;
-import ct01.unipoint.backend.service.LecturerStudentService;
+import ct01.unipoint.backend.service.CurrentUserService;
+import ct01.unipoint.backend.service.LecturerService;
 
 @Service
-public class LecturerStudentServiceImpl implements LecturerStudentService {
+public class LecturerServiceImpl implements LecturerService {
 
   private final LecturerRepository lecturerRepository;
   private final ClassRepository classRepository;
@@ -66,8 +68,9 @@ public class LecturerStudentServiceImpl implements LecturerStudentService {
   private final EventRepository eventRepository;
   private final ActivityRecordRepository activityRecordRepository;
   private final PasswordEncoder passwordEncoder;
+  private final CurrentUserService currentUserService;
 
-  public LecturerStudentServiceImpl(
+  public LecturerServiceImpl(
       LecturerRepository lecturerRepository,
       ClassRepository classRepository,
       StudentRepository studentRepository,
@@ -76,7 +79,8 @@ public class LecturerStudentServiceImpl implements LecturerStudentService {
       SemesterEvaluationRepository semesterEvaluationRepository,
       EventRepository eventRepository,
       ActivityRecordRepository activityRecordRepository,
-      PasswordEncoder passwordEncoder
+      PasswordEncoder passwordEncoder,
+      CurrentUserService currentUserService
   ) {
     this.lecturerRepository = lecturerRepository;
     this.classRepository = classRepository;
@@ -87,6 +91,24 @@ public class LecturerStudentServiceImpl implements LecturerStudentService {
     this.eventRepository = eventRepository;
     this.activityRecordRepository = activityRecordRepository;
     this.passwordEncoder = passwordEncoder;
+    this.currentUserService = currentUserService;
+  }
+
+  @Override
+  @Transactional
+  public Long ensureLecturerAccessForCurrentUser(Long requestedLecturerId) {
+    UserEntity currentUser = currentUserService.requireCurrentUser();
+    LecturerEntity lecturer = lecturerRepository.findByUserEntityId(currentUser.getId())
+        .orElseGet(() -> provisionLecturerProfile(currentUser));
+
+    boolean matchesLecturerId = Objects.equals(lecturer.getId(), requestedLecturerId);
+    boolean matchesUserId = Objects.equals(currentUser.getId(), requestedLecturerId);
+
+    if (!matchesLecturerId && !matchesUserId) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập dữ liệu này.");
+    }
+
+    return lecturer.getId();
   }
 
   @Override
@@ -373,6 +395,25 @@ public class LecturerStudentServiceImpl implements LecturerStudentService {
     if (lecturerId == null || lecturerRepository.findById(lecturerId).isEmpty()) {
       throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy giảng viên.");
     }
+  }
+
+  private LecturerEntity provisionLecturerProfile(UserEntity user) {
+    if (user.getRole() != Role.ROLE_LECTURER && user.getRole() != Role.ROLE_ADMIN) {
+      throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền giảng viên.");
+    }
+
+    String displayName = StringUtils.hasText(user.getUsername())
+        ? user.getUsername()
+        : ("Giảng viên " + user.getId());
+    String lecturerCode = "LC" + user.getId();
+
+    LecturerEntity lecturer = LecturerEntity.builder()
+        .userEntity(user)
+        .lecturerCode(lecturerCode)
+        .fullName(displayName)
+        .build();
+
+    return lecturerRepository.save(lecturer);
   }
 
   private boolean matchesKeyword(StudentEntity student, String keyword) {

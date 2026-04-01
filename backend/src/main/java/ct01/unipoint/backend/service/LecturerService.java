@@ -1,14 +1,17 @@
 package ct01.unipoint.backend.service;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import ct01.unipoint.backend.dto.common.SimpleMessageResponse;
 import ct01.unipoint.backend.dto.lecturer.ImportStudentsResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentListResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentOptionsResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentRowResponse;
 import ct01.unipoint.backend.dto.lecturer.ManualCreateStudentRequest;
-import org.springframework.web.multipart.MultipartFile;
 
-public interface LecturerStudentService {
+public interface LecturerService {
+
+  Long ensureLecturerAccessForCurrentUser(Long requestedLecturerId);
 
   LecturerStudentOptionsResponse getOptions(Long lecturerId);
 

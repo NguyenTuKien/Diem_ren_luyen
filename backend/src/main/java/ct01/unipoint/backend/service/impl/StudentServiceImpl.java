@@ -1,5 +1,15 @@
 package ct01.unipoint.backend.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse.ActivityHistoryItem;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse.UpcomingEventItem;
@@ -14,18 +24,10 @@ import ct01.unipoint.backend.repository.EventRepository;
 import ct01.unipoint.backend.repository.SemesterEvaluationRepository;
 import ct01.unipoint.backend.repository.SemesterRepository;
 import ct01.unipoint.backend.repository.StudentRepository;
-import ct01.unipoint.backend.service.StudentDashboardService;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import ct01.unipoint.backend.service.StudentService;
 
 @Service
-public class StudentDashboardServiceImpl implements StudentDashboardService {
+public class StudentServiceImpl implements StudentService {
 
   private static final DateTimeFormatter UI_TIME_FORMAT = DateTimeFormatter.ofPattern(
       "dd/MM/yyyy HH:mm");
@@ -36,7 +38,7 @@ public class StudentDashboardServiceImpl implements StudentDashboardService {
   private final ActivityRecordRepository activityRecordRepository;
   private final EventRepository eventRepository;
 
-  public StudentDashboardServiceImpl(
+  public StudentServiceImpl(
       StudentRepository studentRepository,
       SemesterRepository semesterRepository,
       SemesterEvaluationRepository semesterEvaluationRepository,

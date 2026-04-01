@@ -6,13 +6,9 @@ import ct01.unipoint.backend.dto.auth.ClassOptionResponse;
 import ct01.unipoint.backend.dto.auth.LoginRequest;
 import ct01.unipoint.backend.dto.auth.RegisterRequest;
 import ct01.unipoint.backend.dto.auth.SsoLoginRequest;
-import ct01.unipoint.backend.entity.UserEntity;
-import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.security.jwt.JwtService;
 import ct01.unipoint.backend.service.AuthService;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,20 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
-public class PortalAuthController {
+public class UserController {
 
   private final AuthService authService;
   private final JwtService jwtService;
-  private final UserRepository userRepository;
 
-  public PortalAuthController(
+  public UserController(
       AuthService authService,
-      JwtService jwtService,
-      UserRepository userRepository
+      JwtService jwtService
   ) {
     this.authService = authService;
     this.jwtService = jwtService;
-    this.userRepository = userRepository;
   }
 
   @PostMapping("/login")
@@ -58,9 +51,7 @@ public class PortalAuthController {
   }
 
   private AuthSessionResponse toSession(AuthResponse auth) {
-    String tokenSubject = userRepository.findByEmailIgnoreCase(auth.email())
-        .map(UserEntity::getUsername)
-        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản."));
+    String tokenSubject = authService.resolveTokenSubjectByEmail(auth.email());
 
     return new AuthSessionResponse(
         auth.userId(),

@@ -1,5 +1,17 @@
 package ct01.unipoint.backend.service.impl;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import ct01.unipoint.backend.dto.monitor.MonitorClassListResponse;
 import ct01.unipoint.backend.dto.monitor.MonitorClassMemberResponse;
 import ct01.unipoint.backend.entity.ActivityRecordEntity;
@@ -17,20 +29,10 @@ import ct01.unipoint.backend.repository.EventRepository;
 import ct01.unipoint.backend.repository.SemesterEvaluationRepository;
 import ct01.unipoint.backend.repository.SemesterRepository;
 import ct01.unipoint.backend.repository.StudentRepository;
-import ct01.unipoint.backend.service.MonitorClassService;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import ct01.unipoint.backend.service.MonitorService;
 
 @Service
-public class MonitorClassServiceImpl implements MonitorClassService {
+public class MonitorServiceImpl implements MonitorService {
 
   private final StudentRepository studentRepository;
   private final ClassRepository classRepository;
@@ -39,7 +41,7 @@ public class MonitorClassServiceImpl implements MonitorClassService {
   private final ActivityRecordRepository activityRecordRepository;
   private final EventRepository eventRepository;
 
-  public MonitorClassServiceImpl(
+  public MonitorServiceImpl(
       StudentRepository studentRepository,
       ClassRepository classRepository,
       SemesterRepository semesterRepository,

@@ -146,6 +146,18 @@ public class AuthServiceImpl implements AuthService {
         .toList();
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public String resolveTokenSubjectByEmail(String email) {
+    if (!StringUtils.hasText(email)) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Email là bắt buộc.");
+    }
+
+    return userRepository.findByEmailIgnoreCase(email.trim())
+        .map(UserEntity::getUsername)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản."));
+  }
+
   private void validateLoginRequest(LoginRequest request) {
     if (request == null || !StringUtils.hasText(request.email()) || !StringUtils.hasText(
         request.password())) {
