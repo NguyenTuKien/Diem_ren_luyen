@@ -5,8 +5,10 @@ import ct01.unipoint.backend.dao.EventDao;
 import ct01.unipoint.backend.dao.SemesterDao;
 import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.dto.event.EventRequest;
+import ct01.unipoint.backend.dto.event.EventResponse;
 import ct01.unipoint.backend.entity.EventEntity;
 import ct01.unipoint.backend.entity.UserEntity;
+import ct01.unipoint.backend.mapper.EventMapper;
 import ct01.unipoint.backend.service.EventService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,39 +28,33 @@ public class EventServiceImpl implements EventService {
     private final SemesterDao semesterDao;
     private final CriteriaDao criteriaDao;
     private final UserDao userDao;
+    private final EventMapper eventMapper;
 
     @Override
-    public Page<EventEntity> getAllEvents(Pageable pageable) {
-        return eventDao.findAll(pageable);
+    public Page<EventResponse> getAllEvents(Pageable pageable) {
+        return eventDao.findAll(pageable)
+                .map(eventMapper::toResponse);
     }
 
     @Override
-    public EventEntity createEvent(EventRequest eventRequest) {
-        EventEntity eventEntity = new EventEntity();
+    public EventResponse createEvent(EventRequest eventRequest) {
+        EventEntity eventEntity = eventMapper.toEntity(eventRequest);
         eventEntity.setSemester(semesterDao.findById(eventRequest.getSemesterId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Học kỳ không hợp lệ.")));
         eventEntity.setCriteria(criteriaDao.findById(eventRequest.getCriteriaId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí không hợp lệ.")));
-        eventEntity.setTitle(eventRequest.getTitle().trim());
-        eventEntity.setOrganizer(eventRequest.getOrganizer());
-        eventEntity.setDescription(eventRequest.getDescription());
-        eventEntity.setLocation(eventRequest.getLocation());
-        eventEntity.setStartTime(eventRequest.getStartTime());
-        eventEntity.setEndTime(eventRequest.getEndTime());
+        if (eventEntity.getTitle() != null) {
+            eventEntity.setTitle(eventEntity.getTitle().trim());
+        }
         eventEntity.setCreatedBy(resolveCreator());
-        return eventDao.save(eventEntity);
+        return eventMapper.toResponse(eventDao.save(eventEntity));
     }
 
     @Override
-    public EventEntity updateEvent(Long eventId, EventRequest eventRequest) {
+    public EventResponse updateEvent(Long eventId, EventRequest eventRequest) {
         EventEntity eventEntity = eventDao.findById(eventId).orElseThrow();
-        eventEntity.setTitle(eventRequest.getTitle());
-        eventEntity.setOrganizer(eventRequest.getOrganizer());
-        eventEntity.setDescription(eventRequest.getDescription());
-        eventEntity.setLocation(eventRequest.getLocation());
-        eventEntity.setStartTime(eventRequest.getStartTime());
-        eventEntity.setEndTime(eventRequest.getEndTime());
-        return eventDao.save(eventEntity);
+        eventMapper.updateEntityFromRequest(eventRequest, eventEntity);
+        return eventMapper.toResponse(eventDao.save(eventEntity));
     }
 
     @Override

@@ -1,11 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import AdminDashboardPage from "../pages/AdminDashboardPage";
 import AuthLoginPage from "../pages/AuthLoginPage";
-import EventDashboard from "../pages/EventDashboard";
-import LecturerStudentManagementPage from "../pages/LecturerStudentManagementPage";
-import MonitorClassPage from "../pages/MonitorClassPage";
-import StudentDashboardPage from "../pages/StudentDashboardPage";
 import OAuthCallback from "../pages/OAuthCallback";
+import AdminPage from "../pages/AdminPage";
+import LecturerPage from "../pages/LecturerPage";
+import StudentPage from "../pages/StudentPage";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import { useAuth } from "../context/AuthContext";
 
@@ -16,7 +14,7 @@ function HomeRedirect() {
     return <Navigate to="/auth" replace />;
   }
 
-  return <Navigate to={user.dashboardPath || "/dashboard/student"} replace />;
+  return <Navigate to={user.dashboardPath || "/student"} replace />;
 }
 
 export default function App() {
@@ -28,46 +26,28 @@ export default function App() {
       <Route path="/oauth-success" element={<OAuthCallback />} />
 
       <Route
-        path="/dashboard/admin"
-        element={
-          <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <AdminDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/dashboard/events"
-        element={
-          <ProtectedRoute allowedRoles={["LECTURER", "ADMIN"]}>
-            <EventDashboard />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/dashboard/lecturer/students"
-        element={
-          <ProtectedRoute allowedRoles={["LECTURER"]}>
-            <LecturerStudentManagementPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/dashboard/monitor/class"
-        element={
-          <ProtectedRoute allowedRoles={["MONITOR"]}>
-            <MonitorClassPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/dashboard/student"
+        path="/student"
         element={
           <ProtectedRoute allowedRoles={["STUDENT"]}>
-            <StudentDashboardPage />
+            <StudentPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/lecturer"
+        element={
+          <ProtectedRoute allowedRoles={["LECTURER", "ADMIN", "MONITOR"]}>
+            <LecturerPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <AdminPage />
           </ProtectedRoute>
         }
       />

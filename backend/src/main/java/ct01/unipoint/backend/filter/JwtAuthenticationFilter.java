@@ -1,7 +1,7 @@
 package ct01.unipoint.backend.filter;
 
 import ct01.unipoint.backend.security.CustomUserDetailsService;
-import ct01.unipoint.backend.security.jwt.JwtService;
+import ct01.unipoint.backend.security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

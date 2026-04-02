@@ -106,4 +106,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-ios-build
-          path: frontend/src-tauri/gen/ios/build/Release-iphonesimulator/**/*.app
+          path: frontend/src-tauri/gen/ios/build/Release-iphonesimulator/*.app

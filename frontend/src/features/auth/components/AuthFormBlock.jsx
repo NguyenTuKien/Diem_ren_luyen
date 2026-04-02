@@ -61,8 +61,7 @@ export default function AuthFormBlock() {
       // 1. Lấy tokens từ /login
       const tokenData = await apiLogin({ username, password });
 
-      // Tạm ghi accessToken để gọi /me (shared/api/http đọc từ unipoint_auth,
-      // nhưng chúng ta sẽ dùng header trực tiếp)
+      // Goi /me bang header Bearer truc tiep de lay thong tin user sau login.
       const meResponse = await fetch('/api/v1/auth/me', {
         headers: { Authorization: `Bearer ${tokenData.accessToken}` },
       });

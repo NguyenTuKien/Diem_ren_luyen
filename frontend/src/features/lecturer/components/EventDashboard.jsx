@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import Layout from '../components/Layout'
-import EventStats from '../shared/components/EventStats'
-import FilterBar from '../shared/components/FilterBar'
-import EventTable from '../shared/components/EventTable'
-import CreateEventModal from '../shared/components/CreateEventModal'
-import { eventApi } from '../shared/api/eventApi'
-import { qrcodeApi } from '../shared/api/qrcodeApi'
+import EventStats from '../../../shared/components/EventStats'
+import FilterBar from '../../../shared/components/FilterBar'
+import EventTable from '../../../shared/components/EventTable'
+import CreateEventModal from '../../../shared/components/CreateEventModal'
+import { eventApi } from '../../../shared/api/eventApi'
+import { qrcodeApi } from '../../../shared/api/qrcodeApi'
 import { QRCodeSVG } from 'qrcode.react'
 
 const toComparableText = (value = '') =>
@@ -169,7 +168,7 @@ function EventDashboard() {
     try {
       const response = await qrcodeApi.generateQr(event.id)
       setCurrentQrValue(response.qrToken)
-      
+
       qrIntervalRef.current = setInterval(async () => {
         try {
           const res = await qrcodeApi.generateQr(event.id)
@@ -321,6 +320,34 @@ function EventDashboard() {
     loadEvents(currentPage)
   }, [currentPage, loadEvents])
 
+  const content = (
+    <div className="flex-1 overflow-y-auto p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <EventStats onCreateEvent={handleCreateEvent} />
+        <FilterBar
+          filters={filters}
+          organizerOptions={organizerOptions}
+          onFilterChange={handleFilterChange}
+        />
+        {loading ? (
+          <div className="text-center py-10">Đang tải dữ liệu...</div>
+        ) : error ? (
+          <div className="text-center py-10 text-red-500">{error}</div>
+        ) : (
+          <EventTable
+            currentPage={currentPage}
+            events={filteredEvents}
+            onEdit={handleEditEvent}
+            onGenerateQr={handleOpenQrModal}
+            onPageChange={handlePageChange}
+            onRefresh={refreshCurrentPage}
+            pagination={pagination}
+          />
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
       {notice.message && (
@@ -335,33 +362,7 @@ function EventDashboard() {
         </div>
       )}
 
-      <Layout>
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <EventStats onCreateEvent={handleCreateEvent} />
-            <FilterBar
-              filters={filters}
-              organizerOptions={organizerOptions}
-              onFilterChange={handleFilterChange}
-            />
-            {loading ? (
-              <div className="text-center py-10">Đang tải dữ liệu...</div>
-            ) : error ? (
-              <div className="text-center py-10 text-red-500">{error}</div>
-            ) : (
-              <EventTable
-                currentPage={currentPage}
-                events={filteredEvents}
-                onEdit={handleEditEvent}
-                onGenerateQr={handleOpenQrModal}
-                onPageChange={handlePageChange}
-                onRefresh={refreshCurrentPage}
-                pagination={pagination}
-              />
-            )}
-          </div>
-        </div>
-      </Layout>
+      {content}
 
       <CreateEventModal
         isOpen={isModalOpen}

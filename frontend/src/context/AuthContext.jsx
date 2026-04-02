@@ -37,15 +37,15 @@ function clearLegacyTokens() {
 }
 
 const ROLE_DASHBOARD = {
-  ROLE_ADMIN: "/dashboard/admin",
-  ROLE_LECTURER: "/dashboard/events",
-  ROLE_MONITOR: "/dashboard/monitor/class",
-  ROLE_STUDENT: "/dashboard/student",
+  ROLE_ADMIN: "/admin",
+  ROLE_LECTURER: "/lecturer",
+  ROLE_MONITOR: "/lecturer",
+  ROLE_STUDENT: "/student",
   // short names (in case backend strips prefix)
-  ADMIN: "/dashboard/admin",
-  LECTURER: "/dashboard/events",
-  MONITOR: "/dashboard/monitor/class",
-  STUDENT: "/dashboard/student",
+  ADMIN: "/admin",
+  LECTURER: "/lecturer",
+  MONITOR: "/lecturer",
+  STUDENT: "/student",
 };
 
 function toUser(payload) {
@@ -56,7 +56,7 @@ function toUser(payload) {
     role,
     effectiveRole: payload.effectiveRole,
     displayName: payload.displayName ?? payload.fullName ?? payload.fullname ?? "",
-    dashboardPath: payload.dashboardPath ?? ROLE_DASHBOARD[role] ?? "/dashboard/student",
+    dashboardPath: payload.dashboardPath ?? ROLE_DASHBOARD[role] ?? "/student",
     classCode: payload.classCode,
     status: payload.status,
   };

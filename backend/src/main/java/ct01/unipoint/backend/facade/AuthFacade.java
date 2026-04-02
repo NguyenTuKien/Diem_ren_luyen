@@ -7,7 +7,7 @@ import ct01.unipoint.backend.entity.LecturerEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.entity.enums.Role;
-import ct01.unipoint.backend.security.jwt.JwtService;
+import ct01.unipoint.backend.security.JwtService;
 import ct01.unipoint.backend.service.LecturerService;
 import ct01.unipoint.backend.service.StudentService;
 import ct01.unipoint.backend.service.UserService;
@@ -41,29 +41,36 @@ public class AuthFacade {
     private final RedisTemplate<Object, Object> redisTemplate;
 
     public LoginResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password())
-        );
-        String subject = authentication.getName();
-        UserEntity userEntity = userService.findByUsername(subject);
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+            String subject = authentication.getName();
+            UserEntity userEntity = userService.findByUsernameOrEmail(subject)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
-        // 1. Tạo Token cho thiết bị mới (Device B)
-        String accessToken = jwtService.generateAccessToken(userEntity);
-        String refreshToken = jwtService.generateRefreshToken(subject);
+            // 1. Tạo Token cho thiết bị mới (Device B)
+            String accessToken = jwtService.generateAccessToken(userEntity);
+            String refreshToken = jwtService.generateRefreshToken(subject);
 
-        String redisKey = "user:" + subject + ":session";
+            String redisKey = "user:" + subject + ":session";
 
-        redisTemplate.opsForValue().set(
-                redisKey,
-                accessToken,
-                refreshExpirationMs,
-                TimeUnit.MILLISECONDS
-        );
+            redisTemplate.opsForValue().set(
+                    redisKey,
+                    accessToken,
+                    refreshExpirationMs,
+                    TimeUnit.MILLISECONDS
+            );
 
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
+            return LoginResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+        } catch (org.springframework.security.core.AuthenticationException ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai tên đăng nhập hoặc mật khẩu");
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống: " + ex.getMessage());
+        }
     }
 
 

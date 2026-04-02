@@ -1,9 +1,9 @@
 package ct01.unipoint.backend.config;
 
 import ct01.unipoint.backend.filter.JwtAuthenticationFilter;
-import ct01.unipoint.backend.security.sso.CustomOidcUserService;
-import ct01.unipoint.backend.security.sso.HttpCookieOAuth2AuthorizationRequestRepository;
-import ct01.unipoint.backend.security.sso.OAuth2LoginHandler;
+import ct01.unipoint.backend.security.CustomOidcUserService;
+import ct01.unipoint.backend.util.HttpCookieOAuth2AuthorizationRequestRepository;
+import ct01.unipoint.backend.util.OAuth2LoginHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

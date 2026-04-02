@@ -1,7 +1,7 @@
 package ct01.unipoint.backend.controller;
 
 import ct01.unipoint.backend.dto.common.PaginationResponse;
-import ct01.unipoint.backend.entity.EventEntity;
+import ct01.unipoint.backend.dto.event.EventResponse;
 import ct01.unipoint.backend.service.EventService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,11 +19,11 @@ public class EventController {
 
 
     @GetMapping("")
-    public PaginationResponse<EventEntity> getAllEvent(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
+    public PaginationResponse<EventResponse> getAllEvent(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
         Pageable pageable = Pageable.ofSize(size).withPage(page);
-        Page<EventEntity> eventPage = eventService.getAllEvents(pageable);
+        Page<EventResponse> eventPage = eventService.getAllEvents(pageable);
 
-        return PaginationResponse.<EventEntity>builder()
+        return PaginationResponse.<EventResponse>builder()
             .content(eventPage.getContent())
             .page(eventPage.getNumber())
             .size(eventPage.getSize())

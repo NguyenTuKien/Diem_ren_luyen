@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.security.sso;
+package ct01.unipoint.backend.security;
 
 import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.entity.UserEntity;

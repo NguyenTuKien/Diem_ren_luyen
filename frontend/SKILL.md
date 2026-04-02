@@ -55,9 +55,11 @@ src/
 - Nếu một Component có mang theo logic (Ví dụ: Table hiển thị điểm chung chung) mà cả `lecturer` và `monitor` cùng xài, hãy vứt nó vào `src/shared/components/`.
 - Nếu Component chỉ là UI thuần túy vô tri giác (chỉ truyền Text vào và hiển thị ra), thả vào `src/components/`.
 
-### 3.4. Cấu Trúc Pages vs Features
-- Tránh việc nhồi nhét xử lý Button, Text logic dài dằng dặc trong `src/pages/`.
-- File trong `pages/` chỉ nên dùng để `import` các Block từ `features/` vào tạo thành bức tranh hoàn chỉnh bọc bằng React Router.
+### 3.4. Cấu Trúc Pages và Cơ Chế Render Động (State-based Rendering)
+- Hệ thống **CHỈ CÓ 3 TRANG CHÍNH** (Main Layouts) tương ứng với 3 Role: `StudentPage.jsx`, `LecturerPage.jsx`, và `AdminPage.jsx`.
+- **Tuyệt đối KHÔNG tạo thêm các file Page rời rạc** (Ví dụ: `QRScannerPage.jsx`, `ScorePage.jsx`) bên trong thư mục `src/pages/`.
+- Mọi màn hình/tính năng mới (Hero/Content area) phải được coi là một Component, xây dựng bên trong `src/features/[role]/`. 
+- Sau khi hoàn thiện, Component này sẽ được nhúng vào vùng nội dung chính (Content Area) của trang Role tương ứng. Việc chuyển đổi giữa các tính năng (VD: từ Dashboard sang Quét QR) được thực hiện thông qua thao tác chọn Menu ở Sidebar/Navbar làm thay đổi State, **không sinh ra Route mới** trong hệ thống Routing.
 
 ### 3.5. Quản Lý Trạng Thái (State) & Móc Câu (Hooks)
 - **Cấm lạm dụng `useEffect`:** Tuyệt đối không viết một nùi logic tính toán, gọi API lồng nhau, set state liên tục bên trong `useEffect`. 
@@ -74,8 +76,8 @@ src/
 
 ## 4. Flow Viết Tiêu Chuẩn 1 Tính Năng Lớn Của 1 Role Mới
 1. Xác định UI này dành cho Role nào -> Tạo thư mục con tương ứng trong `features/` (ví dụ `features/student/StudentScore/`).
-2. Nếu có tạo Call API mới -> Chạy ra `api/` viết endpoint vào `XxxApi.js`.
-3. Tách logic xử lý data vào một file Custom Hook (nếu cần).
+2. Nếu có tạo Call API mới -> Chạy ra `api/` hoặc `shared/api/` viết endpoint vào `XxxApi.js`.
+3. Tách logic xử lý data vào một file Custom Hook (nếu cần) đặt ngay cạnh UI Component.
 4. Nhúng Endpoint/Hook vào Component ở `features/`. Component tự handle Loading/Error.
-5. Lắp Component mảng lớn đó vào 1 Page trống tại thư mục `pages/`.
-6. Đăng ký Page đó vào mảng Routing.
+5. **(QUAN TRỌNG)** Import Component vừa tạo vào trang gốc của Role đó (VD: `StudentPage.jsx` ở mục `pages/`).
+6. Thêm menu item vào Sidebar/Navbar của trang gốc để kích hoạt render Component này vào vùng Hero (Content Area) dựa trên State điều hướng, tuyệt đối không khai báo thêm Route mới trong `App.jsx`.

@@ -1,14 +1,17 @@
 import { authFetch } from './authFetch';
+import { AUTH_STORAGE_KEY } from '../../context/AuthContext';
 
 const API_BASE_URL = '/api/v1/events';
 const API_ADMIN_URL = '/api/v1/admin/events';
 const API_LECTURER_URL = '/api/v1/lecturer/events';
 
-const AUTH_STORAGE_KEY = 'unipoint_auth';
+const LEGACY_AUTH_STORAGE_KEY = 'unipoint_auth';
 
 function getMutationBase() {
   try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    const raw =
+      localStorage.getItem(AUTH_STORAGE_KEY)
+      || localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
     const session = raw ? JSON.parse(raw) : null;
     const role = session?.user?.role ?? '';
     const normalized = role.startsWith('ROLE_') ? role.slice(5) : role;

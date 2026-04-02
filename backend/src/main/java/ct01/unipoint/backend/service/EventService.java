@@ -1,17 +1,17 @@
 package ct01.unipoint.backend.service;
 
 import ct01.unipoint.backend.dto.event.EventRequest;
-import ct01.unipoint.backend.entity.EventEntity;
+import ct01.unipoint.backend.dto.event.EventResponse;
 import ct01.unipoint.backend.entity.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface EventService {
-    Page<EventEntity> getAllEvents(Pageable pageable);
+    Page<EventResponse> getAllEvents(Pageable pageable);
 
-    EventEntity createEvent(EventRequest eventRequest);
+    EventResponse createEvent(EventRequest eventRequest);
 
-    EventEntity updateEvent(Long eventId, EventRequest eventRequest);
+    EventResponse updateEvent(Long eventId, EventRequest eventRequest);
 
     UserEntity resolveCreator();
 

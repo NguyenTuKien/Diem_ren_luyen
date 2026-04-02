@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.security.sso;
+package ct01.unipoint.backend.util;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

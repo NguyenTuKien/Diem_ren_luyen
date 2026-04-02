@@ -1,7 +1,7 @@
-package ct01.unipoint.backend.security.sso;
+package ct01.unipoint.backend.util;
 
 import ct01.unipoint.backend.entity.UserEntity;
-import ct01.unipoint.backend.security.jwt.JwtService;
+import ct01.unipoint.backend.security.JwtService;
 import ct01.unipoint.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
