@@ -9,6 +9,7 @@ import ct01.unipoint.backend.dto.auth.SsoLoginRequest;
 import ct01.unipoint.backend.security.jwt.JwtService;
 import ct01.unipoint.backend.service.AuthService;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,18 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class UserController {
 
   private final AuthService authService;
   private final JwtService jwtService;
 
-  public UserController(
-      AuthService authService,
-      JwtService jwtService
-  ) {
-    this.authService = authService;
-    this.jwtService = jwtService;
-  }
 
   @PostMapping("/login")
   public AuthSessionResponse login(@RequestBody LoginRequest request) {

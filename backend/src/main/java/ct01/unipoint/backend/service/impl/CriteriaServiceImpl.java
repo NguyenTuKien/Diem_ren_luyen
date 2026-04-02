@@ -3,13 +3,13 @@ package ct01.unipoint.backend.service.impl;
 import ct01.unipoint.backend.dao.CriteriaDao;
 import ct01.unipoint.backend.entity.CriteriaEntity;
 import ct01.unipoint.backend.service.CriteriaService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class CriteriaServiceImpl implements CriteriaService {
 
     private final CriteriaDao criteriaDao;

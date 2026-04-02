@@ -2,6 +2,7 @@ package ct01.unipoint.backend.service.impl;
 
 import java.util.Optional;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import ct01.unipoint.backend.entity.ClassEntity;
@@ -13,15 +14,12 @@ import ct01.unipoint.backend.repository.StudentRepository;
 import ct01.unipoint.backend.service.RoleResolverService;
 
 @Service
+@RequiredArgsConstructor
 public class RoleResolverServiceImpl implements RoleResolverService {
 
   private final StudentRepository studentRepository;
   private final ClassRepository classRepository;
 
-  public RoleResolverServiceImpl(StudentRepository studentRepository, ClassRepository classRepository) {
-    this.studentRepository = studentRepository;
-    this.classRepository = classRepository;
-  }
 
   @Override
   public String resolveEffectiveRole(UserEntity user) {

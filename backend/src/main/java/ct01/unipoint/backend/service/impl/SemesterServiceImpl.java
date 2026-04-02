@@ -3,13 +3,13 @@ package ct01.unipoint.backend.service.impl;
 import ct01.unipoint.backend.dao.SemesterDao;
 import ct01.unipoint.backend.entity.SemesterEntity;
 import ct01.unipoint.backend.service.SemesterService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class SemesterServiceImpl implements SemesterService {
 
     private final SemesterDao semesterDao;
