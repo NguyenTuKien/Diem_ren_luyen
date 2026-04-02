@@ -591,6 +591,7 @@ export default function LecturerStudentManagementPage() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, fullName: event.target.value }))
                 }
+                maxLength={100}
                 required
               />
             </label>
@@ -602,6 +603,7 @@ export default function LecturerStudentManagementPage() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, studentCode: event.target.value }))
                 }
+                maxLength={20}
                 required
               />
             </label>
@@ -614,6 +616,7 @@ export default function LecturerStudentManagementPage() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, email: event.target.value }))
                 }
+                maxLength={100}
                 required
               />
             </label>
@@ -645,6 +648,7 @@ export default function LecturerStudentManagementPage() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, password: event.target.value }))
                 }
+                maxLength={255}
               />
             </label>
 

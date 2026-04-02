@@ -18,12 +18,14 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import ct01.unipoint.backend.dto.common.SimpleMessageResponse;
 import ct01.unipoint.backend.dto.lecturer.ImportStudentsResponse;
@@ -57,6 +59,7 @@ import ct01.unipoint.backend.service.CurrentUserService;
 import ct01.unipoint.backend.service.LecturerService;
 
 @Service
+@Slf4j
 public class LecturerServiceImpl implements LecturerService {
 
   private final LecturerRepository lecturerRepository;
@@ -192,6 +195,11 @@ public class LecturerServiceImpl implements LecturerService {
       throw new ApiException(HttpStatus.BAD_REQUEST,
           "Thiếu thông tin bắt buộc: lớp, họ tên, email, mã sinh viên.");
     }
+
+    validateManualCreateRequest(request);
+
+    log.info("Manual student create requested: lecturerId={}, classId={}, studentCode={}, email={}",
+        lecturerId, request.classId(), request.studentCode(), request.email());
 
     ClassEntity classEntity = classRepository.findByIdAndLecturerEntityId(request.classId(), lecturerId)
         .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
@@ -354,16 +362,62 @@ public class LecturerServiceImpl implements LecturerService {
         .role(Role.ROLE_STUDENT)
         .status(UserStatus.ACTIVE)
         .build();
-    UserEntity savedUser = userRepository.save(user);
+    try {
+      UserEntity savedUser = userRepository.save(user);
 
-    StudentEntity student = StudentEntity.builder()
-        .id(savedUser.getId())
-        .userEntity(savedUser)
-        .studentCode(normalizedStudentCode)
-        .fullName(fullName.trim())
-        .classEntity(classEntity)
-        .build();
-    return studentRepository.save(student);
+      StudentEntity student = StudentEntity.builder()
+          .userEntity(savedUser)
+          .studentCode(normalizedStudentCode)
+          .fullName(fullName.trim())
+          .classEntity(classEntity)
+          .build();
+      StudentEntity savedStudent = studentRepository.save(student);
+      log.info("Manual student created successfully: lecturerId={}, studentId={}, userId={}, studentCode={}, email={}",
+          classEntity.getLecturerEntity() != null ? classEntity.getLecturerEntity().getId() : null,
+          savedStudent.getId(),
+          savedUser.getId(),
+          savedStudent.getStudentCode(),
+          savedUser.getEmail());
+      return savedStudent;
+    } catch (DataIntegrityViolationException ex) {
+      log.warn("Manual student create failed due to data integrity violation: lecturerId={}, classId={}, studentCode={}, email={}, message={}",
+          classEntity.getLecturerEntity() != null ? classEntity.getLecturerEntity().getId() : null,
+          classEntity.getId(),
+          normalizedStudentCode,
+          normalizedEmail,
+          ex.getMessage());
+      throw duplicateException(skipWhenDuplicate,
+          "Dữ liệu không hợp lệ hoặc đã tồn tại: email, username hoặc mã sinh viên.");
+    }
+  }
+
+  private void validateManualCreateRequest(ManualCreateStudentRequest request) {
+    String fullName = request.fullName().trim();
+    String email = request.email().trim();
+    String studentCode = request.studentCode().trim();
+
+    if (fullName.length() > 100) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Họ tên không được vượt quá 100 ký tự.");
+    }
+    if (studentCode.length() > 20) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Mã sinh viên không được vượt quá 20 ký tự.");
+    }
+    if (email.length() > 100) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Email không được vượt quá 100 ký tự.");
+    }
+
+    int atIndex = email.indexOf('@');
+    if (atIndex <= 0 || atIndex >= email.length() - 1) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Email không hợp lệ.");
+    }
+
+    if (StringUtils.hasText(request.username()) && request.username().trim().length() > 50) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Username không được vượt quá 50 ký tự.");
+    }
+
+    if (StringUtils.hasText(request.password()) && request.password().trim().length() > 255) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, "Mật khẩu không được vượt quá 255 ký tự.");
+    }
   }
 
   private ApiException duplicateException(boolean skipWhenDuplicate, String message) {
@@ -372,14 +426,23 @@ public class LecturerServiceImpl implements LecturerService {
   }
 
   private String normalizeUsername(String username, String email) {
+    String normalizedUsername;
     if (StringUtils.hasText(username)) {
-      return username.trim().toLowerCase(Locale.ROOT);
+      normalizedUsername = username.trim().toLowerCase(Locale.ROOT);
+    } else {
+      int atIndex = email.indexOf('@');
+      if (atIndex <= 0) {
+        throw new ApiException(HttpStatus.BAD_REQUEST, "Email không hợp lệ để sinh username.");
+      }
+      normalizedUsername = email.substring(0, atIndex).toLowerCase(Locale.ROOT);
     }
-    int atIndex = email.indexOf('@');
-    if (atIndex <= 0) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, "Email không hợp lệ để sinh username.");
+
+    if (normalizedUsername.length() > 50) {
+      throw new ApiException(HttpStatus.BAD_REQUEST,
+          "Username vượt quá 50 ký tự. Vui lòng nhập username ngắn hơn.");
     }
-    return email.substring(0, atIndex).toLowerCase(Locale.ROOT);
+
+    return normalizedUsername;
   }
 
   private ClassEntity assertStudentBelongsToLecturer(StudentEntity student, Long lecturerId) {
@@ -487,7 +550,7 @@ public class LecturerServiceImpl implements LecturerService {
     return new LecturerStudentRowResponse(
         student.getId(),
         student.getFullName(),
-        student.getUserEntity() != null ? student.getUserEntity().getEmail() : null,
+        student.getUserEntity().getEmail(),
         student.getStudentCode(),
         classEntity != null ? classEntity.getId() : null,
         classEntity != null ? classEntity.getClassCode() : null,

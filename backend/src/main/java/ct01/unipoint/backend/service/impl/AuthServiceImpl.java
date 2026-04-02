@@ -104,7 +104,6 @@ public class AuthServiceImpl implements AuthService {
     UserEntity savedUser = userRepository.save(user);
 
     StudentEntity student = StudentEntity.builder()
-        .id(savedUser.getId())
         .userEntity(savedUser)
         .studentCode(studentCode)
         .fullName(request.fullName().trim())
