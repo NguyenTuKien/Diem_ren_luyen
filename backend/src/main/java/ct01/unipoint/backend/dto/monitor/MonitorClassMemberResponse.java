@@ -1,7 +1,7 @@
 package ct01.unipoint.backend.dto.monitor;
 
 public record MonitorClassMemberResponse(
-    Long studentId,
+    String studentId,
     String studentCode,
     String fullName,
     String email,

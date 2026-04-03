@@ -37,10 +37,13 @@ spring:
       password: ${REDIS_PASSWORD}
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST:capybara.lmq.cloudamqp.com}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USERNAME:zkwyimih}
+    password: ${RABBITMQ_PASSWORD:V8gv8wLhBgYzvvTiQQaEeKp1LQbZAZYy}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:zkwyimih}
+    ssl:
+      enabled: ${RABBITMQ_SSL_ENABLED:true}
 
   security:
     oauth2:

@@ -35,14 +35,10 @@ function Pagination({ currentPage, totalPages, totalElements, pageSize, onPageCh
         ))}
 
         <button
-<<<<<<< HEAD
           className="px-3 py-1 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-sm disabled:opacity-50"
           disabled={totalPages === 0 || currentPage >= totalPages - 1}
           onClick={() => onPageChange(currentPage + 1)}
           type="button"
-=======
-          className="px-3 py-1 text-sm bg-[#d23232] text-white rounded shadow-sm"
->>>>>>> origin/TOAN
         >
           Tiếp
         </button>

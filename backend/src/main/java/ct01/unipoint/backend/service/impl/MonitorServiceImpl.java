@@ -59,7 +59,7 @@ public class MonitorServiceImpl implements MonitorService {
 
   @Override
   @Transactional(readOnly = true)
-  public MonitorClassListResponse getManagedClassMembers(Long monitorUserId) {
+  public MonitorClassListResponse getManagedClassMembers(String monitorUserId) {
     StudentEntity monitorStudent = studentDao.findByUserEntityId(monitorUserId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản Monitor."));
 
@@ -67,11 +67,11 @@ public class MonitorServiceImpl implements MonitorService {
         .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
             "Tài khoản hiện tại không được gán quyền Monitor."));
 
-    List<StudentEntity> members = studentDao.findAllByClassIdWithDetails(managedClass.getId());
+    List<StudentEntity> members = studentDao.findAllByClassEntityId(managedClass.getId());
     Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
 
-    Map<Long, Integer> scoreByStudent = buildScoreMap(members, activeSemesterOpt);
-    Map<Long, Integer> joinedMap = buildMandatoryAttendanceMap(members, activeSemesterOpt);
+    Map<String, Integer> scoreByStudent = buildScoreMap(members, activeSemesterOpt);
+    Map<String, Integer> joinedMap = buildMandatoryAttendanceMap(members, activeSemesterOpt);
     int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventDao.countBySemester_Id(
         semester.getId())).orElse(0);
 
@@ -92,8 +92,8 @@ public class MonitorServiceImpl implements MonitorService {
   private MonitorClassMemberResponse mapMember(
       StudentEntity student,
       ClassEntity managedClass,
-      Map<Long, Integer> scoreByStudent,
-      Map<Long, Integer> joinedMap,
+      Map<String, Integer> scoreByStudent,
+      Map<String, Integer> joinedMap,
       int mandatoryEvents
   ) {
     int joined = joinedMap.getOrDefault(student.getId(), 0);
@@ -117,12 +117,12 @@ public class MonitorServiceImpl implements MonitorService {
     );
   }
 
-  private Map<Long, Integer> buildScoreMap(List<StudentEntity> students,
+  private Map<String, Integer> buildScoreMap(List<StudentEntity> students,
       Optional<SemesterEntity> activeSemesterOpt) {
     if (students.isEmpty() || activeSemesterOpt.isEmpty()) {
       return Map.of();
     }
-    List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
+    List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
     return studentSemesterDao.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
@@ -133,21 +133,21 @@ public class MonitorServiceImpl implements MonitorService {
         ));
   }
 
-  private Map<Long, Integer> buildMandatoryAttendanceMap(List<StudentEntity> students,
+  private Map<String, Integer> buildMandatoryAttendanceMap(List<StudentEntity> students,
       Optional<SemesterEntity> activeSemesterOpt) {
     if (students.isEmpty() || activeSemesterOpt.isEmpty()) {
       return Map.of();
     }
-    List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
+    List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
     List<RecordEntity> records =
       recordDao.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
             activeSemesterOpt.get().getId(),
             studentIds,
         RecordStatus.APPROVED
         );
-    Map<Long, Integer> joinedMap = new HashMap<>();
+    Map<String, Integer> joinedMap = new HashMap<>();
     for (RecordEntity record : records) {
-      Long studentId = record.getStudent().getId();
+      String studentId = record.getStudent().getId();
       joinedMap.put(studentId, joinedMap.getOrDefault(studentId, 0) + 1);
     }
     return joinedMap;

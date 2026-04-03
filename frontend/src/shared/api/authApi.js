@@ -1,4 +1,3 @@
-<<<<<<< HEAD:frontend/src/shared/api/authApi.js
 import { API_BASE_URL } from './http';
 
 const AUTH_API_BASE = `${API_BASE_URL}/v1/auth`;
@@ -58,11 +57,6 @@ export const getStoredUserInfo = () => {
     return null;
   }
 };
-=======
-import { API_BASE_URL } from '../shared/api/http';
-
-const AUTH_API_BASE = '/api/v1/auth';
->>>>>>> origin/TOAN:frontend/src/api/authApi.js
 
 export const getAccessToken = () => localStorage.getItem('accessToken');
 

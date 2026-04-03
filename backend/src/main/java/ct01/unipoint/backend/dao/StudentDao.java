@@ -1,13 +1,10 @@
 package ct01.unipoint.backend.dao;
 
 import ct01.unipoint.backend.entity.StudentEntity;
+import ct01.unipoint.backend.entity.UserEntity;
 import java.util.List;
 import java.util.Optional;
-
-import ct01.unipoint.backend.entity.UserEntity;
 import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +34,3 @@ public interface StudentDao extends JpaRepository<StudentEntity, String> {
       """)
   List<StudentEntity> findAllByLecturerIdWithDetails(@Param("lecturerId") String lecturerId);
 }
-

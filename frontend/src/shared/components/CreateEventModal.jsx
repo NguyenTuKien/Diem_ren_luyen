@@ -350,11 +350,7 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
               Hủy bỏ
             </button>
             <button
-<<<<<<< HEAD:frontend/src/shared/components/CreateEventModal.jsx
               className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-[#d23232]/20 transition-all"
-=======
-              className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-primary/20 transition-all"
->>>>>>> origin/TOAN:frontend/src/components/CreateEventModal.jsx
               type="submit"
               disabled={loading}
             >

@@ -71,13 +71,7 @@ function EventTable({ events, onRefresh, onEdit, onGenerateQr, pagination, curre
                   {event.location}
                 </td>
                 <td className="px-6 py-5">
-<<<<<<< HEAD:frontend/src/shared/components/EventTable.jsx
                   <span className="bg-[#d23232]/10 text-[#d23232] text-xs font-bold px-2 py-1 rounded">
-=======
-                  <span
-                    className="bg-[rgba(210,50,50,0.1)] text-[#d23232] text-xs font-bold px-2 py-1 rounded"
-                  >
->>>>>>> origin/TOAN:frontend/src/components/EventTable.jsx
                     {event.type}
                   </span>
                 </td>

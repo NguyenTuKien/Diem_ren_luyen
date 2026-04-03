@@ -1,65 +1,93 @@
 package ct01.unipoint.backend.service.impl;
 
+import ct01.unipoint.backend.dao.EventDao;
+import ct01.unipoint.backend.dao.RecordDao;
+import ct01.unipoint.backend.dao.SemesterDao;
 import ct01.unipoint.backend.dao.StudentDao;
-import ct01.unipoint.backend.entity.UserEntity;
+import ct01.unipoint.backend.dao.StudentSemesterDao;
+import ct01.unipoint.backend.dto.student.StudentDashboardResponse;
+import ct01.unipoint.backend.dto.student.StudentDashboardResponse.ActivityHistoryItem;
+import ct01.unipoint.backend.dto.student.StudentDashboardResponse.UpcomingEventItem;
+import ct01.unipoint.backend.entity.EventEntity;
+import ct01.unipoint.backend.entity.RecordEntity;
+import ct01.unipoint.backend.entity.SemesterEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
+import ct01.unipoint.backend.entity.StudentSemesterEntity;
+import ct01.unipoint.backend.entity.UserEntity;
+import ct01.unipoint.backend.exception.ApiException;
 import ct01.unipoint.backend.service.StudentService;
-import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @AllArgsConstructor
 public class StudentServiceImpl implements StudentService {
-    private final StudentDao studentDao;
+
+  private static final DateTimeFormatter UI_TIME_FORMAT =
+      DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+  private final StudentDao studentDao;
   private final SemesterDao semesterDao;
   private final StudentSemesterDao studentSemesterDao;
   private final RecordDao recordDao;
   private final EventDao eventDao;
-    @Override
-    public StudentEntity getStudentByUser(UserEntity userEntity) {
-        return studentDao.findByUserEntity(userEntity).orElseThrow();
-    }
+
+  @Override
+  public StudentEntity getStudentByUser(UserEntity userEntity) {
+    return studentDao.findByUserEntity(userEntity).orElseThrow();
+  }
+
   @Override
   @Transactional(readOnly = true)
-  public StudentDashboardResponse getDashboard(Long userId) {
+  public StudentDashboardResponse getDashboard(String userId) {
     StudentEntity student = studentDao.findByUserEntityId(userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin sinh viên."));
 
     Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
+
     Integer totalScore = 0;
     int joinedActivities = 0;
     if (activeSemesterOpt.isPresent()) {
-        .map(StudentSemesterEntity::getFinalScore)
-      totalScore = studentSemesterDao.findBySemester_IdAndStudent_Id(semesterId, student.getId())
       Long semesterId = activeSemesterOpt.get().getId();
+      totalScore = studentSemesterDao.findBySemester_IdAndStudent_Id(semesterId, student.getId())
+          .map(StudentSemesterEntity::getFinalScore)
           .orElse(0);
-      joinedActivities = (int) recordDao.countByStudent_IdAndSemester_Id(student.getId(),
-          semesterId);
+      joinedActivities = (int) recordDao.countByStudent_IdAndSemester_Id(student.getId(), semesterId);
     }
 
     List<UpcomingEventItem> upcomingEvents = activeSemesterOpt
-      .map(semester -> eventDao.findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(
+        .map(semester -> eventDao.findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(
                 semester.getId(), LocalDateTime.now())
             .stream()
             .map(this::toUpcomingItem)
             .toList())
         .orElse(List.of());
-    List<ActivityHistoryItem> history = recordDao.findTop10ByStudent_IdOrderByCreatedAtDesc(
 
-            student.getId())
+    List<ActivityHistoryItem> history = recordDao.findTop10ByStudent_IdOrderByCreatedAtDesc(student.getId())
         .stream()
         .map(this::toHistoryItem)
         .toList();
 
+    String classCode = student.getClassEntity() != null ? student.getClassEntity().getClassCode() : null;
+    String facultyName = student.getClassEntity() != null && student.getClassEntity().getFacultyEntity() != null
+        ? student.getClassEntity().getFacultyEntity().getName()
+        : null;
+
     return new StudentDashboardResponse(
-        student.getStudentCode(),
         student.getFullName(),
-        student.getClassEntity() != null ? student.getClassEntity().getClassCode() : null,
-            ? student.getClassEntity().getFacultyEntity().getName() : null,
-        student.getClassEntity() != null && student.getClassEntity().getFacultyEntity() != null
+        student.getStudentCode(),
+        classCode,
+        facultyName,
         totalScore,
-        rankLabel(totalScore),
         joinedActivities,
+        rankLabel(totalScore),
         upcomingEvents,
         history
     );
@@ -86,8 +114,10 @@ public class StudentServiceImpl implements StudentService {
       title = "Hoạt động rèn luyện";
     }
 
-    String createdAt = record.getCreatedAt() != null ? record.getCreatedAt().format(UI_TIME_FORMAT)
+    String createdAt = record.getCreatedAt() != null
+        ? record.getCreatedAt().format(UI_TIME_FORMAT)
         : null;
+
     return new ActivityHistoryItem(
         record.getId(),
         title,

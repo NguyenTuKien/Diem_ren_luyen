@@ -1,4 +1,3 @@
-
 package ct01.unipoint.backend.dao;
 
 import ct01.unipoint.backend.entity.LecturerEntity;
@@ -10,14 +9,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LecturerDao extends JpaRepository<LecturerEntity, Long> {
+public interface LecturerDao extends JpaRepository<LecturerEntity, String> {
 
-    int countByUserEntity_Role(Role role);
+  int countByUserEntity_Role(Role role);
 
-    Optional<LecturerEntity> findByUserEntity_EmailIgnoreCase(String email);
+  Optional<LecturerEntity> findByUserEntity_EmailIgnoreCase(String email);
 
-    Optional<LecturerEntity> findByUserEntity(UserEntity userEntity);
+  Optional<LecturerEntity> findByUserEntity(UserEntity userEntity);
 
-    @EntityGraph(attributePaths = {"facultyEntity"})
-    Optional<LecturerEntity> findByUserEntityId(Long userId);
+  @EntityGraph(attributePaths = {"facultyEntity"})
+  Optional<LecturerEntity> findByUserEntityId(String userId);
 }

@@ -4,5 +4,5 @@ import ct01.unipoint.backend.dto.monitor.MonitorClassListResponse;
 
 public interface MonitorService {
 
-  MonitorClassListResponse getManagedClassMembers(Long monitorUserId);
+  MonitorClassListResponse getManagedClassMembers(String monitorUserId);
 }

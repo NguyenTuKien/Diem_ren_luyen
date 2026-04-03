@@ -4,6 +4,10 @@ import ct01.unipoint.backend.entity.UserEntity;
 import java.util.Optional;
 
 public interface UserService {
+    UserEntity requireCurrentUser();
+
+    String requireCurrentUserId();
+
     UserEntity findByUsername(String username);
 
     boolean isUserExist(String email);

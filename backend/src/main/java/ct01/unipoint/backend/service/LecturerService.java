@@ -1,37 +1,38 @@
 package ct01.unipoint.backend.service;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import ct01.unipoint.backend.dto.common.SimpleMessageResponse;
 import ct01.unipoint.backend.dto.lecturer.ImportStudentsResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentListResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentOptionsResponse;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentRowResponse;
 import ct01.unipoint.backend.dto.lecturer.ManualCreateStudentRequest;
+import ct01.unipoint.backend.entity.LecturerEntity;
+import ct01.unipoint.backend.entity.UserEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface LecturerService {
 
-  Long ensureLecturerAccessForCurrentUser(Long requestedLecturerId);
+  String ensureLecturerAccessForCurrentUser(String requestedLecturerId);
 
-  LecturerStudentOptionsResponse getOptions(Long lecturerId);
+  LecturerStudentOptionsResponse getOptions(String lecturerId);
 
   LecturerStudentListResponse getStudents(
-      Long lecturerId,
+      String lecturerId,
       Long facultyId,
       Long classId,
       String status,
       String keyword
   );
 
-  LecturerStudentRowResponse createManualStudent(Long lecturerId, ManualCreateStudentRequest request);
+  LecturerStudentRowResponse createManualStudent(String lecturerId, ManualCreateStudentRequest request);
 
-  ImportStudentsResponse importStudents(Long lecturerId, MultipartFile file);
+  ImportStudentsResponse importStudents(String lecturerId, MultipartFile file);
 
-  LecturerStudentRowResponse assignMonitor(Long lecturerId, Long studentId);
+  LecturerStudentRowResponse assignMonitor(String lecturerId, String studentId);
 
-  LecturerStudentRowResponse updateStudentStatus(Long lecturerId, Long studentId, String status);
+  LecturerStudentRowResponse updateStudentStatus(String lecturerId, String studentId, String status);
 
-  SimpleMessageResponse deleteStudent(Long lecturerId, Long studentId);
+  SimpleMessageResponse deleteStudent(String lecturerId, String studentId);
 
-    LecturerEntity getLecturerByUser(UserEntity userEntity);
+  LecturerEntity getLecturerByUser(UserEntity userEntity);
 }

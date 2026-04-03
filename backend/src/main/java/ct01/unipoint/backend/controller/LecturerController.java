@@ -34,66 +34,66 @@ public class LecturerController {
   }
 
   @GetMapping("/options")
-  public LecturerStudentOptionsResponse options(@RequestParam Long lecturerId) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+  public LecturerStudentOptionsResponse options(@RequestParam String lecturerId) {
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.getOptions(resolvedLecturerId);
   }
 
   @GetMapping
   public LecturerStudentListResponse list(
-      @RequestParam Long lecturerId,
+      @RequestParam String lecturerId,
       @RequestParam(required = false) Long facultyId,
       @RequestParam(required = false) Long classId,
       @RequestParam(required = false) String status,
       @RequestParam(required = false) String keyword
   ) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.getStudents(resolvedLecturerId, facultyId, classId, status, keyword);
   }
 
   @PostMapping("/manual")
   public LecturerStudentRowResponse createManual(
-      @RequestParam Long lecturerId,
+      @RequestParam String lecturerId,
       @RequestBody ManualCreateStudentRequest request
   ) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.createManualStudent(resolvedLecturerId, request);
   }
 
   @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ImportStudentsResponse importExcel(
-      @RequestParam Long lecturerId,
+      @RequestParam String lecturerId,
       @RequestPart("file") MultipartFile file
   ) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.importStudents(resolvedLecturerId, file);
   }
 
   @PutMapping("/{studentId}/monitor")
   public LecturerStudentRowResponse assignMonitor(
-      @RequestParam Long lecturerId,
-      @PathVariable Long studentId
+      @RequestParam String lecturerId,
+      @PathVariable String studentId
   ) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.assignMonitor(resolvedLecturerId, studentId);
   }
 
   @PutMapping("/{studentId}/status")
   public LecturerStudentRowResponse updateStatus(
-      @RequestParam Long lecturerId,
-      @PathVariable Long studentId,
+      @RequestParam String lecturerId,
+      @PathVariable String studentId,
       @RequestBody UpdateStudentStatusRequest request
   ) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.updateStudentStatus(resolvedLecturerId, studentId, request.status());
   }
 
   @DeleteMapping("/{studentId}")
   public SimpleMessageResponse delete(
-      @RequestParam Long lecturerId,
-      @PathVariable Long studentId
+      @RequestParam String lecturerId,
+      @PathVariable String studentId
   ) {
-    Long resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
+    String resolvedLecturerId = lecturerService.ensureLecturerAccessForCurrentUser(lecturerId);
     return lecturerService.deleteStudent(resolvedLecturerId, studentId);
   }
 }

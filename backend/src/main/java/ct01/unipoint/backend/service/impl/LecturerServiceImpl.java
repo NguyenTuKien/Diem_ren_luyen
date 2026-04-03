@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import ct01.unipoint.backend.service.UserService;
 import lombok.AllArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -56,7 +57,6 @@ import ct01.unipoint.backend.dao.StudentSemesterDao;
 import ct01.unipoint.backend.dao.SemesterDao;
 import ct01.unipoint.backend.dao.StudentDao;
 import ct01.unipoint.backend.dao.UserDao;
-import ct01.unipoint.backend.service.CurrentUserService;
 import ct01.unipoint.backend.service.LecturerService;
 
 @Service
@@ -73,12 +73,12 @@ public class LecturerServiceImpl implements LecturerService {
   private final EventDao eventDao;
   private final RecordDao recordDao;
   private final PasswordEncoder passwordEncoder;
-  private final CurrentUserService currentUserService;
+  private final UserService userService;
 
   @Override
   @Transactional
-  public Long ensureLecturerAccessForCurrentUser(Long requestedLecturerId) {
-    UserEntity currentUser = currentUserService.requireCurrentUser();
+  public String ensureLecturerAccessForCurrentUser(String requestedLecturerId) {
+    UserEntity currentUser = userService.requireCurrentUser();
     LecturerEntity lecturer = lecturerDao.findByUserEntityId(currentUser.getId())
         .orElseGet(() -> provisionLecturerProfile(currentUser));
 
@@ -94,7 +94,7 @@ public class LecturerServiceImpl implements LecturerService {
 
   @Override
   @Transactional(readOnly = true)
-  public LecturerStudentOptionsResponse getOptions(Long lecturerId) {
+  public LecturerStudentOptionsResponse getOptions(String lecturerId) {
     ensureLecturerExists(lecturerId);
 
     List<ClassEntity> lecturerClasses = classDao.findByLecturerEntityId(lecturerId);
@@ -122,7 +122,7 @@ public class LecturerServiceImpl implements LecturerService {
   @Override
   @Transactional(readOnly = true)
   public LecturerStudentListResponse getStudents(
-      Long lecturerId,
+      String lecturerId,
       Long facultyId,
       Long classId,
       String status,
@@ -147,8 +147,8 @@ public class LecturerServiceImpl implements LecturerService {
         .toList();
 
     Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
-    Map<Long, Integer> scoreByStudent = buildScoreMap(filtered, activeSemesterOpt);
-    Map<Long, Integer> joinedMandatoryMap = buildMandatoryAttendanceMap(filtered, activeSemesterOpt);
+    Map<String, Integer> scoreByStudent = buildScoreMap(filtered, activeSemesterOpt);
+    Map<String, Integer> joinedMandatoryMap = buildMandatoryAttendanceMap(filtered, activeSemesterOpt);
     int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventDao.countBySemester_Id(
         semester.getId())).orElse(0);
 
@@ -166,7 +166,7 @@ public class LecturerServiceImpl implements LecturerService {
 
   @Override
   @Transactional
-  public LecturerStudentRowResponse createManualStudent(Long lecturerId,
+  public LecturerStudentRowResponse createManualStudent(String lecturerId,
       ManualCreateStudentRequest request) {
     if (request == null || request.classId() == null || !StringUtils.hasText(request.fullName())
         || !StringUtils.hasText(request.email()) || !StringUtils.hasText(request.studentCode())) {
@@ -198,7 +198,7 @@ public class LecturerServiceImpl implements LecturerService {
 
   @Override
   @Transactional
-  public ImportStudentsResponse importStudents(Long lecturerId, MultipartFile file) {
+  public ImportStudentsResponse importStudents(String lecturerId, MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng chọn file Excel để import.");
     }
@@ -269,7 +269,7 @@ public class LecturerServiceImpl implements LecturerService {
 
   @Override
   @Transactional
-  public LecturerStudentRowResponse assignMonitor(Long lecturerId, Long studentId) {
+  public LecturerStudentRowResponse assignMonitor(String lecturerId, String studentId) {
     StudentEntity student = studentDao.findById(studentId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sinh viên."));
 
@@ -282,7 +282,7 @@ public class LecturerServiceImpl implements LecturerService {
 
   @Override
   @Transactional
-  public LecturerStudentRowResponse updateStudentStatus(Long lecturerId, Long studentId, String status) {
+  public LecturerStudentRowResponse updateStudentStatus(String lecturerId, String studentId, String status) {
     UserStatus nextStatus = parseUserStatus(status, true);
 
     StudentEntity student = studentDao.findById(studentId)
@@ -304,7 +304,7 @@ public class LecturerServiceImpl implements LecturerService {
 
   @Override
   @Transactional
-  public SimpleMessageResponse deleteStudent(Long lecturerId, Long studentId) {
+  public SimpleMessageResponse deleteStudent(String lecturerId, String studentId) {
     updateStudentStatus(lecturerId, studentId, UserStatus.DELETED.name());
     return new SimpleMessageResponse("Đã xóa mềm tài khoản sinh viên.");
   }
@@ -423,7 +423,7 @@ public class LecturerServiceImpl implements LecturerService {
     return normalizedUsername;
   }
 
-  private ClassEntity assertStudentBelongsToLecturer(StudentEntity student, Long lecturerId) {
+  private ClassEntity assertStudentBelongsToLecturer(StudentEntity student, String lecturerId) {
     ClassEntity classEntity = student.getClassEntity();
     if (classEntity == null || classEntity.getLecturerEntity() == null || !Objects.equals(
         classEntity.getLecturerEntity().getId(), lecturerId)) {
@@ -432,7 +432,7 @@ public class LecturerServiceImpl implements LecturerService {
     return classEntity;
   }
 
-  private void ensureLecturerExists(Long lecturerId) {
+  private void ensureLecturerExists(String lecturerId) {
     if (lecturerId == null || lecturerDao.findById(lecturerId).isEmpty()) {
       throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy giảng viên.");
     }
@@ -470,12 +470,12 @@ public class LecturerServiceImpl implements LecturerService {
     return fullName.contains(keyword) || studentCode.contains(keyword) || email.contains(keyword);
   }
 
-  private Map<Long, Integer> buildScoreMap(List<StudentEntity> students,
+  private Map<String, Integer> buildScoreMap(List<StudentEntity> students,
       Optional<SemesterEntity> activeSemesterOpt) {
     if (students.isEmpty() || activeSemesterOpt.isEmpty()) {
       return Map.of();
     }
-    List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
+    List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
     return studentSemesterDao.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
@@ -486,21 +486,21 @@ public class LecturerServiceImpl implements LecturerService {
         ));
   }
 
-  private Map<Long, Integer> buildMandatoryAttendanceMap(List<StudentEntity> students,
+  private Map<String, Integer> buildMandatoryAttendanceMap(List<StudentEntity> students,
       Optional<SemesterEntity> activeSemesterOpt) {
     if (students.isEmpty() || activeSemesterOpt.isEmpty()) {
       return Map.of();
     }
-    List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
+    List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
     List<RecordEntity> records =
       recordDao.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
             activeSemesterOpt.get().getId(),
             studentIds,
         RecordStatus.APPROVED
         );
-    Map<Long, Integer> joinedMap = new HashMap<>();
+    Map<String, Integer> joinedMap = new HashMap<>();
     for (RecordEntity record : records) {
-      Long studentId = record.getStudent().getId();
+      String studentId = record.getStudent().getId();
       joinedMap.put(studentId, joinedMap.getOrDefault(studentId, 0) + 1);
     }
     return joinedMap;
@@ -508,8 +508,8 @@ public class LecturerServiceImpl implements LecturerService {
 
   private LecturerStudentRowResponse toRow(
       StudentEntity student,
-      Map<Long, Integer> scoreByStudent,
-      Map<Long, Integer> joinedMandatoryMap,
+      Map<String, Integer> scoreByStudent,
+      Map<String, Integer> joinedMandatoryMap,
       int mandatoryEvents
   ) {
     ClassEntity classEntity = student.getClassEntity();

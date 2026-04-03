@@ -80,17 +80,17 @@ public class DataInitialization {
 
             UserEntity lecturerUser = userDao.findByEmailIgnoreCase("longdh@ptit.edu.vn")
                     .orElseGet(() -> userDao.save(UserEntity.builder()
-                            .username("longdh")
-                            .email("longdh@ptit.edu.vn")
-                            .password(passwordEncoder.encode("LongDH@123"))
+                            .username("lecturer")
+                            .email("Lecture00@ptit.edu.vn")
+                            .password(passwordEncoder.encode("Lecturer@123"))
                             .role(Role.ROLE_LECTURER)
                             .build()));
 
             LecturerEntity lecturer = lecturerDao.findByUserEntity_EmailIgnoreCase("longdh@ptit.edu.vn")
                     .orElseGet(() -> lecturerDao.save(LecturerEntity.builder()
                             .userEntity(lecturerUser)
-                            .lecturerCode("LONGDH")
-                            .fullName("Thay Long")
+                            .lecturerCode("Lec001")
+                            .fullName("Thay L")
                             .facultyEntity(faculty)
                             .build()));
 

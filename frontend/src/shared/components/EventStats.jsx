@@ -9,11 +9,7 @@ function EventStats({ onCreateEvent }) {
       </div>
 
       <button
-<<<<<<< HEAD:frontend/src/shared/components/EventStats.jsx
         className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#d23232]/20"
-=======
-        className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-6 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
->>>>>>> origin/TOAN:frontend/src/components/EventStats.jsx
         onClick={onCreateEvent}
       >
         <span className="material-symbols-outlined">add_circle</span>
