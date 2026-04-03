@@ -42,7 +42,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         UserEntity userEntity;
         try {
-            userEntity = userDao.findByEmail(email)
+            userEntity = userDao.findByEmailIgnoreCase(email)
                 .orElseGet(() -> userDao.save(UserEntity.builder()
                     .username(generateUniqueUsername(email))
                     .email(email)
@@ -99,7 +99,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String candidate = base;
         int suffix = 1;
 
-        while (userDao.findByUsername(candidate).isPresent()) {
+        while (userDao.findByUsernameIgnoreCase(candidate).isPresent()) {
             String suffixText = "_" + suffix;
             int maxBaseLength = Math.max(1, 50 - suffixText.length());
             String trimmedBase = base.length() > maxBaseLength ? base.substring(0, maxBaseLength) : base;

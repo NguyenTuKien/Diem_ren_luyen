@@ -35,26 +35,26 @@ import ct01.unipoint.backend.dto.lecturer.LecturerStudentOptionsResponse.ClassOp
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentOptionsResponse.FacultyOptionItem;
 import ct01.unipoint.backend.dto.lecturer.LecturerStudentRowResponse;
 import ct01.unipoint.backend.dto.lecturer.ManualCreateStudentRequest;
-import ct01.unipoint.backend.entity.ActivityRecordEntity;
 import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.FacultyEntity;
 import ct01.unipoint.backend.entity.LecturerEntity;
+import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
-import ct01.unipoint.backend.entity.SemesterEvaluationEntity;
+import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
-import ct01.unipoint.backend.entity.enums.ActivityRecordStatus;
+import ct01.unipoint.backend.entity.enums.RecordStatus;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.entity.enums.UserStatus;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.repository.ActivityRecordRepository;
-import ct01.unipoint.backend.repository.ClassRepository;
-import ct01.unipoint.backend.repository.EventRepository;
-import ct01.unipoint.backend.repository.LecturerRepository;
-import ct01.unipoint.backend.repository.SemesterEvaluationRepository;
-import ct01.unipoint.backend.repository.SemesterRepository;
-import ct01.unipoint.backend.repository.StudentRepository;
-import ct01.unipoint.backend.repository.UserRepository;
+import ct01.unipoint.backend.dao.RecordDao;
+import ct01.unipoint.backend.dao.ClassDao;
+import ct01.unipoint.backend.dao.EventDao;
+import ct01.unipoint.backend.dao.LecturerDao;
+import ct01.unipoint.backend.dao.StudentSemesterDao;
+import ct01.unipoint.backend.dao.SemesterDao;
+import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.service.CurrentUserService;
 import ct01.unipoint.backend.service.LecturerService;
 
@@ -62,37 +62,37 @@ import ct01.unipoint.backend.service.LecturerService;
 @Slf4j
 public class LecturerServiceImpl implements LecturerService {
 
-  private final LecturerRepository lecturerRepository;
-  private final ClassRepository classRepository;
-  private final StudentRepository studentRepository;
-  private final UserRepository userRepository;
-  private final SemesterRepository semesterRepository;
-  private final SemesterEvaluationRepository semesterEvaluationRepository;
-  private final EventRepository eventRepository;
-  private final ActivityRecordRepository activityRecordRepository;
+  private final LecturerDao lecturerDao;
+  private final ClassDao classDao;
+  private final StudentDao studentDao;
+  private final UserDao userDao;
+  private final SemesterDao semesterDao;
+  private final StudentSemesterDao studentSemesterDao;
+  private final EventDao eventDao;
+  private final RecordDao recordDao;
   private final PasswordEncoder passwordEncoder;
   private final CurrentUserService currentUserService;
 
   public LecturerServiceImpl(
-      LecturerRepository lecturerRepository,
-      ClassRepository classRepository,
-      StudentRepository studentRepository,
-      UserRepository userRepository,
-      SemesterRepository semesterRepository,
-      SemesterEvaluationRepository semesterEvaluationRepository,
-      EventRepository eventRepository,
-      ActivityRecordRepository activityRecordRepository,
+      LecturerDao lecturerDao,
+      ClassDao classDao,
+      StudentDao studentDao,
+      UserDao userDao,
+      SemesterDao semesterDao,
+      StudentSemesterDao studentSemesterDao,
+      EventDao eventDao,
+      RecordDao recordDao,
       PasswordEncoder passwordEncoder,
       CurrentUserService currentUserService
   ) {
-    this.lecturerRepository = lecturerRepository;
-    this.classRepository = classRepository;
-    this.studentRepository = studentRepository;
-    this.userRepository = userRepository;
-    this.semesterRepository = semesterRepository;
-    this.semesterEvaluationRepository = semesterEvaluationRepository;
-    this.eventRepository = eventRepository;
-    this.activityRecordRepository = activityRecordRepository;
+    this.lecturerDao = lecturerDao;
+    this.classDao = classDao;
+    this.studentDao = studentDao;
+    this.userDao = userDao;
+    this.semesterDao = semesterDao;
+    this.studentSemesterDao = studentSemesterDao;
+    this.eventDao = eventDao;
+    this.recordDao = recordDao;
     this.passwordEncoder = passwordEncoder;
     this.currentUserService = currentUserService;
   }
@@ -101,7 +101,7 @@ public class LecturerServiceImpl implements LecturerService {
   @Transactional
   public Long ensureLecturerAccessForCurrentUser(Long requestedLecturerId) {
     UserEntity currentUser = currentUserService.requireCurrentUser();
-    LecturerEntity lecturer = lecturerRepository.findByUserEntityId(currentUser.getId())
+    LecturerEntity lecturer = lecturerDao.findByUserEntityId(currentUser.getId())
         .orElseGet(() -> provisionLecturerProfile(currentUser));
 
     boolean matchesLecturerId = Objects.equals(lecturer.getId(), requestedLecturerId);
@@ -119,7 +119,7 @@ public class LecturerServiceImpl implements LecturerService {
   public LecturerStudentOptionsResponse getOptions(Long lecturerId) {
     ensureLecturerExists(lecturerId);
 
-    List<ClassEntity> lecturerClasses = classRepository.findByLecturerEntityId(lecturerId);
+    List<ClassEntity> lecturerClasses = classDao.findByLecturerEntityId(lecturerId);
     Map<Long, FacultyOptionItem> facultyMap = new LinkedHashMap<>();
     List<ClassOptionItem> classItems = new ArrayList<>();
 
@@ -151,7 +151,7 @@ public class LecturerServiceImpl implements LecturerService {
       String keyword
   ) {
     ensureLecturerExists(lecturerId);
-    List<StudentEntity> students = studentRepository.findAllByLecturerIdWithDetails(lecturerId);
+    List<StudentEntity> students = studentDao.findAllByLecturerIdWithDetails(lecturerId);
 
     UserStatus statusFilter = parseUserStatus(status, false);
     String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim().toLowerCase(Locale.ROOT)
@@ -168,10 +168,10 @@ public class LecturerServiceImpl implements LecturerService {
         .filter(student -> matchesKeyword(student, normalizedKeyword))
         .toList();
 
-    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
+    Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
     Map<Long, Integer> scoreByStudent = buildScoreMap(filtered, activeSemesterOpt);
     Map<Long, Integer> joinedMandatoryMap = buildMandatoryAttendanceMap(filtered, activeSemesterOpt);
-    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventRepository.countBySemester_Id(
+    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventDao.countBySemester_Id(
         semester.getId())).orElse(0);
 
     List<LecturerStudentRowResponse> rows = filtered.stream()
@@ -201,7 +201,7 @@ public class LecturerServiceImpl implements LecturerService {
     log.info("Manual student create requested: lecturerId={}, classId={}, studentCode={}, email={}",
         lecturerId, request.classId(), request.studentCode(), request.email());
 
-    ClassEntity classEntity = classRepository.findByIdAndLecturerEntityId(request.classId(), lecturerId)
+    ClassEntity classEntity = classDao.findByIdAndLecturerEntityId(request.classId(), lecturerId)
         .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
             "Bạn không có quyền thêm sinh viên vào lớp này."));
 
@@ -231,7 +231,7 @@ public class LecturerServiceImpl implements LecturerService {
     int skippedCount = 0;
     List<String> errors = new ArrayList<>();
 
-    Map<String, ClassEntity> classByCode = classRepository.findByLecturerEntityId(lecturerId).stream()
+    Map<String, ClassEntity> classByCode = classDao.findByLecturerEntityId(lecturerId).stream()
         .collect(Collectors.toMap(
             classEntity -> classEntity.getClassCode().toUpperCase(Locale.ROOT),
             classEntity -> classEntity
@@ -292,12 +292,12 @@ public class LecturerServiceImpl implements LecturerService {
   @Override
   @Transactional
   public LecturerStudentRowResponse assignMonitor(Long lecturerId, Long studentId) {
-    StudentEntity student = studentRepository.findById(studentId)
+    StudentEntity student = studentDao.findById(studentId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sinh viên."));
 
     ClassEntity classEntity = assertStudentBelongsToLecturer(student, lecturerId);
     classEntity.setMonitor(student);
-    classRepository.save(classEntity);
+    classDao.save(classEntity);
 
     return toRow(student, Map.of(), Map.of(), 0);
   }
@@ -307,18 +307,18 @@ public class LecturerServiceImpl implements LecturerService {
   public LecturerStudentRowResponse updateStudentStatus(Long lecturerId, Long studentId, String status) {
     UserStatus nextStatus = parseUserStatus(status, true);
 
-    StudentEntity student = studentRepository.findById(studentId)
+    StudentEntity student = studentDao.findById(studentId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sinh viên."));
     ClassEntity classEntity = assertStudentBelongsToLecturer(student, lecturerId);
 
     UserEntity user = student.getUserEntity();
     user.setStatus(nextStatus);
-    userRepository.save(user);
+    userDao.save(user);
 
     if (nextStatus == UserStatus.DELETED && classEntity.getMonitor() != null
         && Objects.equals(classEntity.getMonitor().getId(), student.getId())) {
       classEntity.setMonitor(null);
-      classRepository.save(classEntity);
+      classDao.save(classEntity);
     }
 
     return toRow(student, Map.of(), Map.of(), 0);
@@ -344,13 +344,13 @@ public class LecturerServiceImpl implements LecturerService {
     String normalizedStudentCode = studentCode.trim().toUpperCase(Locale.ROOT);
     String normalizedUsername = normalizeUsername(username, normalizedEmail);
 
-    if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+    if (userDao.existsByEmailIgnoreCase(normalizedEmail)) {
       throw duplicateException(skipWhenDuplicate, "Email đã tồn tại: " + normalizedEmail);
     }
-    if (userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
+    if (userDao.existsByUsernameIgnoreCase(normalizedUsername)) {
       throw duplicateException(skipWhenDuplicate, "Username đã tồn tại: " + normalizedUsername);
     }
-    if (studentRepository.findByStudentCodeIgnoreCase(normalizedStudentCode).isPresent()) {
+    if (studentDao.findByStudentCodeIgnoreCase(normalizedStudentCode).isPresent()) {
       throw duplicateException(skipWhenDuplicate, "Mã sinh viên đã tồn tại: " + normalizedStudentCode);
     }
 
@@ -363,7 +363,7 @@ public class LecturerServiceImpl implements LecturerService {
         .status(UserStatus.ACTIVE)
         .build();
     try {
-      UserEntity savedUser = userRepository.save(user);
+      UserEntity savedUser = userDao.save(user);
 
       StudentEntity student = StudentEntity.builder()
           .userEntity(savedUser)
@@ -371,7 +371,7 @@ public class LecturerServiceImpl implements LecturerService {
           .fullName(fullName.trim())
           .classEntity(classEntity)
           .build();
-      StudentEntity savedStudent = studentRepository.save(student);
+      StudentEntity savedStudent = studentDao.save(student);
       log.info("Manual student created successfully: lecturerId={}, studentId={}, userId={}, studentCode={}, email={}",
           classEntity.getLecturerEntity() != null ? classEntity.getLecturerEntity().getId() : null,
           savedStudent.getId(),
@@ -455,7 +455,7 @@ public class LecturerServiceImpl implements LecturerService {
   }
 
   private void ensureLecturerExists(Long lecturerId) {
-    if (lecturerId == null || lecturerRepository.findById(lecturerId).isEmpty()) {
+    if (lecturerId == null || lecturerDao.findById(lecturerId).isEmpty()) {
       throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy giảng viên.");
     }
   }
@@ -476,7 +476,7 @@ public class LecturerServiceImpl implements LecturerService {
         .fullName(displayName)
         .build();
 
-    return lecturerRepository.save(lecturer);
+    return lecturerDao.save(lecturer);
   }
 
   private boolean matchesKeyword(StudentEntity student, String keyword) {
@@ -498,12 +498,12 @@ public class LecturerServiceImpl implements LecturerService {
       return Map.of();
     }
     List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
-    return semesterEvaluationRepository.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
+    return studentSemesterDao.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
         .collect(Collectors.toMap(
             eval -> eval.getStudent().getId(),
-            SemesterEvaluationEntity::getFinalScore,
+        StudentSemesterEntity::getFinalScore,
             (first, second) -> first
         ));
   }
@@ -514,14 +514,14 @@ public class LecturerServiceImpl implements LecturerService {
       return Map.of();
     }
     List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
-    List<ActivityRecordEntity> records =
-        activityRecordRepository.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+    List<RecordEntity> records =
+      recordDao.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
             activeSemesterOpt.get().getId(),
             studentIds,
-            ActivityRecordStatus.APPROVED
+        RecordStatus.APPROVED
         );
     Map<Long, Integer> joinedMap = new HashMap<>();
-    for (ActivityRecordEntity record : records) {
+    for (RecordEntity record : records) {
       Long studentId = record.getStudent().getId();
       joinedMap.put(studentId, joinedMap.getOrDefault(studentId, 0) + 1);
     }

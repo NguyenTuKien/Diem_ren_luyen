@@ -14,65 +14,65 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ct01.unipoint.backend.dto.monitor.MonitorClassListResponse;
 import ct01.unipoint.backend.dto.monitor.MonitorClassMemberResponse;
-import ct01.unipoint.backend.entity.ActivityRecordEntity;
 import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.FacultyEntity;
+import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.SemesterEntity;
-import ct01.unipoint.backend.entity.SemesterEvaluationEntity;
+import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
-import ct01.unipoint.backend.entity.enums.ActivityRecordStatus;
+import ct01.unipoint.backend.entity.enums.RecordStatus;
 import ct01.unipoint.backend.entity.enums.UserStatus;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.repository.ActivityRecordRepository;
-import ct01.unipoint.backend.repository.ClassRepository;
-import ct01.unipoint.backend.repository.EventRepository;
-import ct01.unipoint.backend.repository.SemesterEvaluationRepository;
-import ct01.unipoint.backend.repository.SemesterRepository;
-import ct01.unipoint.backend.repository.StudentRepository;
+import ct01.unipoint.backend.dao.RecordDao;
+import ct01.unipoint.backend.dao.ClassDao;
+import ct01.unipoint.backend.dao.EventDao;
+import ct01.unipoint.backend.dao.StudentSemesterDao;
+import ct01.unipoint.backend.dao.SemesterDao;
+import ct01.unipoint.backend.dao.StudentDao;
 import ct01.unipoint.backend.service.MonitorService;
 
 @Service
 public class MonitorServiceImpl implements MonitorService {
 
-  private final StudentRepository studentRepository;
-  private final ClassRepository classRepository;
-  private final SemesterRepository semesterRepository;
-  private final SemesterEvaluationRepository semesterEvaluationRepository;
-  private final ActivityRecordRepository activityRecordRepository;
-  private final EventRepository eventRepository;
+  private final StudentDao studentDao;
+  private final ClassDao classDao;
+  private final SemesterDao semesterDao;
+  private final StudentSemesterDao studentSemesterDao;
+  private final RecordDao recordDao;
+  private final EventDao eventDao;
 
   public MonitorServiceImpl(
-      StudentRepository studentRepository,
-      ClassRepository classRepository,
-      SemesterRepository semesterRepository,
-      SemesterEvaluationRepository semesterEvaluationRepository,
-      ActivityRecordRepository activityRecordRepository,
-      EventRepository eventRepository
+      StudentDao studentDao,
+      ClassDao classDao,
+      SemesterDao semesterDao,
+      StudentSemesterDao studentSemesterDao,
+      RecordDao recordDao,
+      EventDao eventDao
   ) {
-    this.studentRepository = studentRepository;
-    this.classRepository = classRepository;
-    this.semesterRepository = semesterRepository;
-    this.semesterEvaluationRepository = semesterEvaluationRepository;
-    this.activityRecordRepository = activityRecordRepository;
-    this.eventRepository = eventRepository;
+    this.studentDao = studentDao;
+    this.classDao = classDao;
+    this.semesterDao = semesterDao;
+    this.studentSemesterDao = studentSemesterDao;
+    this.recordDao = recordDao;
+    this.eventDao = eventDao;
   }
 
   @Override
   @Transactional(readOnly = true)
   public MonitorClassListResponse getManagedClassMembers(Long monitorUserId) {
-    StudentEntity monitorStudent = studentRepository.findByUserEntityId(monitorUserId)
+    StudentEntity monitorStudent = studentDao.findByUserEntityId(monitorUserId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản Monitor."));
 
-    ClassEntity managedClass = classRepository.findByMonitor_Id(monitorStudent.getId())
+    ClassEntity managedClass = classDao.findByMonitor_Id(monitorStudent.getId())
         .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
             "Tài khoản hiện tại không được gán quyền Monitor."));
 
-    List<StudentEntity> members = studentRepository.findAllByClassIdWithDetails(managedClass.getId());
-    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
+    List<StudentEntity> members = studentDao.findAllByClassIdWithDetails(managedClass.getId());
+    Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
 
     Map<Long, Integer> scoreByStudent = buildScoreMap(members, activeSemesterOpt);
     Map<Long, Integer> joinedMap = buildMandatoryAttendanceMap(members, activeSemesterOpt);
-    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventRepository.countBySemester_Id(
+    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventDao.countBySemester_Id(
         semester.getId())).orElse(0);
 
     List<MonitorClassMemberResponse> rows = members.stream()
@@ -123,12 +123,12 @@ public class MonitorServiceImpl implements MonitorService {
       return Map.of();
     }
     List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
-    return semesterEvaluationRepository.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
+    return studentSemesterDao.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
         .collect(Collectors.toMap(
             eval -> eval.getStudent().getId(),
-            SemesterEvaluationEntity::getFinalScore,
+        StudentSemesterEntity::getFinalScore,
             (first, second) -> first
         ));
   }
@@ -139,14 +139,14 @@ public class MonitorServiceImpl implements MonitorService {
       return Map.of();
     }
     List<Long> studentIds = students.stream().map(StudentEntity::getId).toList();
-    List<ActivityRecordEntity> records =
-        activityRecordRepository.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+    List<RecordEntity> records =
+      recordDao.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
             activeSemesterOpt.get().getId(),
             studentIds,
-            ActivityRecordStatus.APPROVED
+        RecordStatus.APPROVED
         );
     Map<Long, Integer> joinedMap = new HashMap<>();
-    for (ActivityRecordEntity record : records) {
+    for (RecordEntity record : records) {
       Long studentId = record.getStudent().getId();
       joinedMap.put(studentId, joinedMap.getOrDefault(studentId, 0) + 1);
     }

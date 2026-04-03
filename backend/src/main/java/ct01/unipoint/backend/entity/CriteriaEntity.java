@@ -18,6 +18,10 @@ public class CriteriaEntity {
   @Column(name = CriteriaConstant.COL_ID)
   private Long id;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = CriteriaConstant.COL_SEMESTER_ID)
+  private SemesterEntity semester;
+
   @Column(name = CriteriaConstant.COL_CODE, length = 10, nullable = false)
   private String code;
 

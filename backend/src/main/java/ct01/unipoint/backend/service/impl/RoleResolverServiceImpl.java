@@ -9,16 +9,16 @@ import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.entity.enums.Role;
-import ct01.unipoint.backend.repository.ClassRepository;
-import ct01.unipoint.backend.repository.StudentRepository;
+import ct01.unipoint.backend.dao.ClassDao;
+import ct01.unipoint.backend.dao.StudentDao;
 import ct01.unipoint.backend.service.RoleResolverService;
 
 @Service
 @RequiredArgsConstructor
 public class RoleResolverServiceImpl implements RoleResolverService {
 
-  private final StudentRepository studentRepository;
-  private final ClassRepository classRepository;
+  private final StudentDao studentDao;
+  private final ClassDao classDao;
 
 
   @Override
@@ -33,9 +33,9 @@ public class RoleResolverServiceImpl implements RoleResolverService {
       return "MONITOR";
     }
     if (user.getRole() == Role.ROLE_STUDENT) {
-      Optional<StudentEntity> studentOpt = studentRepository.findByUserEntityId(user.getId());
+      Optional<StudentEntity> studentOpt = studentDao.findByUserEntityId(user.getId());
       if (studentOpt.isPresent()) {
-        Optional<ClassEntity> monitorClass = classRepository.findByMonitor_Id(studentOpt.get().getId());
+        Optional<ClassEntity> monitorClass = classDao.findByMonitor_Id(studentOpt.get().getId());
         if (monitorClass.isPresent()) {
           return "MONITOR";
         }

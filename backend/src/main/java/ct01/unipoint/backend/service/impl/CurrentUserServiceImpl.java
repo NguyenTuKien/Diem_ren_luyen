@@ -8,14 +8,14 @@ import lombok.RequiredArgsConstructor;
 
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.repository.UserRepository;
+import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.service.CurrentUserService;
 
 @Service
 @RequiredArgsConstructor
 public class CurrentUserServiceImpl implements CurrentUserService {
 
-  private final UserRepository userRepository;
+  private final UserDao userDao;
 
 
   @Override
@@ -26,8 +26,8 @@ public class CurrentUserServiceImpl implements CurrentUserService {
     }
 
     String principal = authentication.getName();
-    return userRepository.findByUsernameIgnoreCase(principal)
-        .or(() -> userRepository.findByEmailIgnoreCase(principal))
+    return userDao.findByUsernameIgnoreCase(principal)
+      .or(() -> userDao.findByEmailIgnoreCase(principal))
         .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ."));
   }
 

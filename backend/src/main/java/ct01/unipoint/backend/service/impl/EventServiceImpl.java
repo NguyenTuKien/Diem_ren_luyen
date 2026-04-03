@@ -100,8 +100,8 @@ public class EventServiceImpl implements EventService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             String principal = authentication.getName();
-            Optional<UserEntity> userByPrincipal = userDao.findByUsername(principal)
-                    .or(() -> userDao.findByEmail(principal));
+                Optional<UserEntity> userByPrincipal = userDao.findByUsernameIgnoreCase(principal)
+                    .or(() -> userDao.findByEmailIgnoreCase(principal));
             if (userByPrincipal.isPresent()) {
                 return userByPrincipal.get();
             }
