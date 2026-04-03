@@ -17,6 +17,10 @@ public class SemesterServiceImpl implements SemesterService {
     public List<SemesterEntity> getAllSemesters() {
         return semesterDao.findAll();
     }
+
+  @Override
+  public SemesterEntity getSemesterById(final Long id) {
+    return this.semesterDao.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Semester ID: " + id));
+  }
 }
-
-

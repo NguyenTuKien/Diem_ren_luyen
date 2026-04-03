@@ -143,3 +143,14 @@ public class StudentServiceImpl implements StudentService {
     return "Cần cải thiện";
   }
 }
+
+  @Override
+  public StudentEntity getStudentByUsername(final String username) {
+    return this.studentDao.findByUserEntity_Username(username)
+        .orElseThrow(() -> new ResourceNotFoundException("Student profile for user: " + username));
+  }
+
+  @Override
+  public List<StudentEntity> getStudentsByClassId(final Long classId) {
+    return this.studentDao.findByClassEntity_Id(classId);
+  }

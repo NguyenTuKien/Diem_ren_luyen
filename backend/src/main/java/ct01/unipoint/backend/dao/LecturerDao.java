@@ -19,4 +19,5 @@ public interface LecturerDao extends JpaRepository<LecturerEntity, String> {
 
   @EntityGraph(attributePaths = {"facultyEntity"})
   Optional<LecturerEntity> findByUserEntityId(String userId);
+  Optional<LecturerEntity> findByUserEntity_Username(String username);
 }

@@ -584,3 +584,9 @@ public class LecturerServiceImpl implements LecturerService {
   }
 }
 
+
+  @Override
+  public LecturerEntity getLecturerByUsername(final String username) {
+    return this.lecturerDao.findByUserEntity_Username(username)
+  }
+        .orElseThrow(() -> new ResourceNotFoundException("Lecturer profile for user: " + username));

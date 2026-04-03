@@ -18,4 +18,7 @@ public interface StudentSemesterDao extends JpaRepository<StudentSemesterEntity,
   Optional<StudentSemesterEntity> findBySemester_IdAndStudent_Id(Long semesterId, String studentId);
 
   Optional<StudentSemesterEntity> findByStudentAndSemester(StudentEntity student, SemesterEntity semester);
+
+  List<StudentSemesterEntity> findByStudent_ClassEntity_IdAndSemester_Id(Long classId,
+      Long semesterId);
 }
