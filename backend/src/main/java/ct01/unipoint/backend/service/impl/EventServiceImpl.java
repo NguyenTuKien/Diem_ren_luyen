@@ -75,6 +75,31 @@ public class EventServiceImpl implements EventService {
     public void deleteEvent(Long eventId) {
         eventDao.deleteById(eventId);
     }
+    @Override
+    public EventEntity getEventById(Long eventId) {
+        return eventDao.findById(eventId).orElseThrow();
+    }
+    private UserEntity resolveCreator(EventRequest eventRequest) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            String principal = authentication.getName();
+                Optional<UserEntity> userByPrincipal = userDao.findByUsernameIgnoreCase(principal)
+                    .or(() -> userDao.findByEmailIgnoreCase(principal));
+            if (userByPrincipal.isPresent()) {
+                return userByPrincipal.get();
+            }
+        }
+
+        if (eventRequest.getCreatedBy() != null && !eventRequest.getCreatedBy().isBlank()) {
+            try {
+                Long createdById = Long.valueOf(eventRequest.getCreatedBy().trim());
+                return userDao.findById(createdById).orElseThrow();
+            } catch (NumberFormatException ex) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                    EventConstant.MESSAGE_INVALID_CREATED_BY_FORMAT);
+            }
+        }
+
+        throw new ApiException(HttpStatus.UNAUTHORIZED, EventConstant.MESSAGE_UNRESOLVED_EVENT_CREATOR);
+    }
 }
-
-

@@ -10,10 +10,13 @@ public interface EventService {
     Page<EventResponse> getAllEvents(Pageable pageable);
 
     EventResponse createEvent(EventRequest eventRequest);
+    EventEntity getEventById(Long eventId);
 
     EventResponse updateEvent(Long eventId, EventRequest eventRequest);
 
     UserEntity resolveCreator();
+
+    EventEntity updateEvent(Long eventId, EventRequest eventRequest);
 
     void deleteEvent(Long eventId);
 }

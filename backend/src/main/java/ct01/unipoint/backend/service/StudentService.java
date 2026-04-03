@@ -5,5 +5,5 @@ import ct01.unipoint.backend.entity.UserEntity;
 
 public interface StudentService {
     StudentEntity getStudentByUser(UserEntity userEntity);
+  StudentDashboardResponse getDashboard(Long userId);
 }
-

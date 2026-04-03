@@ -4,6 +4,7 @@ import ct01.unipoint.backend.entity.ClassEntity;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,8 +14,16 @@ public interface ClassDao extends JpaRepository<ClassEntity, Long> {
 
   List<ClassEntity> findByLecturerEntityId(String lecturerId);
 
-  Optional<ClassEntity> findByMonitor_Id(String monitorId);
+  Optional<ClassEntity> findByClassCodeIgnoreCase(String classCode);
 
-  Optional<ClassEntity> findByIdAndLecturerEntityId(Long id, String lecturerId);
+  Optional<ClassEntity> findByMonitor_Id(Long monitorId);
+
+
+  @EntityGraph(attributePaths = {"facultyEntity"})
+  List<ClassEntity> findAllByOrderByClassCodeAsc();
+  List<ClassEntity> findByLecturerEntityId(Long lecturerId);
+  @EntityGraph(attributePaths = {"facultyEntity", "monitor"})
+  Optional<ClassEntity> findByIdAndLecturerEntityId(Long id, Long lecturerId);
+  @EntityGraph(attributePaths = {"facultyEntity", "monitor"})
 }
 

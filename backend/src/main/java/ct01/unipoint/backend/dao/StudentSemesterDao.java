@@ -11,6 +11,12 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StudentSemesterDao extends JpaRepository<StudentSemesterEntity, Long> {
+
+  List<StudentSemesterEntity> findBySemester_IdAndStudent_IdIn(Long semesterId,
+      Collection<Long> studentIds);
+
+  Optional<StudentSemesterEntity> findBySemester_IdAndStudent_Id(Long semesterId, Long studentId);
+
   Optional<StudentSemesterEntity> findByStudentAndSemester(StudentEntity student, SemesterEntity semester);
 
   List<StudentSemesterEntity> findBySemester_IdAndStudent_IdIn(Long semesterId,

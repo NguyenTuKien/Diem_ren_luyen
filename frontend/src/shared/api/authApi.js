@@ -1,3 +1,4 @@
+<<<<<<< HEAD:frontend/src/shared/api/authApi.js
 import { API_BASE_URL } from './http';
 
 const AUTH_API_BASE = `${API_BASE_URL}/v1/auth`;
@@ -57,6 +58,11 @@ export const getStoredUserInfo = () => {
     return null;
   }
 };
+=======
+import { API_BASE_URL } from '../shared/api/http';
+
+const AUTH_API_BASE = '/api/v1/auth';
+>>>>>>> origin/TOAN:frontend/src/api/authApi.js
 
 export const getAccessToken = () => localStorage.getItem('accessToken');
 
@@ -147,6 +153,27 @@ export const logout = async () => {
   } finally {
     clearTokens();
   }
+};
+
+export const fetchAuthSession = async (accessToken) => {
+  if (!accessToken) {
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/session`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await response.json();
+  return payload && typeof payload === 'object' ? payload : null;
 };
 
 export const startMicrosoftOAuthLogin = () => {

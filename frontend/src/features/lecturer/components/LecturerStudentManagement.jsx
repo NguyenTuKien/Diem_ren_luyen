@@ -32,8 +32,13 @@ const DEFAULT_MANUAL_FORM = {
   password: "",
 };
 
-function csvEscape(value) {
-  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+function htmlEscape(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 export default function LecturerStudentManagement() {
@@ -141,38 +146,55 @@ export default function LecturerStudentManagement() {
   };
 
   const handleExport = () => {
-    const headers = [
-      "MSSV",
-      "Họ tên",
-      "Email",
-      "Lớp",
-      "Vai trò",
-      "Trạng thái",
-      "Tổng điểm",
-      "Sự kiện bắt buộc",
-    ];
+    const tableHeader = `
+      <tr>
+        <th>MSSV</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Lớp</th>
+        <th>Vai trò</th>
+        <th>Trạng thái</th>
+        <th>Tổng điểm</th>
+        <th>Sự kiện bắt buộc</th>
+      </tr>
+    `;
 
-    const lines = rows.map((row) =>
-      [
-        row.studentCode,
-        row.fullName,
-        row.email,
-        row.classCode,
-        ROLE_LABEL[row.role] || row.role,
-        STATUS_LABEL[row.accountStatus] || row.accountStatus,
-        row.totalPoint ?? 0,
-        row.mandatoryStatus,
-      ]
-        .map(csvEscape)
-        .join(","),
-    );
+    const tableRows = rows
+      .map(
+        (row) => `
+          <tr>
+            <td>${htmlEscape(row.studentCode)}</td>
+            <td>${htmlEscape(row.fullName)}</td>
+            <td>${htmlEscape(row.email)}</td>
+            <td>${htmlEscape(row.classCode)}</td>
+            <td>${htmlEscape(ROLE_LABEL[row.role] || row.role)}</td>
+            <td>${htmlEscape(STATUS_LABEL[row.accountStatus] || row.accountStatus)}</td>
+            <td>${htmlEscape(row.totalPoint ?? 0)}</td>
+            <td>${htmlEscape(row.mandatoryStatus)}</td>
+          </tr>
+        `,
+      )
+      .join("");
 
-    const csv = `\uFEFF${[headers.join(","), ...lines].join("\n")}`;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8" />
+        </head>
+        <body>
+          <table border="1">
+            ${tableHeader}
+            ${tableRows}
+          </table>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "danh-sach-sinh-vien.csv";
+    link.download = "danh-sach-sinh-vien.xls";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -505,6 +527,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, fullName: event.target.value }))
                 }
+                maxLength={100}
                 required
               />
             </label>
@@ -516,6 +539,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, studentCode: event.target.value }))
                 }
+                maxLength={20}
                 required
               />
             </label>
@@ -528,6 +552,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, email: event.target.value }))
                 }
+                maxLength={100}
                 required
               />
             </label>
@@ -559,6 +584,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, password: event.target.value }))
                 }
+                maxLength={255}
               />
             </label>
 

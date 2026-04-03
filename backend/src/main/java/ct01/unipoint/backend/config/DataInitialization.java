@@ -215,7 +215,7 @@ public class DataInitialization {
             if(eventDao.count() > 0) return;
             Optional<SemesterEntity> semesterOptional = semesterDao.findByName("HK1-2026");
             Optional<CriteriaEntity> criteriaOptional = criteriaDao.findByCode("HD01");
-            Optional<UserEntity> createdByOptional = userDao.findByUsername("admin");
+            Optional<UserEntity> createdByOptional = userDao.findByUsernameIgnoreCase("admin");
 
             if (semesterOptional.isEmpty() || criteriaOptional.isEmpty() || createdByOptional.isEmpty()) {
                 return;

@@ -46,7 +46,11 @@ const OAuthCallback = () => {
 
   return (
     <div className="flex justify-center mt-[50px]">
+<<<<<<< HEAD
       <h2>Đang xác thực...</h2>
+=======
+      <h2>Authenticating...</h2>
+>>>>>>> origin/TOAN
     </div>
   );
 };

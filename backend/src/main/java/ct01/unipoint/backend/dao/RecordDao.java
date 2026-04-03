@@ -13,6 +13,17 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RecordDao extends JpaRepository<RecordEntity, Long> {
+
+  long countByStudent_IdAndSemester_Id(Long studentId, Long semesterId);
+
+  List<RecordEntity> findTop10ByStudent_IdOrderByCreatedAtDesc(Long studentId);
+
+  List<RecordEntity> findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+      Long semesterId,
+      Collection<Long> studentIds,
+      RecordStatus status
+  );
+
   Optional<RecordEntity> findByStudentAndSemesterAndEvent(
       StudentEntity student,
       SemesterEntity semester,
