@@ -19,19 +19,11 @@ public class EventController {
 
 
     @GetMapping("")
-    public PaginationResponse<EventResponse> getAllEvent(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
+    public Page<EventResponse> getAllEvent(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
         Pageable pageable = Pageable.ofSize(size).withPage(page);
         Page<EventResponse> eventPage = eventService.getAllEvents(pageable);
 
-        return PaginationResponse.<EventResponse>builder()
-            .content(eventPage.getContent())
-            .page(eventPage.getNumber())
-            .size(eventPage.getSize())
-            .totalElements(eventPage.getTotalElements())
-            .totalPages(eventPage.getTotalPages())
-            .hasNext(eventPage.hasNext())
-            .hasPrevious(eventPage.hasPrevious())
-            .build();
+        return eventPage;
     }
 
 }
