@@ -289,7 +289,7 @@ jobs:
           git add "$TARGET_FILE"
           git commit -m "CD: Update backend stag image tag to ${{ env.TAG }}" || echo "No changes to commit"
           git pull --rebase origin main
-          git push origin main
+          git push origin main --force
 
   update_be_config_prod:
     name: Update Backend Config (Prod)
@@ -323,7 +323,7 @@ jobs:
           git add "$TARGET_FILE"
           git commit -m "CD: Update backend prod image tag to ${{ env.TAG }}" || echo "No changes to commit"
           git pull --rebase origin main
-          git push origin main
+          git push origin main --force
 
 
   update_fe_config_stag:
@@ -362,7 +362,7 @@ jobs:
           git add "$TARGET_FILE"
           git commit -m "CD: Update frontend stag image tag to ${{ env.TAG }}" || echo "No changes to commit"
           git pull --rebase origin main
-          git push origin main
+          git push origin main --force
 
   update_fe_config_prod:
     name: Update Frontend Config (Prod)
@@ -396,7 +396,7 @@ jobs:
           git add "$TARGET_FILE"
           git commit -m "CD: Update frontend prod image tag to ${{ env.TAG }}" || echo "No changes to commit"
           git pull --rebase origin main
-          git push origin main
+          git push origin main --force
 
   notify_success:
     name: Send Success Notification to Discord
