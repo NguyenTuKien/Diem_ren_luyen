@@ -1,6 +1,8 @@
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import:
+#      - optional:file:.env[.properties]
+      - optional:file:./backend/.env[.properties]
   main:
     banner-mode: "off"
     time-zone: Asia/Ho_Chi_Minh
@@ -90,7 +92,7 @@ cors:
 logging:
   level:
     root: warn
-    ct01.unipoint.backend: info
+    ct01.n06.backend: info
 
 management:
   endpoints:
