@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dao;
+package ct01.unipoint.backend.repository;
 
 import ct01.unipoint.backend.entity.EventEntity;
 import ct01.unipoint.backend.entity.RecordEntity;
@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RecordDao extends JpaRepository<RecordEntity, Long> {
+public interface RecordRepository extends JpaRepository<RecordEntity, Long> {
 
   long countByStudent_IdAndSemester_Id(String studentId, Long semesterId);
 

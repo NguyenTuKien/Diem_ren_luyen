@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.security;
 
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.entity.UserEntity;
 import java.util.Collection;
 import java.util.List;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CustomOidcUserService extends OidcUserService {
 
-    private final UserDao userDao;
+    private final UserRepository userRepository;
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
@@ -34,7 +34,7 @@ public class CustomOidcUserService extends OidcUserService {
         }
         final String resolvedEmail = email.trim().toLowerCase(Locale.ROOT);
         // LOGIC MỚI: Kiểm tra DB, ném lỗi thẳng tay nếu không tìm thấy email
-        UserEntity userEntity = userDao.findByEmailIgnoreCase(resolvedEmail)
+        UserEntity userEntity = userRepository.findByEmailIgnoreCase(resolvedEmail)
                 .orElseThrow(() -> new OAuth2AuthenticationException(
                         new OAuth2Error("user_not_found"),
                         "Tài khoản chưa được đăng ký trong hệ thống. Vui lòng liên hệ Admin!"

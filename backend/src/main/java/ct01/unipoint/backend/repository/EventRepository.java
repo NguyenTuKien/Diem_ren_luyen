@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dao;
+package ct01.unipoint.backend.repository;
 
 import ct01.unipoint.backend.entity.EventEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EventDao extends JpaRepository<EventEntity, Long> {
+public interface EventRepository extends JpaRepository<EventEntity, Long> {
 
     Optional<EventEntity> findByTitleAndStartTime(String title, LocalDateTime startTime);
 

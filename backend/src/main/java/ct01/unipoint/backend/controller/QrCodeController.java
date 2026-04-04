@@ -2,7 +2,7 @@ package ct01.unipoint.backend.controller;
 
 import ct01.unipoint.backend.dto.qrcode.ScanQrRequest;
 import ct01.unipoint.backend.dto.qrcode.GenerateQrResponse;
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.exception.ApiException;
 import ct01.unipoint.backend.service.QrCodeService;
@@ -23,7 +23,7 @@ import java.util.Map;
 public class QrCodeController {
 
     private final QrCodeService qrCodeService;
-    private final UserDao userDao; // Dùng để lookup user id (student_id)
+    private final UserRepository userRepository; // Dùng để lookup user id (student_id)
 
     @GetMapping("/generate")
     @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN', 'STAFF')")
@@ -41,8 +41,8 @@ public class QrCodeController {
         }
 
         String principal = authentication.getName();
-        UserEntity user = userDao.findByUsernameIgnoreCase(principal)
-                .or(() -> userDao.findByEmailIgnoreCase(principal))
+        UserEntity user = userRepository.findByUsernameIgnoreCase(principal)
+                .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
         qrCodeService.scanQr(request, user.getId());

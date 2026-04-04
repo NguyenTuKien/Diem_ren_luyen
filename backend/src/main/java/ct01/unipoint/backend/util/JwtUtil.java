@@ -1,7 +1,7 @@
 package ct01.unipoint.backend.util;
 
-import ct01.unipoint.backend.dao.LecturerDao;
-import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.repository.LecturerRepository;
+import ct01.unipoint.backend.repository.StudentRepository;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.entity.enums.Role;
 import io.jsonwebtoken.Claims;
@@ -23,8 +23,8 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class JwtUtil {
 
-    private final LecturerDao lecturerDao;
-    private final StudentDao studentDao;
+    private final LecturerRepository lecturerRepository;
+    private final StudentRepository studentRepository;
 
     @Value("${jwt.secret}")
     private String secret;
@@ -58,13 +58,13 @@ public class JwtUtil {
         claims.put("role", userEntity.getRole().name());
 
         if (userEntity.getRole() == Role.ROLE_LECTURER) {
-            lecturerDao.findByUserEntity(userEntity).ifPresent(lecturer -> {
+            lecturerRepository.findByUserEntity(userEntity).ifPresent(lecturer -> {
                 claims.put("fullname", lecturer.getFullName());
                 claims.put("lecture_id", lecturer.getId()); // Ghi đúng ID của bảng Lecturer
             });
         }
         else if (userEntity.getRole() == Role.ROLE_STUDENT || userEntity.getRole() == Role.ROLE_MONITOR) {
-            studentDao.findByUserEntity(userEntity).ifPresent(student -> {
+            studentRepository.findByUserEntity(userEntity).ifPresent(student -> {
                 claims.put("fullname", student.getFullName());
                 claims.put("student_id", student.getId()); // Ghi đúng ID của bảng Student
             });

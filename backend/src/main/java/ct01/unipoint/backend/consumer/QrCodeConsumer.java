@@ -1,9 +1,9 @@
 package ct01.unipoint.backend.consumer;
 
 import ct01.unipoint.backend.config.RabbitMQConfig;
-import ct01.unipoint.backend.dao.AttendenceDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.repository.AttendenceRepository;
+import ct01.unipoint.backend.repository.EventRepository;
+import ct01.unipoint.backend.repository.StudentRepository;
 import ct01.unipoint.backend.dto.qrcode.QrCheckinMessage;
 import ct01.unipoint.backend.entity.AttendenceEntity;
 import ct01.unipoint.backend.entity.EventEntity;
@@ -23,9 +23,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QrCodeConsumer {
 
-    private final AttendenceDao attendenceDao;
-    private final EventDao eventDao;
-    private final StudentDao studentDao;
+    private final AttendenceRepository attendenceRepository;
+    private final EventRepository eventRepository;
+    private final StudentRepository studentRepository;
     private final StringRedisTemplate stringRedisTemplate;
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
@@ -50,15 +50,15 @@ public class QrCodeConsumer {
 
         try {
             // ⚡ Check DB nhanh (idempotency)
-            boolean existed = attendenceDao.existsByEventIdAndStudentId(eventId, studentId);
+            boolean existed = attendenceRepository.existsByEventIdAndStudentId(eventId, studentId);
             if (existed) {
                 log.warn("Đã tồn tại check-in trong DB: studentId={}, eventId={}", studentId, eventId);
                 return;
             }
 
             // 🔎 Lấy dữ liệu
-            EventEntity event = eventDao.findById(eventId).orElse(null);
-            StudentEntity student = studentDao.findById(studentId).orElse(null);
+            EventEntity event = eventRepository.findById(eventId).orElse(null);
+            StudentEntity student = studentRepository.findById(studentId).orElse(null);
 
             if (event == null || student == null) {
                 log.error("Không tìm thấy dữ liệu: studentId={}, eventId={}", studentId, eventId);
@@ -72,7 +72,7 @@ public class QrCodeConsumer {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            attendenceDao.save(attendence);
+            attendenceRepository.save(attendence);
 
             log.info("Check-in thành công: studentId={}, eventId={}", studentId, eventId);
 

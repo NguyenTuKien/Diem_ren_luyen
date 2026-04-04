@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.security;
 
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,7 +19,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final UserDao userDao;
+    private final UserRepository userRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -35,7 +35,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         attributes.putIfAbsent("email", email);
         attributes.putIfAbsent("name", name);
         // LOGIC MỚI Ở ĐÂY: Tìm user, nếu không thấy thì ném lỗi ngay lập tức
-        UserEntity userEntity = userDao.findByEmailIgnoreCase(email)
+        UserEntity userEntity = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new OAuth2AuthenticationException(
                         new OAuth2Error("user_not_found"),
                         "Tài khoản chưa được đăng ký trong hệ thống. Vui lòng liên hệ Admin!"

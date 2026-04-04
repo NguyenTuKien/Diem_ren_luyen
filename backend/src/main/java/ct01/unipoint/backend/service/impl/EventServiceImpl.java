@@ -1,9 +1,9 @@
 package ct01.unipoint.backend.service.impl;
 
-import ct01.unipoint.backend.dao.CriteriaDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.SemesterDao;
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.repository.CriteriaRepository;
+import ct01.unipoint.backend.repository.EventRepository;
+import ct01.unipoint.backend.repository.SemesterRepository;
+import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.dto.event.EventRequest;
 import ct01.unipoint.backend.dto.event.EventResponse;
 import ct01.unipoint.backend.entity.EventEntity;
@@ -24,37 +24,37 @@ import java.util.Optional;
 @Service
 @AllArgsConstructor
 public class EventServiceImpl implements EventService {
-    private final EventDao eventDao;
-    private final SemesterDao semesterDao;
-    private final CriteriaDao criteriaDao;
-    private final UserDao userDao;
+    private final EventRepository eventRepository;
+    private final SemesterRepository semesterRepository;
+    private final CriteriaRepository criteriaRepository;
+    private final UserRepository userRepository;
     private final EventMapper eventMapper;
 
     @Override
     public Page<EventResponse> getAllEvents(Pageable pageable) {
-        return eventDao.findAll(pageable)
+        return eventRepository.findAll(pageable)
                 .map(eventMapper::toResponse);
     }
 
     @Override
     public EventResponse createEvent(EventRequest eventRequest) {
         EventEntity eventEntity = eventMapper.toEntity(eventRequest);
-        eventEntity.setSemester(semesterDao.findById(eventRequest.getSemesterId())
+        eventEntity.setSemester(semesterRepository.findById(eventRequest.getSemesterId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Học kỳ không hợp lệ.")));
-        eventEntity.setCriteria(criteriaDao.findById(eventRequest.getCriteriaId())
+        eventEntity.setCriteria(criteriaRepository.findById(eventRequest.getCriteriaId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí không hợp lệ.")));
         if (eventEntity.getTitle() != null) {
             eventEntity.setTitle(eventEntity.getTitle().trim());
         }
         eventEntity.setCreatedBy(resolveCreator());
-        return eventMapper.toResponse(eventDao.save(eventEntity));
+        return eventMapper.toResponse(eventRepository.save(eventEntity));
     }
 
     @Override
     public EventResponse updateEvent(Long eventId, EventRequest eventRequest) {
-        EventEntity eventEntity = eventDao.findById(eventId).orElseThrow();
+        EventEntity eventEntity = eventRepository.findById(eventId).orElseThrow();
         eventMapper.updateEntityFromRequest(eventRequest, eventEntity);
-        return eventMapper.toResponse(eventDao.save(eventEntity));
+        return eventMapper.toResponse(eventRepository.save(eventEntity));
     }
 
     @Override
@@ -64,19 +64,19 @@ public class EventServiceImpl implements EventService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
         String username = authentication.getName();
-        Optional<UserEntity> userOpt = userDao.findByUsernameIgnoreCase(username)
-                .or(() -> userDao.findByEmailIgnoreCase(username))
-                .or(() -> userDao.findByUsername(username))
-                .or(() -> userDao.findByEmail(username));
+        Optional<UserEntity> userOpt = userRepository.findByUsernameIgnoreCase(username)
+                .or(() -> userRepository.findByEmailIgnoreCase(username))
+                .or(() -> userRepository.findByUsername(username))
+                .or(() -> userRepository.findByEmail(username));
         return userOpt.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
     @Override
     public void deleteEvent(Long eventId) {
-        eventDao.deleteById(eventId);
+        eventRepository.deleteById(eventId);
     }
     @Override
     public EventEntity getEventById(Long eventId) {
-        return eventDao.findById(eventId).orElseThrow();
+        return eventRepository.findById(eventId).orElseThrow();
     }
 }

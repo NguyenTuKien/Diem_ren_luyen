@@ -1,10 +1,10 @@
 package ct01.unipoint.backend.service.impl;
 
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.RecordDao;
-import ct01.unipoint.backend.dao.SemesterDao;
-import ct01.unipoint.backend.dao.StudentDao;
-import ct01.unipoint.backend.dao.StudentSemesterDao;
+import ct01.unipoint.backend.repository.EventRepository;
+import ct01.unipoint.backend.repository.RecordRepository;
+import ct01.unipoint.backend.repository.SemesterRepository;
+import ct01.unipoint.backend.repository.StudentRepository;
+import ct01.unipoint.backend.repository.StudentSemesterRepository;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse.ActivityHistoryItem;
 import ct01.unipoint.backend.dto.student.StudentDashboardResponse.UpcomingEventItem;
@@ -34,44 +34,44 @@ public class StudentServiceImpl implements StudentService {
   private static final DateTimeFormatter UI_TIME_FORMAT =
       DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-  private final StudentDao studentDao;
-  private final SemesterDao semesterDao;
-  private final StudentSemesterDao studentSemesterDao;
-  private final RecordDao recordDao;
-  private final EventDao eventDao;
+  private final StudentRepository studentRepository;
+  private final SemesterRepository semesterRepository;
+  private final StudentSemesterRepository studentSemesterRepository;
+  private final RecordRepository recordRepository;
+  private final EventRepository eventRepository;
 
   @Override
   public StudentEntity getStudentByUser(UserEntity userEntity) {
-    return studentDao.findByUserEntity(userEntity).orElseThrow();
+    return studentRepository.findByUserEntity(userEntity).orElseThrow();
   }
 
   @Override
   @Transactional(readOnly = true)
   public StudentDashboardResponse getDashboard(String userId) {
-    StudentEntity student = studentDao.findByUserEntityId(userId)
+    StudentEntity student = studentRepository.findByUserEntityId(userId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin sinh viên."));
 
-    Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
+    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
 
     Integer totalScore = 0;
     int joinedActivities = 0;
     if (activeSemesterOpt.isPresent()) {
       Long semesterId = activeSemesterOpt.get().getId();
-      totalScore = studentSemesterDao.findBySemester_IdAndStudent_Id(semesterId, student.getId())
+      totalScore = studentSemesterRepository.findBySemester_IdAndStudent_Id(semesterId, student.getId())
           .map(StudentSemesterEntity::getFinalScore)
           .orElse(0);
-      joinedActivities = (int) recordDao.countByStudent_IdAndSemester_Id(student.getId(), semesterId);
+      joinedActivities = (int) recordRepository.countByStudent_IdAndSemester_Id(student.getId(), semesterId);
     }
 
     List<UpcomingEventItem> upcomingEvents = activeSemesterOpt
-        .map(semester -> eventDao.findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(
+        .map(semester -> eventRepository.findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(
                 semester.getId(), LocalDateTime.now())
             .stream()
             .map(this::toUpcomingItem)
             .toList())
         .orElse(List.of());
 
-    List<ActivityHistoryItem> history = recordDao.findTop10ByStudent_IdOrderByCreatedAtDesc(student.getId())
+    List<ActivityHistoryItem> history = recordRepository.findTop10ByStudent_IdOrderByCreatedAtDesc(student.getId())
         .stream()
         .map(this::toHistoryItem)
         .toList();
@@ -146,12 +146,12 @@ public class StudentServiceImpl implements StudentService {
 
   @Override
   public StudentEntity getStudentByUsername(final String username) {
-    return this.studentDao.findByUserEntity_Username(username)
+    return this.studentRepository.findByUserEntity_Username(username)
         .orElseThrow(() -> new ResourceNotFoundException("Student profile for user: " + username));
   }
 
   @Override
   public List<StudentEntity> getStudentsByClassId(final Long classId) {
-    return this.studentDao.findByClassEntity_Id(classId);
+    return this.studentRepository.findByClassEntity_Id(classId);
   }
 }

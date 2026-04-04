@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import ct01.unipoint.backend.repository.*;
 import ct01.unipoint.backend.service.UserService;
 import lombok.AllArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
@@ -50,14 +51,6 @@ import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.entity.enums.UserStatus;
 import ct01.unipoint.backend.exception.ApiException;
 import ct01.unipoint.backend.exception.business.ResourceNotFoundException;
-import ct01.unipoint.backend.dao.RecordDao;
-import ct01.unipoint.backend.dao.ClassDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.LecturerDao;
-import ct01.unipoint.backend.dao.StudentSemesterDao;
-import ct01.unipoint.backend.dao.SemesterDao;
-import ct01.unipoint.backend.dao.StudentDao;
-import ct01.unipoint.backend.dao.UserDao;
 import ct01.unipoint.backend.service.LecturerService;
 
 @Service
@@ -65,14 +58,14 @@ import ct01.unipoint.backend.service.LecturerService;
 @AllArgsConstructor
 public class LecturerServiceImpl implements LecturerService {
 
-  private final LecturerDao lecturerDao;
-  private final ClassDao classDao;
-  private final StudentDao studentDao;
-  private final UserDao userDao;
-  private final SemesterDao semesterDao;
-  private final StudentSemesterDao studentSemesterDao;
-  private final EventDao eventDao;
-  private final RecordDao recordDao;
+  private final LecturerRepository lecturerRepository;
+  private final ClassRepository classRepository;
+  private final StudentRepository studentRepository;
+  private final UserRepository userRepository;
+  private final SemesterRepository semesterRepository;
+  private final StudentSemesterRepository studentSemesterRepository;
+  private final EventRepository eventRepository;
+  private final RecordRepository recordRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserService userService;
 
@@ -81,7 +74,7 @@ public class LecturerServiceImpl implements LecturerService {
   public String ensureLecturerAccessForCurrentUser(String requestedLecturerId) {
     UserEntity currentUser = userService.requireCurrentUser();
     String currentUserId = currentUser.getId();
-    LecturerEntity lecturer = lecturerDao.findByUserEntityId(currentUserId)
+    LecturerEntity lecturer = lecturerRepository.findByUserEntityId(currentUserId)
         .orElseGet(() -> provisionLecturerProfile(currentUser));
 
     boolean matchesLecturerId = Objects.equals(lecturer.getId(), requestedLecturerId);
@@ -99,7 +92,7 @@ public class LecturerServiceImpl implements LecturerService {
   public LecturerStudentOptionsResponse getOptions(String lecturerId) {
     ensureLecturerExists(lecturerId);
 
-    List<ClassEntity> lecturerClasses = classDao.findByLecturerEntityId(lecturerId);
+    List<ClassEntity> lecturerClasses = classRepository.findByLecturerEntityId(lecturerId);
     Map<Long, FacultyOptionItem> facultyMap = new LinkedHashMap<>();
     List<ClassOptionItem> classItems = new ArrayList<>();
 
@@ -131,7 +124,7 @@ public class LecturerServiceImpl implements LecturerService {
       String keyword
   ) {
     ensureLecturerExists(lecturerId);
-    List<StudentEntity> students = studentDao.findAllByLecturerIdWithDetails(lecturerId);
+    List<StudentEntity> students = studentRepository.findAllByLecturerIdWithDetails(lecturerId);
 
     UserStatus statusFilter = parseUserStatus(status, false);
     String normalizedKeyword = StringUtils.hasText(keyword) ? keyword.trim().toLowerCase(Locale.ROOT)
@@ -148,10 +141,10 @@ public class LecturerServiceImpl implements LecturerService {
         .filter(student -> matchesKeyword(student, normalizedKeyword))
         .toList();
 
-    Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
+    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
     Map<String, Integer> scoreByStudent = buildScoreMap(filtered, activeSemesterOpt);
     Map<String, Integer> joinedMandatoryMap = buildMandatoryAttendanceMap(filtered, activeSemesterOpt);
-    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventDao.countBySemester_Id(
+    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventRepository.countBySemester_Id(
         semester.getId())).orElse(0);
 
     List<LecturerStudentRowResponse> rows = filtered.stream()
@@ -181,7 +174,7 @@ public class LecturerServiceImpl implements LecturerService {
     log.info("Manual student create requested: lecturerId={}, classId={}, studentCode={}, email={}",
         lecturerId, request.classId(), request.studentCode(), request.email());
 
-    ClassEntity classEntity = classDao.findByIdAndLecturerEntityId(request.classId(), lecturerId)
+    ClassEntity classEntity = classRepository.findByIdAndLecturerEntityId(request.classId(), lecturerId)
         .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
             "Bạn không có quyền thêm sinh viên vào lớp này."));
 
@@ -211,7 +204,7 @@ public class LecturerServiceImpl implements LecturerService {
     int skippedCount = 0;
     List<String> errors = new ArrayList<>();
 
-    Map<String, ClassEntity> classByCode = classDao.findByLecturerEntityId(lecturerId).stream()
+    Map<String, ClassEntity> classByCode = classRepository.findByLecturerEntityId(lecturerId).stream()
         .collect(Collectors.toMap(
             classEntity -> classEntity.getClassCode().toUpperCase(Locale.ROOT),
             classEntity -> classEntity
@@ -272,12 +265,12 @@ public class LecturerServiceImpl implements LecturerService {
   @Override
   @Transactional
   public LecturerStudentRowResponse assignMonitor(String lecturerId, String studentId) {
-    StudentEntity student = studentDao.findById(studentId)
+    StudentEntity student = studentRepository.findById(studentId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sinh viên."));
 
     ClassEntity classEntity = assertStudentBelongsToLecturer(student, lecturerId);
     classEntity.setMonitor(student);
-    classDao.save(classEntity);
+    classRepository.save(classEntity);
 
     return toRow(student, Map.of(), Map.of(), 0);
   }
@@ -287,18 +280,18 @@ public class LecturerServiceImpl implements LecturerService {
   public LecturerStudentRowResponse updateStudentStatus(String lecturerId, String studentId, String status) {
     UserStatus nextStatus = parseUserStatus(status, true);
 
-    StudentEntity student = studentDao.findById(studentId)
+    StudentEntity student = studentRepository.findById(studentId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sinh viên."));
     ClassEntity classEntity = assertStudentBelongsToLecturer(student, lecturerId);
 
     UserEntity user = student.getUserEntity();
     user.setStatus(nextStatus);
-    userDao.save(user);
+    userRepository.save(user);
 
     if (nextStatus == UserStatus.DELETED && classEntity.getMonitor() != null
         && Objects.equals(classEntity.getMonitor().getId(), student.getId())) {
       classEntity.setMonitor(null);
-      classDao.save(classEntity);
+      classRepository.save(classEntity);
     }
 
     return toRow(student, Map.of(), Map.of(), 0);
@@ -324,13 +317,13 @@ public class LecturerServiceImpl implements LecturerService {
     String normalizedStudentCode = studentCode.trim().toUpperCase(Locale.ROOT);
     String normalizedUsername = normalizeUsername(username, normalizedEmail);
 
-    if (userDao.existsByEmailIgnoreCase(normalizedEmail)) {
+    if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
       throw duplicateException(skipWhenDuplicate, "Email đã tồn tại: " + normalizedEmail);
     }
-    if (userDao.existsByUsernameIgnoreCase(normalizedUsername)) {
+    if (userRepository.existsByUsernameIgnoreCase(normalizedUsername)) {
       throw duplicateException(skipWhenDuplicate, "Username đã tồn tại: " + normalizedUsername);
     }
-    if (studentDao.findByStudentCodeIgnoreCase(normalizedStudentCode).isPresent()) {
+    if (studentRepository.findByStudentCodeIgnoreCase(normalizedStudentCode).isPresent()) {
       throw duplicateException(skipWhenDuplicate, "Mã sinh viên đã tồn tại: " + normalizedStudentCode);
     }
 
@@ -343,7 +336,7 @@ public class LecturerServiceImpl implements LecturerService {
         .status(UserStatus.ACTIVE)
         .build();
     try {
-      UserEntity savedUser = userDao.save(user);
+      UserEntity savedUser = userRepository.save(user);
 
       StudentEntity student = StudentEntity.builder()
           .userEntity(savedUser)
@@ -351,7 +344,7 @@ public class LecturerServiceImpl implements LecturerService {
           .fullName(fullName.trim())
           .classEntity(classEntity)
           .build();
-      StudentEntity savedStudent = studentDao.save(student);
+      StudentEntity savedStudent = studentRepository.save(student);
       log.info("Manual student created successfully: lecturerId={}, studentId={}, userId={}, studentCode={}, email={}",
           classEntity.getLecturerEntity() != null ? classEntity.getLecturerEntity().getId() : null,
           savedStudent.getId(),
@@ -435,7 +428,7 @@ public class LecturerServiceImpl implements LecturerService {
   }
 
   private void ensureLecturerExists(String lecturerId) {
-    if (lecturerId == null || lecturerDao.findById(lecturerId).isEmpty()) {
+    if (lecturerId == null || lecturerRepository.findById(lecturerId).isEmpty()) {
       throw new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy giảng viên.");
     }
   }
@@ -456,7 +449,7 @@ public class LecturerServiceImpl implements LecturerService {
         .fullName(displayName)
         .build();
 
-    return lecturerDao.save(lecturer);
+    return lecturerRepository.save(lecturer);
   }
 
   private boolean matchesKeyword(StudentEntity student, String keyword) {
@@ -478,7 +471,7 @@ public class LecturerServiceImpl implements LecturerService {
       return Map.of();
     }
     List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
-    return studentSemesterDao.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
+    return studentSemesterRepository.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
         .collect(Collectors.toMap(
@@ -495,7 +488,7 @@ public class LecturerServiceImpl implements LecturerService {
     }
     List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
     List<RecordEntity> records =
-      recordDao.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+      recordRepository.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
             activeSemesterOpt.get().getId(),
             studentIds,
         RecordStatus.APPROVED
@@ -574,12 +567,12 @@ public class LecturerServiceImpl implements LecturerService {
 
     @Override
     public LecturerEntity getLecturerByUser(UserEntity userEntity) {
-        return lecturerDao.findByUserEntity(userEntity).orElseThrow();
+        return lecturerRepository.findByUserEntity(userEntity).orElseThrow();
     }
 
       @Override
       public LecturerEntity getLecturerByUsername(final String username) {
-        return this.lecturerDao.findByUserEntity_Username(username)
+        return this.lecturerRepository.findByUserEntity_Username(username)
             .orElseThrow(() -> new ResourceNotFoundException("Lecturer profile for user: " + username));
       }
 

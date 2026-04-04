@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dao;
+package ct01.unipoint.backend.repository;
 
 import ct01.unipoint.backend.entity.SemesterEntity;
 import ct01.unipoint.backend.entity.StudentEntity;
@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface StudentSemesterDao extends JpaRepository<StudentSemesterEntity, Long> {
+public interface StudentSemesterRepository extends JpaRepository<StudentSemesterEntity, Long> {
 
   List<StudentSemesterEntity> findBySemester_IdAndStudent_IdIn(Long semesterId,
       Collection<String> studentIds);

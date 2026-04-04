@@ -1,13 +1,8 @@
 package ct01.unipoint.backend.config;
 
-import ct01.unipoint.backend.dao.ClassDao;
-import ct01.unipoint.backend.dao.CriteriaDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.FacultyDao;
-import ct01.unipoint.backend.dao.LecturerDao;
-import ct01.unipoint.backend.dao.SemesterDao;
-import ct01.unipoint.backend.dao.StudentDao;
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.repository.*;
+import ct01.unipoint.backend.repository.ClassRepository;
+import ct01.unipoint.backend.repository.FacultyRepository;
 import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.entity.CriteriaEntity;
 import ct01.unipoint.backend.entity.EventEntity;
@@ -37,7 +32,7 @@ public class DataInitialization {
   @Bean
   @Order(1)
   @Transactional
-  CommandLineRunner initFaculty(FacultyDao facultyDao) {
+  CommandLineRunner initFaculty(FacultyRepository facultyRepository) {
     return args -> {
       List<FacultyEntity> faculties = List.of(
           FacultyEntity.builder().code("CNTT").name("Cong nghe thong tin").build(),
@@ -46,8 +41,8 @@ public class DataInitialization {
       );
 
       for (FacultyEntity faculty : faculties) {
-        if (facultyDao.findByCode(faculty.getCode()).isEmpty()) {
-          facultyDao.save(faculty);
+        if (facultyRepository.findByCode(faculty.getCode()).isEmpty()) {
+          facultyRepository.save(faculty);
         }
       }
     };
@@ -57,16 +52,16 @@ public class DataInitialization {
   @Order(2)
   @Transactional
   CommandLineRunner initAdmin(
-      UserDao userDao,
-      LecturerDao lecturerDao,
-      FacultyDao facultyDao,
+      UserRepository userRepository,
+      LecturerRepository lecturerRepository,
+      FacultyRepository facultyRepository,
       PasswordEncoder passwordEncoder
   ) {
     return args -> {
-      FacultyEntity faculty = facultyDao.findByCode("CNTT").orElseThrow();
+      FacultyEntity faculty = facultyRepository.findByCode("CNTT").orElseThrow();
 
-      UserEntity adminUser = userDao.findByUsernameIgnoreCase("admin")
-          .orElseGet(() -> userDao.save(UserEntity.builder()
+      UserEntity adminUser = userRepository.findByUsernameIgnoreCase("admin")
+          .orElseGet(() -> userRepository.save(UserEntity.builder()
               .username("admin")
               .email("admin@ptit.edu.vn")
               .password(passwordEncoder.encode("Admin@123"))
@@ -74,8 +69,8 @@ public class DataInitialization {
               .status(UserStatus.ACTIVE)
               .build()));
 
-      if (lecturerDao.findByUserEntityId(adminUser.getId()).isEmpty()) {
-        lecturerDao.save(LecturerEntity.builder()
+      if (lecturerRepository.findByUserEntityId(adminUser.getId()).isEmpty()) {
+        lecturerRepository.save(LecturerEntity.builder()
             .userEntity(adminUser)
             .lecturerCode("ADMIN")
             .fullName("Quan tri vien")
@@ -89,18 +84,18 @@ public class DataInitialization {
   @Order(3)
   @Transactional
   CommandLineRunner initStudent(
-      StudentDao studentDao,
-      UserDao userDao,
-      FacultyDao facultyDao,
-      LecturerDao lecturerDao,
-      ClassDao classDao,
+      StudentRepository studentRepository,
+      UserRepository userRepository,
+      FacultyRepository facultyRepository,
+      LecturerRepository lecturerRepository,
+      ClassRepository classRepository,
       PasswordEncoder passwordEncoder
   ) {
     return args -> {
-      FacultyEntity faculty = facultyDao.findByCode("CNTT").orElseThrow();
+      FacultyEntity faculty = facultyRepository.findByCode("CNTT").orElseThrow();
 
-      UserEntity lecturerUser = userDao.findByEmailIgnoreCase("longdh@ptit.edu.vn")
-          .orElseGet(() -> userDao.save(UserEntity.builder()
+      UserEntity lecturerUser = userRepository.findByEmailIgnoreCase("longdh@ptit.edu.vn")
+          .orElseGet(() -> userRepository.save(UserEntity.builder()
               .username("ct01.n06")
               .email("ct01.n06@ptit.edu.vn")
               .password(passwordEncoder.encode("Lecturer@123"))
@@ -108,16 +103,16 @@ public class DataInitialization {
               .status(UserStatus.ACTIVE)
               .build()));
 
-      LecturerEntity lecturer = lecturerDao.findByUserEntity_EmailIgnoreCase("ct01.n06@ptit.edu.vn")
-          .orElseGet(() -> lecturerDao.save(LecturerEntity.builder()
+      LecturerEntity lecturer = lecturerRepository.findByUserEntity_EmailIgnoreCase("ct01.n06@ptit.edu.vn")
+          .orElseGet(() -> lecturerRepository.save(LecturerEntity.builder()
               .userEntity(lecturerUser)
               .lecturerCode("Lec001")
               .fullName("Mr.Kien Toan Tu")
               .facultyEntity(faculty)
               .build()));
 
-      ClassEntity classEntity = classDao.findByClassCodeIgnoreCase("d23ctcn01-b")
-          .orElseGet(() -> classDao.save(ClassEntity.builder()
+      ClassEntity classEntity = classRepository.findByClassCodeIgnoreCase("d23ctcn01-b")
+          .orElseGet(() -> classRepository.save(ClassEntity.builder()
               .classCode("D23CTCN01-B")
               .facultyEntity(faculty)
               .lecturerEntity(lecturer)
@@ -126,7 +121,7 @@ public class DataInitialization {
       if (classEntity.getLecturerEntity() == null
           || !classEntity.getLecturerEntity().getId().equals(lecturer.getId())) {
         classEntity.setLecturerEntity(lecturer);
-        classDao.save(classEntity);
+        classRepository.save(classEntity);
       }
 
       List<StudentSeed> students = List.of(
@@ -138,8 +133,8 @@ public class DataInitialization {
       for (StudentSeed seed : students) {
         String normalizedEmail = seed.email().toLowerCase(Locale.ROOT);
 
-        UserEntity studentUser = userDao.findByEmailIgnoreCase(normalizedEmail)
-            .orElseGet(() -> userDao.save(UserEntity.builder()
+        UserEntity studentUser = userRepository.findByEmailIgnoreCase(normalizedEmail)
+            .orElseGet(() -> userRepository.save(UserEntity.builder()
                 .username(seed.username())
                 .email(normalizedEmail)
                 .password(passwordEncoder.encode("Student@123"))
@@ -147,7 +142,7 @@ public class DataInitialization {
                 .status(UserStatus.ACTIVE)
                 .build()));
 
-        Optional<StudentEntity> existingStudent = studentDao.findByStudentCodeIgnoreCase(
+        Optional<StudentEntity> existingStudent = studentRepository.findByStudentCodeIgnoreCase(
             seed.studentCode());
 
         if (existingStudent.isPresent()) {
@@ -155,11 +150,11 @@ public class DataInitialization {
           student.setUserEntity(studentUser);
           student.setFullName(seed.fullName());
           student.setClassEntity(classEntity);
-          studentDao.save(student);
+          studentRepository.save(student);
           continue;
         }
 
-        studentDao.save(StudentEntity.builder()
+        studentRepository.save(StudentEntity.builder()
             .userEntity(studentUser)
             .studentCode(seed.studentCode())
             .fullName(seed.fullName())
@@ -176,18 +171,18 @@ public class DataInitialization {
   @Order(4)
   @Transactional
   CommandLineRunner initLecturer(
-      LecturerDao lecturerDao,
-      UserDao userDao,
-      FacultyDao facultyDao,
+      LecturerRepository lecturerRepository,
+      UserRepository userRepository,
+      FacultyRepository facultyRepository,
       PasswordEncoder passwordEncoder
   ) {
     return args -> {
-      if (lecturerDao.findByUserEntity_EmailIgnoreCase("agv.gv001@ptit.edu.vn").isPresent()) {
+      if (lecturerRepository.findByUserEntity_EmailIgnoreCase("agv.gv001@ptit.edu.vn").isPresent()) {
         return;
       }
 
-      UserEntity userEntity = userDao.findByEmailIgnoreCase("agv.gv001@ptit.edu.vn")
-          .orElseGet(() -> userDao.save(UserEntity.builder()
+      UserEntity userEntity = userRepository.findByEmailIgnoreCase("agv.gv001@ptit.edu.vn")
+          .orElseGet(() -> userRepository.save(UserEntity.builder()
               .username("gv001")
               .email("agv.gv001@ptit.edu.vn")
               .password(passwordEncoder.encode("GV001@123"))
@@ -195,11 +190,11 @@ public class DataInitialization {
               .status(UserStatus.ACTIVE)
               .build()));
 
-      lecturerDao.save(LecturerEntity.builder()
+      lecturerRepository.save(LecturerEntity.builder()
           .userEntity(userEntity)
           .lecturerCode("GV001")
           .fullName("Giang vien A")
-          .facultyEntity(facultyDao.findByCode("CNTT").orElseThrow())
+          .facultyEntity(facultyRepository.findByCode("CNTT").orElseThrow())
           .build());
     };
   }
@@ -207,7 +202,7 @@ public class DataInitialization {
   @Bean
   @Order(5)
   @Transactional
-  CommandLineRunner initSemester(SemesterDao semesterDao) {
+  CommandLineRunner initSemester(SemesterRepository semesterRepository) {
     return args -> {
       List<SemesterEntity> semesters = List.of(
           SemesterEntity.builder()
@@ -231,8 +226,8 @@ public class DataInitialization {
       );
 
       for (SemesterEntity semester : semesters) {
-        if (semesterDao.findByName(semester.getName()).isEmpty()) {
-          semesterDao.save(semester);
+        if (semesterRepository.findByName(semester.getName()).isEmpty()) {
+          semesterRepository.save(semester);
         }
       }
     };
@@ -241,7 +236,7 @@ public class DataInitialization {
   @Bean
   @Order(6)
   @Transactional
-  CommandLineRunner initCriteria(CriteriaDao criteriaDao) {
+  CommandLineRunner initCriteria(CriteriaRepository criteriaRepository) {
     return args -> {
       List<CriteriaEntity> criteriaList = List.of(
           CriteriaEntity.builder()
@@ -275,8 +270,8 @@ public class DataInitialization {
       );
 
       for (CriteriaEntity criteria : criteriaList) {
-        if (criteriaDao.findByCode(criteria.getCode()).isEmpty()) {
-          criteriaDao.save(criteria);
+        if (criteriaRepository.findByCode(criteria.getCode()).isEmpty()) {
+          criteriaRepository.save(criteria);
         }
       }
     };
@@ -286,19 +281,19 @@ public class DataInitialization {
   @Order(7)
   @Transactional
   CommandLineRunner initEvent(
-      EventDao eventDao,
-      SemesterDao semesterDao,
-      CriteriaDao criteriaDao,
-      UserDao userDao
+      EventRepository eventRepository,
+      SemesterRepository semesterRepository,
+      CriteriaRepository criteriaRepository,
+      UserRepository userRepository
   ) {
     return args -> {
-      if (eventDao.count() > 0) {
+      if (eventRepository.count() > 0) {
         return;
       }
 
-      Optional<SemesterEntity> semesterOptional = semesterDao.findByName("HK1-2026");
-      Optional<CriteriaEntity> criteriaOptional = criteriaDao.findByCode("HD01");
-      Optional<UserEntity> createdByOptional = userDao.findByUsernameIgnoreCase("admin");
+      Optional<SemesterEntity> semesterOptional = semesterRepository.findByName("HK1-2026");
+      Optional<CriteriaEntity> criteriaOptional = criteriaRepository.findByCode("HD01");
+      Optional<UserEntity> createdByOptional = userRepository.findByUsernameIgnoreCase("admin");
 
       if (semesterOptional.isEmpty() || criteriaOptional.isEmpty() || createdByOptional.isEmpty()) {
         return;
@@ -325,7 +320,7 @@ public class DataInitialization {
               .criteria(criteria)
               .title("Ngay hoi hien mau sinh vien")
               .organizer("Doan Thanh nien")
-              .description("Hoat dong tinh nguyen hien mau nhan dao danh cho sinh vien")
+              .description("Hoat dong tinh nguyen hien mau nhan repository danh cho sinh vien")
               .location("Nha thi dau")
               .startTime(LocalDateTime.of(2026, 4, 18, 7, 30))
               .endTime(LocalDateTime.of(2026, 4, 18, 11, 0))
@@ -345,12 +340,12 @@ public class DataInitialization {
       );
 
       List<EventEntity> eventsToInsert = events.stream()
-          .filter(event -> eventDao.findByTitleAndStartTime(event.getTitle(), event.getStartTime())
+          .filter(event -> eventRepository.findByTitleAndStartTime(event.getTitle(), event.getStartTime())
               .isEmpty())
           .toList();
 
       if (!eventsToInsert.isEmpty()) {
-        eventDao.saveAll(eventsToInsert);
+        eventRepository.saveAll(eventsToInsert);
       }
     };
   }

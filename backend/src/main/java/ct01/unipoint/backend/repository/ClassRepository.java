@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dao;
+package ct01.unipoint.backend.repository;
 
 import ct01.unipoint.backend.entity.ClassEntity;
 import java.util.List;
@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ClassDao extends JpaRepository<ClassEntity, Long> {
+public interface ClassRepository extends JpaRepository<ClassEntity, Long> {
   Optional<ClassEntity> findByClassCode(String classCode);
 
   List<ClassEntity> findByLecturerEntityId(String lecturerId);

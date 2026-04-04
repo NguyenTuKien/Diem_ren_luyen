@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import ct01.unipoint.backend.repository.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,56 +24,51 @@ import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.enums.RecordStatus;
 import ct01.unipoint.backend.entity.enums.UserStatus;
 import ct01.unipoint.backend.exception.ApiException;
-import ct01.unipoint.backend.dao.RecordDao;
-import ct01.unipoint.backend.dao.ClassDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.StudentSemesterDao;
-import ct01.unipoint.backend.dao.SemesterDao;
-import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.repository.ClassRepository;
 import ct01.unipoint.backend.service.MonitorService;
 
 @Service
 public class MonitorServiceImpl implements MonitorService {
 
-  private final StudentDao studentDao;
-  private final ClassDao classDao;
-  private final SemesterDao semesterDao;
-  private final StudentSemesterDao studentSemesterDao;
-  private final RecordDao recordDao;
-  private final EventDao eventDao;
+  private final StudentRepository studentRepository;
+  private final ClassRepository classRepository;
+  private final SemesterRepository semesterRepository;
+  private final StudentSemesterRepository studentSemesterRepository;
+  private final RecordRepository recordRepository;
+  private final EventRepository eventRepository;
 
   public MonitorServiceImpl(
-      StudentDao studentDao,
-      ClassDao classDao,
-      SemesterDao semesterDao,
-      StudentSemesterDao studentSemesterDao,
-      RecordDao recordDao,
-      EventDao eventDao
+      StudentRepository studentRepository,
+      ClassRepository classRepository,
+      SemesterRepository semesterRepository,
+      StudentSemesterRepository studentSemesterRepository,
+      RecordRepository recordRepository,
+      EventRepository eventRepository
   ) {
-    this.studentDao = studentDao;
-    this.classDao = classDao;
-    this.semesterDao = semesterDao;
-    this.studentSemesterDao = studentSemesterDao;
-    this.recordDao = recordDao;
-    this.eventDao = eventDao;
+    this.studentRepository = studentRepository;
+    this.classRepository = classRepository;
+    this.semesterRepository = semesterRepository;
+    this.studentSemesterRepository = studentSemesterRepository;
+    this.recordRepository = recordRepository;
+    this.eventRepository = eventRepository;
   }
 
   @Override
   @Transactional(readOnly = true)
   public MonitorClassListResponse getManagedClassMembers(String monitorUserId) {
-    StudentEntity monitorStudent = studentDao.findByUserEntityId(monitorUserId)
+    StudentEntity monitorStudent = studentRepository.findByUserEntityId(monitorUserId)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy tài khoản Monitor."));
 
-    ClassEntity managedClass = classDao.findByMonitor_Id(monitorStudent.getId())
+    ClassEntity managedClass = classRepository.findByMonitor_Id(monitorStudent.getId())
         .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN,
             "Tài khoản hiện tại không được gán quyền Monitor."));
 
-    List<StudentEntity> members = studentDao.findAllByClassEntityId(managedClass.getId());
-    Optional<SemesterEntity> activeSemesterOpt = semesterDao.findFirstByIsActiveTrueOrderByStartDateDesc();
+    List<StudentEntity> members = studentRepository.findAllByClassEntityId(managedClass.getId());
+    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
 
     Map<String, Integer> scoreByStudent = buildScoreMap(members, activeSemesterOpt);
     Map<String, Integer> joinedMap = buildMandatoryAttendanceMap(members, activeSemesterOpt);
-    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventDao.countBySemester_Id(
+    int mandatoryEvents = activeSemesterOpt.map(semester -> (int) eventRepository.countBySemester_Id(
         semester.getId())).orElse(0);
 
     List<MonitorClassMemberResponse> rows = members.stream()
@@ -123,7 +119,7 @@ public class MonitorServiceImpl implements MonitorService {
       return Map.of();
     }
     List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
-    return studentSemesterDao.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
+    return studentSemesterRepository.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
         .collect(Collectors.toMap(
@@ -140,7 +136,7 @@ public class MonitorServiceImpl implements MonitorService {
     }
     List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
     List<RecordEntity> records =
-      recordDao.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+      recordRepository.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
             activeSemesterOpt.get().getId(),
             studentIds,
         RecordStatus.APPROVED

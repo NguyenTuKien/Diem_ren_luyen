@@ -28,13 +28,13 @@ src/main/java/ct01/unipoint/backend/
     ├── monitor       # Các API dành riêng cho Lớp Trưởng
     └── student       # Các API dành riêng cho Sinh Viên
     ...               # Các API không yêu cầu phân quyền (AuthController, ...)
-├── dao/              # Các interface truy suất Repo (Hậu tố *Dao.java)
 ├── dto/              # Các class DTO (Data Transfer Object) dùng để nhận request và trả response. Chia theo domain (EventDto, UserDto,...)
 ├── entity/           # Bảng DB Model (Hậu tố *Entity.java)
 │   ├── base/         # Chứa BaseEntity (id, createdAt, updatedAt)
 │   └── enums/        # Các Enum dùng trong DB
 ├── exception/        # Ném lỗi với ApiException.java và hứng bằng RestExceptionHandler.java
 ├── facade/           # CHÚ Ý: Bộ điều phối gom logic chéo của nhiều Service (VD: AuthFacade.java)
+├── repository/              # Các interface truy suất Repo (Hậu tố *Repository.java)
 ├── security/         # Provider và Filter cho cấu trúc JWT
 └── service/          # Các class Core Logic (Hậu tố *Service.java). Không tách rời Interface và Impl.
     ├── impl          # Nếu có logic phức tạp cần tách riêng, nhưng ưu tiên viết trực tiếp trong Service nếu đơn giản.

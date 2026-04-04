@@ -1,9 +1,9 @@
 package ct01.unipoint.backend.service.impl;
 
-import ct01.unipoint.backend.dao.AttendenceDao;
-import ct01.unipoint.backend.dao.EventDao;
-import ct01.unipoint.backend.dao.QrCodeDao;
-import ct01.unipoint.backend.dao.StudentDao;
+import ct01.unipoint.backend.repository.AttendenceRepository;
+import ct01.unipoint.backend.repository.EventRepository;
+import ct01.unipoint.backend.repository.QrCodeRepository;
+import ct01.unipoint.backend.repository.StudentRepository;
 import ct01.unipoint.backend.service.QrCodeService;
 import ct01.unipoint.backend.dto.qrcode.ScanQrRequest;
 import ct01.unipoint.backend.dto.qrcode.GenerateQrResponse;
@@ -27,10 +27,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QrCodeServiceImpl implements QrCodeService {
 
-    private final QrCodeDao qrCodeDao;
-    private final EventDao eventDao;
-    private final StudentDao studentDao;
-    private final AttendenceDao attendenceDao;
+    private final QrCodeRepository qrCodeRepository;
+    private final EventRepository eventRepository;
+    private final StudentRepository studentRepository;
+    private final AttendenceRepository attendenceRepository;
     private final RabbitTemplate rabbitTemplate;
 
     @Override
@@ -44,7 +44,7 @@ public class QrCodeServiceImpl implements QrCodeService {
                 .build();
                 
         // Lưu vào Redis, cấu hình @TimeToLive sẽ tự động xóa sau TTL
-        qrCodeDao.save(qrcode);
+        qrCodeRepository.save(qrcode);
         
         return GenerateQrResponse.builder()
                 .qrToken(token)
@@ -60,18 +60,18 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Mã QR không hợp lệ");
         }
 
-        QrCodeEntity qrCode = qrCodeDao.findById(token)
+        QrCodeEntity qrCode = qrCodeRepository.findById(token)
                 .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Mã QR đã hết hạn hoặc không hợp lệ"));
 
-        Optional<AttendenceEntity> existing = attendenceDao.findByEventIdAndStudentId(qrCode.getEventId(), studentUserId);
+        Optional<AttendenceEntity> existing = attendenceRepository.findByEventIdAndStudentId(qrCode.getEventId(), studentUserId);
         if (existing.isPresent()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn đã điểm danh sự kiện này rồi!");
         }
 
-        EventEntity event = eventDao.findById(qrCode.getEventId())
+        EventEntity event = eventRepository.findById(qrCode.getEventId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sự kiện"));
 
-        StudentEntity student = studentDao.findById(studentUserId)
+        StudentEntity student = studentRepository.findById(studentUserId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
 
         QrCheckinMessage message = QrCheckinMessage.builder()

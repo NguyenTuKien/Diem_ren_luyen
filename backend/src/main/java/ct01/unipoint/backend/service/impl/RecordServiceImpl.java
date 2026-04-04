@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.service.impl;
 
-import ct01.unipoint.backend.dao.RecordDao;
+import ct01.unipoint.backend.repository.RecordRepository;
 import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.enums.RecordStatus;
 import ct01.unipoint.backend.service.RecordService;
@@ -16,11 +16,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RecordServiceImpl implements RecordService {
 
-  private final RecordDao recordDao;
+  private final RecordRepository recordRepository;
 
   @Override
   public Map<String, Double> calculateAutoScores(final String studentId, final Long semesterId) {
-    final List<RecordEntity> records = this.recordDao.findByStudent_IdAndSemester_IdAndStatus(
+    final List<RecordEntity> records = this.recordRepository.findByStudent_IdAndSemester_IdAndStatus(
         studentId, semesterId, RecordStatus.APPROVED
     );
 

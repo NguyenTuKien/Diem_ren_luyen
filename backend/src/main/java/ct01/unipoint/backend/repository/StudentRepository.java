@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.dao;
+package ct01.unipoint.backend.repository;
 
 import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.UserEntity;
@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface StudentDao extends JpaRepository<StudentEntity, String> {
+public interface StudentRepository extends JpaRepository<StudentEntity, String> {
 
   Optional<StudentEntity> findByStudentCode(String studentCode);
 

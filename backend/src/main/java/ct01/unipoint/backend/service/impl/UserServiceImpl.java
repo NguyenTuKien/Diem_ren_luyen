@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.service.impl;
 
-import ct01.unipoint.backend.dao.UserDao;
+import ct01.unipoint.backend.repository.UserRepository;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.exception.ApiException;
 import ct01.unipoint.backend.service.UserService;
@@ -15,7 +15,7 @@ import java.util.Optional;
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final UserDao userDao;
+    private final UserRepository userRepository;
 
     @Override
     public UserEntity requireCurrentUser() {
@@ -25,8 +25,8 @@ public class UserServiceImpl implements UserService {
         }
 
         String principal = authentication.getName();
-        return userDao.findByUsernameIgnoreCase(principal)
-                .or(() -> userDao.findByEmailIgnoreCase(principal))
+        return userRepository.findByUsernameIgnoreCase(principal)
+                .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ."));
     }
 
@@ -37,21 +37,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserEntity findByUsername(String username) {
-        return userDao.findByUsername(username)
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
     }
 
     @Override
     public boolean isUserExist(String email) {
-        return userDao.existsByEmailIgnoreCase(email);
+        return userRepository.existsByEmailIgnoreCase(email);
     }
 
     @Override
     public Optional<UserEntity> findByUsernameOrEmail(String principalIdentifier) {
-        return userDao.findByUsernameIgnoreCase(principalIdentifier)
-                .or(() -> userDao.findByEmailIgnoreCase(principalIdentifier))
-                .or(() -> userDao.findByUsername(principalIdentifier))
-                .or(() -> userDao.findByEmail(principalIdentifier));
+        return userRepository.findByUsernameIgnoreCase(principalIdentifier)
+                .or(() -> userRepository.findByEmailIgnoreCase(principalIdentifier))
+                .or(() -> userRepository.findByUsername(principalIdentifier))
+                .or(() -> userRepository.findByEmail(principalIdentifier));
     }
 }
 

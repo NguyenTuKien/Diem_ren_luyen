@@ -1,14 +1,13 @@
-package ct01.unipoint.backend.dao;
+package ct01.unipoint.backend.repository;
 
 import ct01.unipoint.backend.entity.AttendenceEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface AttendenceDao extends JpaRepository<AttendenceEntity, Long> {
+public interface AttendenceRepository extends JpaRepository<AttendenceEntity, Long> {
     Optional<AttendenceEntity> findByEventIdAndStudentId(Long eventId, String studentId);
 
     boolean existsByEventIdAndStudentId(Long eventId, String studentId);

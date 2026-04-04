@@ -1,6 +1,6 @@
 package ct01.unipoint.backend.service.impl;
 
-import ct01.unipoint.backend.dao.StudentSemesterDao;
+import ct01.unipoint.backend.repository.StudentSemesterRepository;
 import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.exception.business.ResourceNotFoundException;
 import ct01.unipoint.backend.service.StudentSemesterService;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class StudentSemesterServiceImpl implements StudentSemesterService {
 
-  private final StudentSemesterDao dao;
+  private final StudentSemesterRepository dao;
 
   @Override
   public Optional<StudentSemesterEntity> findByStudentAndSemester(final String studentId,
