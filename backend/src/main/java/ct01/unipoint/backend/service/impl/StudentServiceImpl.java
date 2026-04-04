@@ -15,6 +15,7 @@ import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.entity.UserEntity;
 import ct01.unipoint.backend.exception.ApiException;
+import ct01.unipoint.backend.exception.business.ResourceNotFoundException;
 import ct01.unipoint.backend.service.StudentService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -142,7 +143,6 @@ public class StudentServiceImpl implements StudentService {
     }
     return "Cần cải thiện";
   }
-}
 
   @Override
   public StudentEntity getStudentByUsername(final String username) {
@@ -154,3 +154,4 @@ public class StudentServiceImpl implements StudentService {
   public List<StudentEntity> getStudentsByClassId(final Long classId) {
     return this.studentDao.findByClassEntity_Id(classId);
   }
+}

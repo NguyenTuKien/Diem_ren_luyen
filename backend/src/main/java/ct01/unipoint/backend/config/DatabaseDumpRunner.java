@@ -42,7 +42,7 @@ public class DatabaseDumpRunner implements CommandLineRunner {
 
     System.out.println("\n--- 2. BẢNG STUDENTS (Sinh viên) ---");
     studentDao.findAll().forEach(s -> {
-      Long userId = s.getUserEntity() != null ? s.getUserEntity().getId() : null;
+      String userId = s.getUserEntity() != null ? s.getUserEntity().getId() : null;
       Long classId = s.getClassEntity() != null ? s.getClassEntity().getId() : null;
       System.out.println("Student[id=" + s.getId() + ", code='" + s.getStudentCode() + "', name='" + s.getFullName() + "', FK_userId=" + userId + ", FK_classId=" + classId + "]");
     });
@@ -61,12 +61,12 @@ public class DatabaseDumpRunner implements CommandLineRunner {
     eventDao.findAll().forEach(e -> {
       Long semId = e.getSemester() != null ? e.getSemester().getId() : null;
       Long critId = e.getCriteria() != null ? e.getCriteria().getId() : null;
-      System.out.println("Event[id=" + e.getId() + ", title='" + e.getTitle() + "', status='" + e.getStatus() + "', FK_semId=" + semId + ", FK_critId=" + critId + "]");
+      System.out.println("Event[id=" + e.getId() + ", title='" + e.getTitle() + "', FK_semId=" + semId + ", FK_critId=" + critId + "]");
     });
 
     System.out.println("\n--- 6. BẢNG ACTIVITY_RECORDS (Điểm tự động đã cộng) ---");
     recordDao.findAll().forEach(r -> {
-      Long stuId = r.getStudent() != null ? r.getStudent().getId() : null;
+      String stuId = r.getStudent() != null ? r.getStudent().getId() : null;
       Long semId = r.getSemester() != null ? r.getSemester().getId() : null;
       Long eventId = r.getEvent() != null ? r.getEvent().getId() : null;
       Long critId = r.getCriteria() != null ? r.getCriteria().getId() : null;
@@ -75,7 +75,7 @@ public class DatabaseDumpRunner implements CommandLineRunner {
 
     System.out.println("\n--- 7. BẢNG SEMESTER_EVALUATIONS (Phiếu điểm rèn luyện) ---");
     evaluationDao.findAll().forEach(ev -> {
-      Long stuId = ev.getStudent() != null ? ev.getStudent().getId() : null;
+      String stuId = ev.getStudent() != null ? ev.getStudent().getId() : null;
       Long semId = ev.getSemester() != null ? ev.getSemester().getId() : null;
       System.out.println("Evaluation[id=" + ev.getId() + ", status='" + ev.getStatus() + "', finalScore=" + ev.getFinalScore() + ", FK_studentId=" + stuId + ", FK_semId=" + semId + "]");
     });

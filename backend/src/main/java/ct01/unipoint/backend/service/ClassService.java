@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.service.interfaces;
+package ct01.unipoint.backend.service;
 
 import ct01.unipoint.backend.dto.response.ClassResponse;
 import ct01.unipoint.backend.entity.ClassEntity;
@@ -10,3 +10,4 @@ public interface ClassService {
 
   List<ClassResponse> getAllClasses();
 }
+

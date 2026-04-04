@@ -3,7 +3,7 @@ package ct01.unipoint.backend.service.impl;
 import ct01.unipoint.backend.dao.RecordDao;
 import ct01.unipoint.backend.entity.RecordEntity;
 import ct01.unipoint.backend.entity.enums.RecordStatus;
-import ct01.unipoint.backend.service.interfaces.RecordService;
+import ct01.unipoint.backend.service.RecordService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ public class RecordServiceImpl implements RecordService {
   private final RecordDao recordDao;
 
   @Override
-  public Map<String, Double> calculateAutoScores(final Long studentId, final Long semesterId) {
+  public Map<String, Double> calculateAutoScores(final String studentId, final Long semesterId) {
     final List<RecordEntity> records = this.recordDao.findByStudent_IdAndSemester_IdAndStatus(
         studentId, semesterId, RecordStatus.APPROVED
     );

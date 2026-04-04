@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.facade.impl;
+package ct01.unipoint.backend.facade;
 
 import ct01.unipoint.backend.dto.request.MonitorReviewRequest;
 import ct01.unipoint.backend.dto.response.EvaluationFormResponse;
@@ -8,10 +8,9 @@ import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.entity.enums.SemesterEvaluationStatus;
 import ct01.unipoint.backend.exception.business.InvalidEvaluationStatusException;
 import ct01.unipoint.backend.exception.business.UnauthorizedAccessException;
-import ct01.unipoint.backend.facade.interfaces.MonitorEvaluationFacade;
-import ct01.unipoint.backend.service.interfaces.RecordService;
-import ct01.unipoint.backend.service.interfaces.StudentSemesterService;
-import ct01.unipoint.backend.service.interfaces.StudentService;
+import ct01.unipoint.backend.service.RecordService;
+import ct01.unipoint.backend.service.StudentSemesterService;
+import ct01.unipoint.backend.service.StudentService;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -20,14 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class MonitorEvaluationFacadeImpl implements MonitorEvaluationFacade {
+public class MonitorEvaluationFacade{
 
   private final StudentService studentService;
   private final StudentSemesterService evaluationService;
   private final RecordService recordService;
 
   @Transactional
-  @Override
   public void reviewEvaluation(final String monitorUsername, final MonitorReviewRequest request) {
     final StudentEntity monitor = this.studentService.getStudentByUsername(monitorUsername);
     final StudentSemesterEntity evaluation = this.evaluationService.getById(
@@ -43,7 +41,6 @@ public class MonitorEvaluationFacadeImpl implements MonitorEvaluationFacade {
     this.evaluationService.save(evaluation);
   }
 
-  @Override
   @Transactional(readOnly = true)
   public List<StudentEvaluationSummaryResponse> getClassEvaluations(final String username,
       final Long semesterId) {
@@ -54,7 +51,7 @@ public class MonitorEvaluationFacadeImpl implements MonitorEvaluationFacade {
     final List<StudentSemesterEntity> evaluations = this.evaluationService.findByClassAndSemester(
         classId, semesterId);
 
-    final Map<Long, StudentSemesterEntity> evalMap = evaluations.stream()
+    final Map<String, StudentSemesterEntity> evalMap = evaluations.stream()
         .collect(java.util.stream.Collectors.toMap(e -> e.getStudent().getId(), e -> e));
 
     return students.stream().map(student -> {
@@ -71,7 +68,6 @@ public class MonitorEvaluationFacadeImpl implements MonitorEvaluationFacade {
     }).collect(java.util.stream.Collectors.toList());
   }
 
-  @Override
   @Transactional(readOnly = true)
   public EvaluationFormResponse getStudentEvaluationDetail(final String username,
       final Long evaluationId) {
@@ -118,3 +114,4 @@ public class MonitorEvaluationFacadeImpl implements MonitorEvaluationFacade {
         .sum();
   }
 }
+

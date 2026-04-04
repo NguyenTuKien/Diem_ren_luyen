@@ -81,7 +81,7 @@ jwt:
 server:
   servlet:
     context-path: /api
-  port: 8081
+  port: 8080
   forward-headers-strategy: framework
 
 cors:

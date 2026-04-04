@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.facade.impl;
+package ct01.unipoint.backend.facade;
 
 import ct01.unipoint.backend.dto.request.LecturerReviewRequest;
 import ct01.unipoint.backend.dto.response.EvaluationFormResponse;
@@ -10,12 +10,11 @@ import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.entity.enums.SemesterEvaluationStatus;
 import ct01.unipoint.backend.exception.business.InvalidEvaluationStatusException;
 import ct01.unipoint.backend.exception.business.UnauthorizedAccessException;
-import ct01.unipoint.backend.facade.interfaces.LecturerEvaluationFacade;
-import ct01.unipoint.backend.service.interfaces.ClassService;
-import ct01.unipoint.backend.service.interfaces.LecturerService;
-import ct01.unipoint.backend.service.interfaces.RecordService;
-import ct01.unipoint.backend.service.interfaces.StudentSemesterService;
-import ct01.unipoint.backend.service.interfaces.StudentService;
+import ct01.unipoint.backend.service.ClassService;
+import ct01.unipoint.backend.service.LecturerService;
+import ct01.unipoint.backend.service.RecordService;
+import ct01.unipoint.backend.service.StudentSemesterService;
+import ct01.unipoint.backend.service.StudentService;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
+public class LecturerEvaluationFacade {
 
   private final LecturerService lecturerService;
   private final ClassService classService;
@@ -33,7 +32,6 @@ public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
   private final StudentService studentService;
   private final RecordService recordService;
 
-  @Override
   @Transactional
   public void finalizeClassEvaluation(final String lecturerUsername, final Long classId,
       final Long semesterId) {
@@ -54,7 +52,6 @@ public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
   }
 
   @Transactional
-  @Override
   public void reviewEvaluation(final String lecturerUsername, final LecturerReviewRequest request) {
     final LecturerEntity lecturer = this.lecturerService.getLecturerByUsername(lecturerUsername);
     final StudentSemesterEntity evaluation = this.evaluationService.getById(
@@ -75,7 +72,6 @@ public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
     this.evaluationService.save(evaluation);
   }
 
-  @Override
   @Transactional(readOnly = true)
   public List<StudentEvaluationSummaryResponse> getClassEvaluations(final String lecturerUsername,
       final Long classId, final Long semesterId) {
@@ -89,7 +85,7 @@ public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
     final List<StudentSemesterEntity> evaluations = this.evaluationService.findByClassAndSemester(
         classId, semesterId);
 
-    final Map<Long, StudentSemesterEntity> evalMap = evaluations.stream()
+    final Map<String, StudentSemesterEntity> evalMap = evaluations.stream()
         .collect(Collectors.toMap(e -> e.getStudent().getId(), e -> e));
 
     return students.stream().map(student -> {
@@ -106,7 +102,6 @@ public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
     }).collect(Collectors.toList());
   }
 
-  @Override
   @Transactional(readOnly = true)
   public EvaluationFormResponse getStudentEvaluationDetail(final String lecturerUsername,
       final Long evaluationId) {
@@ -145,3 +140,4 @@ public class LecturerEvaluationFacadeImpl implements LecturerEvaluationFacade {
         .sum();
   }
 }
+

@@ -3,7 +3,7 @@ package ct01.unipoint.backend.service.impl;
 import ct01.unipoint.backend.dao.StudentSemesterDao;
 import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.exception.business.ResourceNotFoundException;
-import ct01.unipoint.backend.service.interfaces.StudentSemesterService;
+import ct01.unipoint.backend.service.StudentSemesterService;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -16,9 +16,9 @@ public class StudentSemesterServiceImpl implements StudentSemesterService {
   private final StudentSemesterDao dao;
 
   @Override
-  public Optional<StudentSemesterEntity> findByStudentAndSemester(final Long studentId,
+  public Optional<StudentSemesterEntity> findByStudentAndSemester(final String studentId,
       final Long semesterId) {
-    return this.dao.findByStudent_IdAndSemester_Id(studentId, semesterId);
+    return this.dao.findBySemester_IdAndStudent_Id(semesterId, studentId);
   }
 
   @Override

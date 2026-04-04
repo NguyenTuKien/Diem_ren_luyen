@@ -3,7 +3,7 @@ package ct01.unipoint.backend.controller;
 import ct01.unipoint.backend.dto.ResponseGeneral;
 import ct01.unipoint.backend.dto.request.StudentSubmitRequest;
 import ct01.unipoint.backend.dto.response.EvaluationFormResponse;
-import ct01.unipoint.backend.facade.interfaces.StudentEvaluationFacade;
+import ct01.unipoint.backend.facade.StudentEvaluationFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,10 +1,7 @@
 package ct01.unipoint.backend.dao;
 
 import ct01.unipoint.backend.entity.StudentEntity;
-<<<<<<< HEAD
 import ct01.unipoint.backend.entity.UserEntity;
-=======
->>>>>>> feature/score-management
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,25 +11,19 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-<<<<<<< HEAD
 public interface StudentDao extends JpaRepository<StudentEntity, String> {
-  Optional<StudentEntity> findByStudentCode(String studentCode);
-=======
-public interface StudentDao extends JpaRepository<StudentEntity, Long> {
 
   Optional<StudentEntity> findByStudentCode(String studentCode);
-
-  Optional<StudentEntity> findByUserEntity_Username(String username);
-
-  List<StudentEntity> findByClassEntity_Id(Long classId);
-}
->>>>>>> feature/score-management
 
   Optional<StudentEntity> findByStudentCodeIgnoreCase(String studentCode);
 
   Optional<StudentEntity> findByUserEntity(UserEntity userEntity);
 
   Optional<StudentEntity> findByUserEntityId(String userId);
+
+  Optional<StudentEntity> findByUserEntity_Username(String username);
+
+  List<StudentEntity> findByClassEntity_Id(Long classId);
 
   @EntityGraph(attributePaths = {"userEntity", "classEntity", "classEntity.facultyEntity"})
   List<StudentEntity> findAllByClassEntityId(Long classId);

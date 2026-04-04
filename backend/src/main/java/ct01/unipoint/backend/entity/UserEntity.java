@@ -22,9 +22,9 @@ import lombok.Setter;
 public class UserEntity extends BaseJpaAuditingEntity {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.UUID)
   @Column(name = UserConstant.COL_ID)
-  private Long id;
+  private String id;
   @Column(name = UserConstant.COL_USERNAME, unique = true, nullable = false, length = 50)
   private String username;
   @Column(name = UserConstant.COL_EMAIL, unique = true, nullable = false, length = 100)

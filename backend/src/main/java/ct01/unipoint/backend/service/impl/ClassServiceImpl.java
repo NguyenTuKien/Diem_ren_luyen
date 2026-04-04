@@ -3,7 +3,7 @@ package ct01.unipoint.backend.service.impl;
 import ct01.unipoint.backend.dao.ClassDao;
 import ct01.unipoint.backend.entity.ClassEntity;
 import ct01.unipoint.backend.exception.business.ResourceNotFoundException;
-import ct01.unipoint.backend.service.interfaces.ClassService;
+import ct01.unipoint.backend.service.ClassService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

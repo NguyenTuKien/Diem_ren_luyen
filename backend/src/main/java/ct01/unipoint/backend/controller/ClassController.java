@@ -2,7 +2,7 @@ package ct01.unipoint.backend.controller;
 
 import ct01.unipoint.backend.dto.ResponseGeneral;
 import ct01.unipoint.backend.dto.response.ClassResponse;
-import ct01.unipoint.backend.service.interfaces.ClassService;
+import ct01.unipoint.backend.service.ClassService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

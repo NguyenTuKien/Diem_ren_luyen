@@ -30,6 +30,6 @@ public interface RecordDao extends JpaRepository<RecordEntity, Long> {
       EventEntity event
   );
 
-  List<RecordEntity> findByStudent_IdAndSemester_IdAndStatus(Long studentId, Long semesterId,
+  List<RecordEntity> findByStudent_IdAndSemester_IdAndStatus(String studentId, Long semesterId,
       RecordStatus status);
 }

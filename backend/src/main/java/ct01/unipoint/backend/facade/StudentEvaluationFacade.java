@@ -1,4 +1,4 @@
-package ct01.unipoint.backend.facade.impl;
+package ct01.unipoint.backend.facade;
 
 import ct01.unipoint.backend.dto.request.StudentSubmitRequest;
 import ct01.unipoint.backend.dto.response.EvaluationFormResponse;
@@ -7,11 +7,10 @@ import ct01.unipoint.backend.entity.StudentEntity;
 import ct01.unipoint.backend.entity.StudentSemesterEntity;
 import ct01.unipoint.backend.entity.enums.SemesterEvaluationStatus;
 import ct01.unipoint.backend.exception.business.InvalidEvaluationStatusException;
-import ct01.unipoint.backend.facade.interfaces.StudentEvaluationFacade;
-import ct01.unipoint.backend.service.interfaces.RecordService;
-import ct01.unipoint.backend.service.interfaces.SemesterService;
-import ct01.unipoint.backend.service.interfaces.StudentSemesterService;
-import ct01.unipoint.backend.service.interfaces.StudentService;
+import ct01.unipoint.backend.service.RecordService;
+import ct01.unipoint.backend.service.SemesterService;
+import ct01.unipoint.backend.service.StudentSemesterService;
+import ct01.unipoint.backend.service.StudentService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,14 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class StudentEvaluationFacadeImpl implements StudentEvaluationFacade {
+public class StudentEvaluationFacade {
 
   private final StudentService studentService;
   private final SemesterService semesterService;
   private final StudentSemesterService evaluationService;
   private final RecordService recordService;
 
-  @Override
   @Transactional
   public void submitEvaluation(final String username, final StudentSubmitRequest request) {
     final StudentEntity student = this.studentService.getStudentByUsername(username);
@@ -51,7 +49,6 @@ public class StudentEvaluationFacadeImpl implements StudentEvaluationFacade {
     this.evaluationService.save(evaluation);
   }
 
-  @Override
   @Transactional(readOnly = true)
   public EvaluationFormResponse getEvaluationForm(final String username, final Long semesterId) {
     final StudentEntity student = this.studentService.getStudentByUsername(username);
@@ -104,3 +101,4 @@ public class StudentEvaluationFacadeImpl implements StudentEvaluationFacade {
         .sum();
   }
 }
+

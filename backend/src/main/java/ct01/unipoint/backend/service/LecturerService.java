@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface LecturerService {
 
+  LecturerEntity getLecturerByUsername(String username);
+
   String ensureLecturerAccessForCurrentUser(String requestedLecturerId);
 
   LecturerStudentOptionsResponse getOptions(String lecturerId);

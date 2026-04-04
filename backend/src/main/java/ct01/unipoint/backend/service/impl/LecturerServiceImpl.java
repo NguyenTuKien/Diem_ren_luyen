@@ -49,6 +49,7 @@ import ct01.unipoint.backend.entity.enums.RecordStatus;
 import ct01.unipoint.backend.entity.enums.Role;
 import ct01.unipoint.backend.entity.enums.UserStatus;
 import ct01.unipoint.backend.exception.ApiException;
+import ct01.unipoint.backend.exception.business.ResourceNotFoundException;
 import ct01.unipoint.backend.dao.RecordDao;
 import ct01.unipoint.backend.dao.ClassDao;
 import ct01.unipoint.backend.dao.EventDao;
@@ -79,11 +80,12 @@ public class LecturerServiceImpl implements LecturerService {
   @Transactional
   public String ensureLecturerAccessForCurrentUser(String requestedLecturerId) {
     UserEntity currentUser = userService.requireCurrentUser();
-    LecturerEntity lecturer = lecturerDao.findByUserEntityId(currentUser.getId())
+    String currentUserId = currentUser.getId();
+    LecturerEntity lecturer = lecturerDao.findByUserEntityId(currentUserId)
         .orElseGet(() -> provisionLecturerProfile(currentUser));
 
     boolean matchesLecturerId = Objects.equals(lecturer.getId(), requestedLecturerId);
-    boolean matchesUserId = Objects.equals(currentUser.getId(), requestedLecturerId);
+    boolean matchesUserId = Objects.equals(currentUserId, requestedLecturerId);
 
     if (!matchesLecturerId && !matchesUserId) {
       throw new ApiException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập dữ liệu này.");
@@ -575,6 +577,12 @@ public class LecturerServiceImpl implements LecturerService {
         return lecturerDao.findByUserEntity(userEntity).orElseThrow();
     }
 
+      @Override
+      public LecturerEntity getLecturerByUsername(final String username) {
+        return this.lecturerDao.findByUserEntity_Username(username)
+            .orElseThrow(() -> new ResourceNotFoundException("Lecturer profile for user: " + username));
+      }
+
   private String getCellValue(Cell cell, DataFormatter formatter) {
     if (cell == null) {
       return "";
@@ -584,9 +592,3 @@ public class LecturerServiceImpl implements LecturerService {
   }
 }
 
-
-  @Override
-  public LecturerEntity getLecturerByUsername(final String username) {
-    return this.lecturerDao.findByUserEntity_Username(username)
-  }
-        .orElseThrow(() -> new ResourceNotFoundException("Lecturer profile for user: " + username));

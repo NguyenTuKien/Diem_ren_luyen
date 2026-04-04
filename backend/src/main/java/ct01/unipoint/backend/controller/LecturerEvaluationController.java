@@ -4,7 +4,8 @@ import ct01.unipoint.backend.dto.ResponseGeneral;
 import ct01.unipoint.backend.dto.request.LecturerReviewRequest;
 import ct01.unipoint.backend.dto.response.EvaluationFormResponse;
 import ct01.unipoint.backend.dto.response.StudentEvaluationSummaryResponse;
-import ct01.unipoint.backend.facade.interfaces.LecturerEvaluationFacade;
+import ct01.unipoint.backend.facade.LecturerEvaluationFacade;
+
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
