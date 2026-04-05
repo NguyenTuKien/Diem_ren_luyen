@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -33,62 +34,92 @@ public class QrCodeConsumer {
 
         Long eventId = message.getEventId();
         String studentId = message.getStudentId();
+        String deviceId = message.getDeviceId();
 
-        String lockKey = "checkin_lock:" + studentId + ":" + eventId;
-        String lockValue = UUID.randomUUID().toString();
-
-        log.info("Nhận message check-in: studentId={}, eventId={}", studentId, eventId);
-
-        // 🔒 Acquire distributed lock (SET NX + TTL)
-        Boolean lockAcquired = stringRedisTemplate.opsForValue()
-                .setIfAbsent(lockKey, lockValue, Duration.ofSeconds(10));
-
-        if (Boolean.FALSE.equals(lockAcquired)) {
-            log.warn("Duplicate event bị chặn bởi Redis lock: studentId={}, eventId={}", studentId, eventId);
+        if (eventId == null || studentId == null || studentId.trim().isEmpty()) {
+            log.warn("Thiếu eventId hoặc studentId trong message check-in: studentId={}, eventId={}", studentId, eventId);
+            return;
+        }
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            log.warn("Thiếu deviceId trong message check-in: studentId={}, eventId={}", studentId, eventId);
             return;
         }
 
+        String normalizedDeviceId = deviceId.trim();
+
+        EventEntity event = eventRepository.findById(eventId).orElse(null);
+        StudentEntity student = studentRepository.findById(studentId).orElse(null);
+        if (event == null || student == null) {
+            log.error("Không tìm thấy dữ liệu: studentId={}, eventId={}", studentId, eventId);
+            return;
+        }
+
+        Duration ttlDuration = Duration.between(LocalDateTime.now(), event.getEndTime());
+        if (!ttlDuration.isPositive()) {
+            log.warn("Sự kiện đã kết thúc, bỏ qua check-in: studentId={}, eventId={}", studentId, eventId);
+            return;
+        }
+
+        String processingLockKey = "event_checkin_processing:" + eventId + ":device:" + normalizedDeviceId;
+        String processingLockValue = UUID.randomUUID().toString();
+
+        Boolean processingLocked = stringRedisTemplate.opsForValue()
+                .setIfAbsent(processingLockKey, processingLockValue, Duration.ofSeconds(20));
+
+        if (!Boolean.TRUE.equals(processingLocked)) {
+            log.warn("Đang có request khác xử lý cùng thiết bị: eventId={}, deviceId={}", eventId, normalizedDeviceId);
+            return;
+        }
+
+        String finalDeviceLockKey = "event_checkin:" + eventId + ":device:" + normalizedDeviceId;
+        String finalDeviceLockValue = studentId;
+
+        log.info("Nhận message check-in: studentId={}, eventId={}, deviceId={}", studentId, eventId, normalizedDeviceId);
+
         try {
-            // ⚡ Check DB nhanh (idempotency)
             boolean existed = attendenceRepository.existsByEventIdAndStudentId(eventId, studentId);
             if (existed) {
                 log.warn("Đã tồn tại check-in trong DB: studentId={}, eventId={}", studentId, eventId);
                 return;
             }
 
-            // 🔎 Lấy dữ liệu
-            EventEntity event = eventRepository.findById(eventId).orElse(null);
-            StudentEntity student = studentRepository.findById(studentId).orElse(null);
-
-            if (event == null || student == null) {
-                log.error("Không tìm thấy dữ liệu: studentId={}, eventId={}", studentId, eventId);
+            String currentDeviceLockValue = stringRedisTemplate.opsForValue().get(finalDeviceLockKey);
+            if (!Objects.equals(finalDeviceLockValue, currentDeviceLockValue)) {
+                log.warn("Thiết bị đã được dùng để điểm danh trong sự kiện này: eventId={}, deviceId={}", eventId,
+                        normalizedDeviceId);
                 return;
             }
 
-            // 💾 Save DB
             AttendenceEntity attendence = AttendenceEntity.builder()
                     .event(event)
                     .student(student)
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            attendenceRepository.save(attendence);
+            try {
+                attendenceRepository.save(attendence);
+            } catch (Exception e) {
+                String currentFinalValue = stringRedisTemplate.opsForValue().get(finalDeviceLockKey);
+                if (Objects.equals(finalDeviceLockValue, currentFinalValue)) {
+                    stringRedisTemplate.delete(finalDeviceLockKey);
+                }
+                throw e;
+            }
 
-            log.info("Check-in thành công: studentId={}, eventId={}", studentId, eventId);
+            log.info("Check-in thành công: studentId={}, eventId={}, deviceId={}", studentId, eventId,
+                    normalizedDeviceId);
 
         } catch (Exception e) {
             log.error("Lỗi xử lý check-in queue", e);
 
         } finally {
-            // 🔓 Release lock an toàn (check value)
             try {
-                String currentValue = stringRedisTemplate.opsForValue().get(lockKey);
-                if (lockValue.equals(currentValue)) {
-                    stringRedisTemplate.delete(lockKey);
-                    log.info("Đã release Redis lock: {}", lockKey);
+                String currentValue = stringRedisTemplate.opsForValue().get(processingLockKey);
+                if (Objects.equals(processingLockValue, currentValue)) {
+                    stringRedisTemplate.delete(processingLockKey);
                 }
             } catch (Exception e) {
-                log.error("Lỗi khi release Redis lock", e);
+                log.error("Lỗi khi release processing lock", e);
             }
         }
     }

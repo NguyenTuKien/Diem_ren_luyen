@@ -34,7 +34,9 @@ public class QrCodeController {
 
     @PostMapping("/scan")
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<Map<String, Object>> scanQr(@RequestBody ScanQrRequest request) {
+    public ResponseEntity<Map<String, Object>> scanQr(
+            @RequestHeader(value = "X-Device-Id", required = false) String deviceIdHeader,
+            @RequestBody ScanQrRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
@@ -45,7 +47,11 @@ public class QrCodeController {
                 .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
-        qrCodeService.scanQr(request, user.getId());
+        String resolvedDeviceId = (deviceIdHeader != null && !deviceIdHeader.trim().isEmpty())
+            ? deviceIdHeader.trim()
+            : request.getDeviceId();
+
+        qrCodeService.scanQr(request, user.getId(), resolvedDeviceId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);

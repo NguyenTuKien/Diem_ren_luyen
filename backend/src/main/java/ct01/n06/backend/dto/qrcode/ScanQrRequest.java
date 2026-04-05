@@ -11,4 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ScanQrRequest {
     private String qrData;
+    private Long eventId;
+    private String deviceId;
 }

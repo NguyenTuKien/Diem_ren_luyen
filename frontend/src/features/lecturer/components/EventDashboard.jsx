@@ -25,6 +25,13 @@ const toLocalDateInputValue = (dateTime) => {
 
 const PAGE_SIZE = 10
 
+const buildQrPayload = (eventId, qrToken) => {
+  return JSON.stringify({
+    eventId,
+    qrData: qrToken,
+  })
+}
+
 function EventDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
@@ -167,12 +174,12 @@ function EventDashboard() {
     setCurrentQrValue('')
     try {
       const response = await qrcodeApi.generateQr(event.id)
-      setCurrentQrValue(response.qrToken)
+      setCurrentQrValue(buildQrPayload(event.id, response.qrToken))
 
       qrIntervalRef.current = setInterval(async () => {
         try {
           const res = await qrcodeApi.generateQr(event.id)
-          setCurrentQrValue(res.qrToken)
+          setCurrentQrValue(buildQrPayload(event.id, res.qrToken))
         } catch (err) {
           console.error('Failed to update QR code:', err)
           clearInterval(qrIntervalRef.current)
