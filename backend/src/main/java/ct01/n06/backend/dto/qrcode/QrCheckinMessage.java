@@ -14,4 +14,5 @@ import java.io.Serializable;
 public class QrCheckinMessage implements Serializable {
     private Long eventId;
     private String studentId;
+    private String deviceId;
 }

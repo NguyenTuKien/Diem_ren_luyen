@@ -6,6 +6,6 @@ import ct01.n06.backend.dto.qrcode.ScanQrRequest;
 public interface QrCodeService {
     GenerateQrResponse generateQr(Long eventId);
 
-    void scanQr(ScanQrRequest request, String studentUserId);
+    void scanQr(ScanQrRequest request, String studentUserId, String deviceId);
 }
 

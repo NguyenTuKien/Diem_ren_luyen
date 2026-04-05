@@ -15,19 +15,24 @@ export const qrcodeApi = {
     return response.json()
   },
 
-  scanQRCode: async (qrData) => {
+  scanQRCode: async ({ qrData, eventId, deviceId }) => {
     const response = await authFetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Device-Id': deviceId,
       },
-      body: JSON.stringify({ qrData })
+      body: JSON.stringify({ qrData, eventId, deviceId }),
     })
 
+    const responseData = await response.json().catch(() => ({}))
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Lỗi lúc quét mã mã QR')
+      const error = new Error(responseData.message || 'Lỗi lúc quét mã QR')
+      error.status = response.status
+      throw error
     }
-    return response.json()
+
+    return responseData
   }
 }

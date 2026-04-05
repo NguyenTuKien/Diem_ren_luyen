@@ -2,27 +2,70 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
 import { qrcodeApi } from '../../../shared/api/qrcodeApi'
+import { getOrCreateDeviceId } from '../../../shared/utils/deviceId'
 
 const SCANNER_REGION_ID = 'unipoint-qr-reader'
 
-const handleCheckinSubmit = async (qrData, pinCode = null) => {
-  if (!qrData && !pinCode) {
-    throw new Error('Vui lòng cung cấp mã QR hoặc mã PIN.')
+function resolveScanPayload(decodedText, fallbackEventId) {
+  const raw = String(decodedText || '').trim()
+  if (!raw) {
+    throw new Error('Mã QR không hợp lệ. Vui lòng quét lại.')
   }
 
-  if (qrData) {
-    const response = await qrcodeApi.scanQRCode(qrData)
-    return {
-      success: true,
-      message: response.message || 'Điểm danh QR thành công!'
+  let qrData = raw
+  let eventId = null
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') {
+      qrData = parsed.qrData || parsed.qrToken || parsed.token || raw
+      if (parsed.eventId != null) {
+        eventId = Number(parsed.eventId)
+      }
     }
-  } else if (pinCode) {
-    // PIN implementation placeholder
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    return {
-      success: true,
-      message: 'Điểm danh bằng PIN thành công!'
+  } catch {
+    // Keep raw text when QR content is not JSON.
+  }
+
+  if (eventId == null && /^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw)
+      const value = Number(url.searchParams.get('eventId'))
+      if (Number.isFinite(value) && value > 0) {
+        eventId = value
+      }
+      const tokenFromUrl = url.searchParams.get('qrData') || url.searchParams.get('token')
+      if (tokenFromUrl) {
+        qrData = tokenFromUrl
+      }
+    } catch {
+      // Ignore URL parse errors.
     }
+  }
+
+  if (eventId == null && /^\d+$/.test(raw)) {
+    eventId = Number(raw)
+  }
+
+  if (eventId == null && fallbackEventId) {
+    const fallbackNumber = Number(fallbackEventId)
+    if (Number.isFinite(fallbackNumber) && fallbackNumber > 0) {
+      eventId = fallbackNumber
+    }
+  }
+
+  if (eventId == null || !Number.isFinite(eventId) || eventId <= 0) {
+    throw new Error('Không đọc được eventId từ mã QR.')
+  }
+
+  return { qrData, eventId }
+}
+
+const handleCheckinSubmit = async ({ qrData, eventId, deviceId }) => {
+  const response = await qrcodeApi.scanQRCode({ qrData, eventId, deviceId })
+  return {
+    success: true,
+    message: response.message || 'Điểm danh thành công'
   }
 }
 
@@ -36,11 +79,13 @@ function QRScanner() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [notice, setNotice] = useState({ type: '', message: '' })
   const [toastMessage, setToastMessage] = useState('')
-  const [eventId, setEventId] = useState(searchParams.get('eventId') || '')
+  const [scanCompleted, setScanCompleted] = useState(false)
   const [pinCode, setPinCode] = useState('')
   const toastTimerRef = useRef(null)
 
   const scannerRef = useRef(null)
+  const scanLockRef = useRef(false)
+  const fallbackEventId = searchParams.get('eventId') || ''
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current && scannerRef.current.isScanning) {
@@ -63,35 +108,52 @@ function QRScanner() {
     setIsScanning(false)
   }, [])
 
-  const processCheckin = useCallback(async (qrDataOrEventId, pin = null) => {
+  const processCheckin = useCallback(async (scanPayload) => {
     setIsProcessing(true)
     setNotice({ type: '', message: '' })
 
     try {
-      const result = await handleCheckinSubmit(qrDataOrEventId, pin)
+      const result = await handleCheckinSubmit(scanPayload)
       setNotice({ type: 'success', message: result.message })
-      setToastMessage('Đã điểm danh thành công!')
+      setToastMessage('Điểm danh thành công')
+      setScanCompleted(true)
 
       if (toastTimerRef.current) {
         clearTimeout(toastTimerRef.current)
       }
       toastTimerRef.current = setTimeout(() => setToastMessage(''), 3500)
     } catch (error) {
-      setNotice({ type: 'error', message: error.message || 'Điểm danh thất bại.' })
+      if (error?.status === 403) {
+        setNotice({
+          type: 'error',
+          message: 'Thiết bị này đã được sử dụng để điểm danh cho sự kiện này!'
+        })
+      } else {
+        setNotice({ type: 'error', message: error.message || 'Mã QR không hợp lệ hoặc đã hết hạn.' })
+      }
+      scanLockRef.current = false
     } finally {
       setIsProcessing(false)
     }
   }, [])
 
   const onScanSuccess = useCallback(async (decodedText) => {
-    if (!decodedText) {
-      setNotice({ type: 'error', message: 'Mã QR không hợp lệ. Vui lòng quét lại.' })
+    if (scanLockRef.current || isProcessing || scanCompleted) {
       return
     }
 
+    scanLockRef.current = true
+
     await stopScanner()
-    processCheckin(decodedText)
-  }, [processCheckin, stopScanner])
+    try {
+      const deviceId = getOrCreateDeviceId()
+      const payload = resolveScanPayload(decodedText, fallbackEventId)
+      await processCheckin({ ...payload, deviceId })
+    } catch (error) {
+      setNotice({ type: 'error', message: error.message || 'Mã QR không hợp lệ hoặc đã hết hạn.' })
+      scanLockRef.current = false
+    }
+  }, [fallbackEventId, isProcessing, processCheckin, scanCompleted, stopScanner])
 
   const startScanner = useCallback(async () => {
     try {
@@ -138,12 +200,6 @@ function QRScanner() {
     }
   }, [startScanner])
 
-  useEffect(() => {
-    if (eventId) {
-      processCheckin(eventId)
-    }
-  }, [eventId, processCheckin])
-
   useEffect(() => () => {
     stopScanner()
     if (toastTimerRef.current) {
@@ -156,13 +212,14 @@ function QRScanner() {
       setNotice({ type: 'error', message: 'Mã PIN không hợp lệ' })
       return
     }
-    processCheckin(null, pinCode)
+    setNotice({ type: 'error', message: 'Điểm danh bằng PIN chưa được bật cho phiên bản này.' })
   }
 
   const handleResetQRTab = async () => {
-    setEventId('')
     setPinCode('')
+    setScanCompleted(false)
     setNotice({ type: '', message: '' })
+    scanLockRef.current = false
     if (permissionStatus === 'granted') {
       await startScanner()
     }
@@ -205,6 +262,34 @@ function QRScanner() {
                   <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Quét mã sự kiện</h3>
                   <p className="text-slate-500 text-sm text-center mb-8">Vui lòng quét mã QR tại sự kiện hoặc nhập mã PIN được cung cấp bởi ban tổ chức.</p>
 
+                  {scanCompleted && notice.type === 'success' && (
+                    <div className="w-full mb-6 p-5 rounded-2xl border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+                      <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-green-600 text-3xl">task_alt</span>
+                        <div className="flex-1">
+                          <p className="text-base font-bold text-green-800 dark:text-green-300">Điểm danh thành công</p>
+                          <p className="text-sm mt-1 text-green-700 dark:text-green-400">{notice.message}</p>
+                          <div className="mt-4 flex gap-2">
+                            <button
+                              onClick={() => {
+                                window.location.href = '/student'
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                            >
+                              Quay lại Dashboard
+                            </button>
+                            <button
+                              onClick={handleResetQRTab}
+                              className="bg-white text-green-700 border border-green-300 px-4 py-2 rounded-lg text-sm font-semibold"
+                            >
+                              Quét lại
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* QR Scanner Frame Container */}
                   <div className="w-full aspect-square bg-slate-100 dark:bg-slate-900 rounded-2xl relative flex items-center justify-center overflow-hidden border-2 border-dashed border-primary/30 group">
                     {/* html5-qrcode renderer block */}
@@ -213,7 +298,7 @@ function QRScanner() {
                       className={`absolute inset-0 z-0 [&>div]:!h-full [&>div]:!w-full [&_video]:!h-full [&_video]:!w-full [&_video]:!object-cover ${isScanning ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                     />
 
-                    {!isScanning && (
+                    {!isScanning && !scanCompleted && (
                       <>
                         <div
                           className="absolute inset-0 bg-cover bg-center opacity-50 transition-transform group-hover:scale-110"
@@ -267,7 +352,7 @@ function QRScanner() {
                   </div>
 
                   {/* Notice Block beneath Scanner */}
-                  {notice.message && (
+                  {notice.message && notice.type === 'error' && (
                     <div className={`w-full mt-4 p-4 border rounded-lg flex items-start gap-3 ${notice.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'}`}>
                       <span className={`material-symbols-outlined shrink-0 mt-0.5 ${notice.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                         {notice.type === 'success' ? 'check_circle' : 'error'}
@@ -289,7 +374,7 @@ function QRScanner() {
                     </div>
                   )}
 
-                  {!eventId && !isScanning && !notice.message && (
+                  {!scanCompleted && !isScanning && !notice.message && (
                     <div className="w-full mt-10">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
