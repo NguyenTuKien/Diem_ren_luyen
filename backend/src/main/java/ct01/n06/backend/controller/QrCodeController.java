@@ -1,5 +1,6 @@
 package ct01.n06.backend.controller;
 
+import ct01.n06.backend.annotation.RateLimit;
 import ct01.n06.backend.dto.qrcode.CheckinByCodeRequest;
 import ct01.n06.backend.dto.qrcode.ScanQrRequest;
 import ct01.n06.backend.dto.qrcode.GenerateQrResponse;
@@ -37,6 +38,7 @@ public class QrCodeController {
 
     @PostMapping("/scan")
     @PreAuthorize("hasRole('STUDENT')")
+    @RateLimit(limit = 100, window = 1, isGlobal = true)
     public ResponseEntity<Map<String, Object>> scanQr(
             @RequestHeader(value = "X-Device-Id", required = false) String deviceIdHeader,
             @RequestBody ScanQrRequest request) {
@@ -64,6 +66,7 @@ public class QrCodeController {
 
     @PostMapping("/checkin/code")
     @PreAuthorize("hasRole('STUDENT')")
+    @RateLimit(limit = 100, window = 1, isGlobal = true)
     public ResponseEntity<Map<String, Object>> checkinByCode(
             @RequestHeader(value = "X-Device-Id", required = false) String deviceIdHeader,
             @Valid @RequestBody CheckinByCodeRequest request) {

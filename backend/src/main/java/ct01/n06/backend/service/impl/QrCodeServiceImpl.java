@@ -34,7 +34,7 @@ import static ct01.n06.backend.util.RandomUtil.generate6DigitPin;
 public class QrCodeServiceImpl implements QrCodeService {
 
     private static final String PIN_CODE_KEY_PREFIX = "PIN_";
-    private static final long PIN_CODE_TTL_SECONDS = 6L;
+    private static final long PIN_CODE_TTL_SECONDS = 11L;
 
     private final QrCodeRepository qrCodeRepository;
     private final EventRepository eventRepository;
@@ -51,7 +51,7 @@ public class QrCodeServiceImpl implements QrCodeService {
                 .qrToken(token)
                 .eventId(eventId)
                 .pinCode(pinCode)
-                .timeToLive(PIN_CODE_TTL_SECONDS) // 6 giây trên Redis (để buffer 1s cho mạng)
+                .timeToLive(PIN_CODE_TTL_SECONDS) // 11 giây trên Redis (để buffer 1s cho mạng)
                 .build();
                 
         // Lưu vào Redis, cấu hình @TimeToLive sẽ tự động xóa sau TTL
