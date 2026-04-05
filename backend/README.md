@@ -57,6 +57,7 @@ Tài liệu này liệt kê các API hiện có trong backend của hệ thống
 | --- | --- | --- | --- | --- | --- | --- |
 | `GET` | `/v1/qrcode/generate` | Query: `eventId` | `GenerateQrResponse` | Bearer | `ROLE_LECTURER` hoặc `ROLE_ADMIN` (`@PreAuthorize`) | Tạo QR cho sự kiện. |
 | `POST` | `/v1/qrcode/scan` | Body: `ScanQrRequest` | `Map<String,Object>` (`success`, `message`) | Bearer | `ROLE_STUDENT` (`@PreAuthorize`) | Sinh viên quét QR để điểm danh. |
+| `POST` | `/v1/qrcode/checkin/code` | Header: `X-Device-Id`; Body: `CheckinByCodeRequest` (`pinCode`) | `Map<String,Object>` (`success`, `message`) | Bearer | `ROLE_STUDENT` (`@PreAuthorize`) | Sinh viên nhập mã PIN để điểm danh. |
 
 ### 7) Student
 

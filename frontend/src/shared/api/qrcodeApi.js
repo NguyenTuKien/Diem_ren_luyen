@@ -34,5 +34,26 @@ export const qrcodeApi = {
     }
 
     return responseData
+  },
+
+  checkinByCode: async ({ pinCode, deviceId }) => {
+    const response = await authFetch(`${API_BASE_URL}/checkin/code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Device-Id': deviceId,
+      },
+      body: JSON.stringify({ pinCode }),
+    })
+
+    const responseData = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const error = new Error(responseData.message || 'Lỗi lúc điểm danh bằng PIN')
+      error.status = response.status
+      throw error
+    }
+
+    return responseData
   }
 }

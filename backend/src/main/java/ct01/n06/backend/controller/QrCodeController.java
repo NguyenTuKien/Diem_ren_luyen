@@ -1,5 +1,6 @@
 package ct01.n06.backend.controller;
 
+import ct01.n06.backend.dto.qrcode.CheckinByCodeRequest;
 import ct01.n06.backend.dto.qrcode.ScanQrRequest;
 import ct01.n06.backend.dto.qrcode.GenerateQrResponse;
 import ct01.n06.backend.repository.UserRepository;
@@ -13,6 +14,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +59,33 @@ public class QrCodeController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "Điểm danh QR thành công!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/checkin/code")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Map<String, Object>> checkinByCode(
+            @RequestHeader(value = "X-Device-Id", required = false) String deviceIdHeader,
+            @Valid @RequestBody CheckinByCodeRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
+        }
+
+        String principal = authentication.getName();
+        UserEntity user = userRepository.findByUsernameIgnoreCase(principal)
+                .or(() -> userRepository.findByEmailIgnoreCase(principal))
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
+
+        String resolvedDeviceId = (deviceIdHeader != null && !deviceIdHeader.trim().isEmpty())
+            ? deviceIdHeader.trim()
+            : null;
+
+        qrCodeService.checkinByCode(request, user.getId(), resolvedDeviceId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Điểm danh bằng PIN thành công!");
         return ResponseEntity.ok(response);
     }
 }

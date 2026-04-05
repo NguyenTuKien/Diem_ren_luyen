@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class GenerateQrResponse {
     private String qrToken;
+    private String pinCode;
     private Long timeToLive;
 }
