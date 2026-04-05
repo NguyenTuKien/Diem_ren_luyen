@@ -36,6 +36,10 @@ public class QrCodeConsumer {
         String studentId = message.getStudentId();
         String deviceId = message.getDeviceId();
 
+        if (eventId == null || studentId == null || studentId.trim().isEmpty()) {
+            log.warn("Thiếu eventId hoặc studentId trong message check-in: studentId={}, eventId={}", studentId, eventId);
+            return;
+        }
         if (deviceId == null || deviceId.trim().isEmpty()) {
             log.warn("Thiếu deviceId trong message check-in: studentId={}, eventId={}", studentId, eventId);
             return;
@@ -79,8 +83,8 @@ public class QrCodeConsumer {
                 return;
             }
 
-                String currentDeviceLockValue = stringRedisTemplate.opsForValue().get(finalDeviceLockKey);
-                if (!Objects.equals(finalDeviceLockValue, currentDeviceLockValue)) {
+            String currentDeviceLockValue = stringRedisTemplate.opsForValue().get(finalDeviceLockKey);
+            if (!Objects.equals(finalDeviceLockValue, currentDeviceLockValue)) {
                 log.warn("Thiết bị đã được dùng để điểm danh trong sự kiện này: eventId={}, deviceId={}", eventId,
                         normalizedDeviceId);
                 return;
