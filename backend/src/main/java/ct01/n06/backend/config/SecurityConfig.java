@@ -57,7 +57,7 @@ public class SecurityConfig {
                                                                 new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                                 .authorizeHttpRequests(auth -> auth
                                                 // Mở khóa các endpoint cần thiết
-                                                .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/oauth2/**",
+                                                .requestMatchers("/v1/auth/login", "/v1/auth/refresh", "/v1/auth/logout", "/oauth2/**",
                                                                 "/login/**", "/error", "/actuator/**")
                                                 .permitAll()
                                                 .requestMatchers("/v1/admin/**").hasAuthority("ROLE_ADMIN")

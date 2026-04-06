@@ -11,19 +11,20 @@ function getSessionTokens() {
     const raw =
       window.localStorage.getItem(AUTH_STORAGE_KEY)
       || window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
-    if (!raw) return { accessToken: null, refreshToken: null };
+    if (!raw) return { accessToken: null, refreshToken: null, deviceToken: null };
     const parsed = JSON.parse(raw);
     return {
       accessToken: parsed?.accessToken ?? null,
       refreshToken: parsed?.refreshToken ?? null,
+      deviceToken: parsed?.deviceToken ?? null,
     };
   } catch {
-    return { accessToken: null, refreshToken: null };
+    return { accessToken: null, refreshToken: null, deviceToken: null };
   }
 }
 
-// Merge new tokens back into the session store (preserves user info)
-function patchSessionTokens({ accessToken, refreshToken }) {
+// Merge new tokens back into the session store (preserves user info + deviceToken)
+function patchSessionTokens({ accessToken, refreshToken, deviceToken }) {
   try {
     const raw =
       window.localStorage.getItem(AUTH_STORAGE_KEY)
@@ -33,6 +34,8 @@ function patchSessionTokens({ accessToken, refreshToken }) {
       ...existing,
       accessToken: accessToken ?? existing.accessToken,
       refreshToken: refreshToken ?? existing.refreshToken,
+      // Giữ deviceToken: nếu response có token mới thì dùng, không thì giữ cũ
+      deviceToken: deviceToken ?? existing.deviceToken ?? null,
     }));
     window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
   } catch {
@@ -52,20 +55,24 @@ const redirectToLogin = () => {
   }
 };
 
-const buildHeaders = (optionsHeaders, token) => {
+const buildHeaders = (optionsHeaders, token, deviceToken) => {
   const headers = new Headers(optionsHeaders || {});
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+  if (deviceToken) {
+    headers.set('X-Device-Token', deviceToken);
   }
   return headers;
 };
 
 export const authFetch = async (url, options = {}) => {
-  let { accessToken, refreshToken } = getSessionTokens();
+  let { accessToken, refreshToken, deviceToken } = getSessionTokens();
 
   let response = await fetch(url, {
     ...options,
-    headers: buildHeaders(options.headers, accessToken),
+    credentials: 'include',
+    headers: buildHeaders(options.headers, accessToken, deviceToken),
   });
 
   if (response.status !== 401) {
@@ -95,7 +102,8 @@ export const authFetch = async (url, options = {}) => {
 
     response = await fetch(url, {
       ...options,
-      headers: buildHeaders(options.headers, accessToken),
+      credentials: 'include',
+      headers: buildHeaders(options.headers, accessToken, deviceToken),
     });
 
     if (response.status === 401) {
@@ -110,4 +118,3 @@ export const authFetch = async (url, options = {}) => {
     return response;
   }
 };
-

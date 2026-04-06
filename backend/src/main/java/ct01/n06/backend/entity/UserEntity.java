@@ -1,6 +1,7 @@
 package ct01.n06.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nimbusds.oauth2.sdk.TokenIntrospectionSuccessResponse;
 import ct01.n06.backend.constant.UserConstant;
 import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.n06.backend.entity.enums.Role;
@@ -8,6 +9,7 @@ import ct01.n06.backend.entity.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,6 +19,7 @@ import lombok.Setter;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @Builder
 @Table(name = UserConstant.TABLE_NAME)
 public class UserEntity extends BaseJpaAuditingEntity {
@@ -38,4 +41,7 @@ public class UserEntity extends BaseJpaAuditingEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = UserConstant.COL_STATUS, length = 20)
   private UserStatus status;
+
+  @Column(name = UserConstant.COL_TOTP_SECRET, length = 64)
+  private String totpSecret;
 }

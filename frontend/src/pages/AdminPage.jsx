@@ -20,11 +20,11 @@ export default function AdminPage() {
   const [activeFeature, setActiveFeature] = useState("dashboard");
   const FeatureComponent = FEATURE_COMPONENTS[activeFeature] || AdminDashboard;
   const fullNameLabel = user?.displayName || "Administrator";
-  const userIdLabel = user?.userId || "admin";
+  const userIdLabel = user?.profileCode || user?.userId || "admin";
   const avatarLetter = (fullNameLabel || "A").slice(0, 1).toUpperCase();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth", { replace: true });
   };
 

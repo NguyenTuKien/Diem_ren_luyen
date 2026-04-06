@@ -1,18 +1,24 @@
-// eslint-disable-next-line no-undef
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
-        changeOrigin: true,
-      }
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
+
+    return {
+        plugins: [react()],
+        server: {
+            host: '0.0.0.0',
+            port: 3000,
+            proxy: {
+                '/api': {
+                    // Sử dụng env.VITE_API_PROXY_TARGET thay cho import.meta.env
+                    target: env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
+                    changeOrigin: true,
+                }
+            }
+        },
+        define: {
+            'process.env': env
+        }
     }
-  }
 })

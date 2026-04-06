@@ -12,4 +12,5 @@ public class UserConstant {
   public static final String COL_PASSWORD = "password";
   public static final String COL_ROLE = "role";
   public static final String COL_STATUS = "status";
+  public static final String COL_TOTP_SECRET = "totp_secret";
 }

@@ -1,31 +1,37 @@
 package ct01.n06.backend.entity;
 
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
+import lombok.Setter;
 
 @Entity
-@Table(name = "attendent")
-@Data
+@Table(name = "attendent",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uc_attendent_event_student",
+        columnNames = {"event_id", "student_id"}
+    )
+)
+@Getter
+@Setter
+@EqualsAndHashCode(callSuper = false)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AttendenceEntity {
+public class AttendenceEntity extends BaseJpaAuditingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "event_id", unique = true)
+    @JoinColumn(name = "event_id")
     private EventEntity event;
 
     @ManyToOne
-    @JoinColumn(name = "student_id", unique = true)
+    @JoinColumn(name = "student_id")
     private StudentEntity student;
-
-    private LocalDateTime createdAt;
 }

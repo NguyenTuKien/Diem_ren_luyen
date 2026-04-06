@@ -93,7 +93,6 @@ public class QrCodeConsumer {
             AttendenceEntity attendence = AttendenceEntity.builder()
                     .event(event)
                     .student(student)
-                    .createdAt(LocalDateTime.now())
                     .build();
 
             try {

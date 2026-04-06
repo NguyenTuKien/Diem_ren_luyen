@@ -1,114 +1,135 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useStudentDashboard } from "../hooks/useStudentDashboard";
-
-function parseUiDateTime(value) {
-    if (!value || typeof value !== "string") {
-        return null;
-    }
-
-    const [datePart, timePart = "00:00"] = value.trim().split(" ");
-    const [dd, mm, yyyy] = datePart.split("/").map(Number);
-    const [hour, minute] = timePart.split(":").map(Number);
-
-    if (!dd || !mm || !yyyy) {
-        return null;
-    }
-
-    return new Date(yyyy, mm - 1, dd, Number(hour) || 0, Number(minute) || 0);
-}
-
-function getEventBadge(startTime) {
-    if (!startTime) {
-        return { day: "--", month: "TH--" };
-    }
-
-    const [datePart] = startTime.split(" ");
-    const [day, month] = datePart.split("/");
-    const monthNumber = Number(month);
-
-    return {
-        day: day || "--",
-        month: Number.isNaN(monthNumber) ? "TH--" : `TH${monthNumber}`,
-    };
-}
+import { useStudentEvents } from "../hooks/useStudentEvents";
 
 export default function StudentEventsPanel() {
-    const { user } = useAuth();
-    const { dashboard, loading, error } = useStudentDashboard(user?.userId);
+  const { user } = useAuth();
+  const { events, loading, error } = useStudentEvents(user?.userId);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
-    const upcomingEvents = useMemo(() => {
-        const rows = Array.isArray(dashboard?.upcomingEvents) ? dashboard.upcomingEvents : [];
-        const now = new Date();
+  if (loading) {
+    return <div className="p-6 text-slate-500">Đang tải sự kiện...</div>;
+  }
 
-        return rows
-            .map((event) => ({ ...event, _startDate: parseUiDateTime(event.startTime) }))
-            .filter((event) => !event._startDate || event._startDate >= now)
-            .sort((a, b) => {
-                if (!a._startDate && !b._startDate) {
-                    return 0;
-                }
-                if (!a._startDate) {
-                    return 1;
-                }
-                if (!b._startDate) {
-                    return -1;
-                }
-                return a._startDate - b._startDate;
-            });
-    }, [dashboard]);
+  if (error) {
+    return <div className="p-6 text-red-500">Lỗi: {error}</div>;
+  }
 
-    if (loading) {
-        return <div className="page-state">Đang tải danh sách sự kiện sắp tới...</div>;
-    }
+  // Sắp xếp các sự kiện mới nhất (startTime giảm dần hoặc tang dan)
+  // Backend đang trả về time asc (những sự kiện gần nhất trước). 
+  // Để render "mới nhất" lên trên tuỳ chỉnh theo ý user
+  const sortedEvents = [...events].sort((a, b) => {
+    return new Date(b.startTime) - new Date(a.startTime);
+  });
 
-    if (error) {
-        return <div className="page-state error">Không thể tải sự kiện: {error}</div>;
-    }
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/50 w-full overflow-hidden flex flex-col h-[calc(100vh-100px)]">
+      <div className="p-6 border-b border-slate-200 dark:border-slate-700/50 shrink-0">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Sự kiện sắp tới</h2>
+        <p className="text-sm text-slate-500 mt-1">Danh sách các sự kiện được sắp xếp mới nhất từ trên xuống.</p>
+      </div>
 
-    return (
-        <section className="rounded-2xl border border-primary/10 bg-white p-6 shadow-sm dark:bg-slate-800/50">
-            <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex-1 overflow-auto p-6">
+        {sortedEvents.length === 0 ? (
+          <div className="py-12 text-center text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+            Chưa có sự kiện sắp tới.
+          </div>
+        ) : (
+          <div className="overflow-hidden border border-slate-200 dark:border-slate-700 rounded-xl">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Tên sự kiện</th>
+                  <th className="px-4 py-3 font-semibold">Thời gian bắt đầu</th>
+                  <th className="px-4 py-3 font-semibold">Địa điểm</th>
+                  <th className="px-4 py-3 font-semibold text-right">Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
+                {sortedEvents.map((event) => (
+                  <tr 
+                    key={event.id} 
+                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedEvent(event)}
+                  >
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 max-w-[300px] truncate" title={event.title}>
+                      {event.title}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+                      {event.startTime}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[200px] truncate" title={event.location}>
+                      {event.location || "Đang cập nhật"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button 
+                        className="text-primary hover:underline font-medium text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedEvent(event);
+                        }}
+                      >
+                        Xem chi tiết
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Event Detail Modal */}
+      {selectedEvent && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 shrink-0 flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                  {selectedEvent.title}
+                </h3>
+                <p className="text-sm text-primary font-medium flex items-center gap-1 mt-2">
+                  <span className="material-symbols-outlined text-[16px]">schedule</span>
+                  Bắt đầu: {selectedEvent.startTime}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedEvent(null)}
+                className="size-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 text-sm text-slate-600 dark:text-slate-300 space-y-4">
+              <div className="flex items-start gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                <span className="material-symbols-outlined text-slate-400">location_on</span>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Sự kiện sắp tới</h2>
-                    <p className="mt-1 text-sm text-slate-500">Chỉ hiển thị các sự kiện chưa diễn ra.</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100 mb-0.5">Địa điểm tổ chức</p>
+                  <p>{selectedEvent.location || "Chưa có thông tin cập nhật"}</p>
                 </div>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                    {upcomingEvents.length} sự kiện
-                </span>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">Mô tả sự kiện</h4>
+                <div className="whitespace-pre-wrap rounded-lg bg-slate-50 dark:bg-slate-800/30 p-4 border border-slate-100 dark:border-slate-800/50">
+                  {selectedEvent.description || "Chưa có thông tin mô tả chi tiết."}
+                </div>
+              </div>
             </div>
 
-            {upcomingEvents.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                    Hiện chưa có sự kiện sắp tới.
-                </p>
-            ) : (
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {upcomingEvents.map((event) => {
-                        const badge = getEventBadge(event.startTime);
-                        return (
-                            <article
-                                key={event.id}
-                                className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
-                            >
-                                <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                    <span className="text-[11px] font-semibold">{badge.month}</span>
-                                    <strong className="text-lg leading-none">{badge.day}</strong>
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{event.title}</h3>
-                                    <p className="mt-1 text-xs text-slate-500">{event.startTime || "Đang cập nhật thời gian"}</p>
-                                    <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-600 dark:text-slate-300">
-                                        <span className="material-symbols-outlined text-sm">location_on</span>
-                                        {event.location || "Đang cập nhật địa điểm"}
-                                    </p>
-                                </div>
-                            </article>
-                        );
-                    })}
-                </div>
-            )}
-        </section>
-    );
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+              <button 
+                onClick={() => setSelectedEvent(null)}
+                className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white font-semibold rounded-xl transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

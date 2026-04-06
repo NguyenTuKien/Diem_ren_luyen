@@ -53,6 +53,11 @@ public class UserServiceImpl implements UserService {
                 .or(() -> userRepository.findByUsername(principalIdentifier))
                 .or(() -> userRepository.findByEmail(principalIdentifier));
     }
+
+    @Override
+    public UserEntity save(UserEntity user) {
+        return userRepository.save(user);
+    }
 }
 
 

@@ -1,61 +1,52 @@
 package ct01.n06.backend.exception;
 
-import ct01.n06.backend.constant.exception.ExceptionConstant;
-import ct01.n06.backend.dto.ResponseGeneral;
-import ct01.n06.backend.exception.base.BaseException;
-import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@Slf4j
+import java.util.HashMap;
+import java.util.Map;
+
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(BaseException.class)
-  public ResponseEntity<ResponseGeneral<Object>> handleBaseException(BaseException ex) {
+    private Map<String, Object> buildErrorResponse(String message) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", message);
+        return response;
+    }
 
-    String detailMessage = ex.getMessage();
+    @ExceptionHandler(RequestException.class)
+    public ResponseEntity<Map<String, Object>> handleRequestException(RequestException ex) {
+        log.warn("RequestException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(buildErrorResponse(ex.getMessage()));
+    }
 
-    ResponseGeneral<Object> response = ResponseGeneral.of(
-        ex.getHttpStatus().value(),
-        detailMessage,
-        null,
-        LocalDateTime.now().toString()
-    );
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedException(UnauthorizedException ex) {
+        log.warn("UnauthorizedException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(buildErrorResponse(ex.getMessage()));
+    }
 
-    return ResponseEntity.status(ex.getHttpStatus()).body(response);
-  }
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleForbiddenException(ForbiddenException ex) {
+        log.warn("ForbiddenException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(buildErrorResponse(ex.getMessage()));
+    }
 
-  @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ResponseEntity<ResponseGeneral<Object>> handleHttpMessageNotReadableException(
-      HttpMessageNotReadableException ex) {
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFoundException(NotFoundException ex) {
+        log.warn("NotFoundException: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildErrorResponse(ex.getMessage()));
+    }
 
-    ResponseGeneral<Object> response = ResponseGeneral.of(
-        HttpStatus.BAD_REQUEST.value(),
-        ExceptionConstant.MISSING_REQUEST_BODY,
-        null,
-        LocalDateTime.now().toString()
-    );
-
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-  }
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ResponseGeneral<Object>> handleException(Exception ex) {
-
-    String detailMessage = ExceptionConstant.GROUP_CODE_SYSTEM;
-
-    ResponseGeneral<Object> response = ResponseGeneral.of(
-        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-        detailMessage,
-        null,
-        LocalDateTime.now().toString()
-    );
-
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-  }
+    @ExceptionHandler(ServerException.class)
+    public ResponseEntity<Map<String, Object>> handleServerException(ServerException ex) {
+        log.error("ServerException: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(buildErrorResponse(ex.getMessage()));
+    }
 }

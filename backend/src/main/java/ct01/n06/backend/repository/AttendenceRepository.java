@@ -11,4 +11,6 @@ public interface AttendenceRepository extends JpaRepository<AttendenceEntity, Lo
     Optional<AttendenceEntity> findByEventIdAndStudentId(Long eventId, String studentId);
 
     boolean existsByEventIdAndStudentId(Long eventId, String studentId);
+
+    java.util.List<AttendenceEntity> findTop10ByStudentIdOrderByCreatedAtDesc(String studentId);
 }

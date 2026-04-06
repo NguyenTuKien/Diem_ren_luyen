@@ -37,6 +37,7 @@ function EventDashboard() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [qrEvent, setQrEvent] = useState(null)
   const [currentQrValue, setCurrentQrValue] = useState('')
+  const [currentPinCode, setCurrentPinCode] = useState('')
   const [isGeneratingQr, setIsGeneratingQr] = useState(false)
   const qrIntervalRef = useRef(null)
   const [notice, setNotice] = useState({ type: '', message: '' })
@@ -172,14 +173,17 @@ function EventDashboard() {
     setQrEvent(event)
     setIsGeneratingQr(true)
     setCurrentQrValue('')
+    setCurrentPinCode('')
     try {
       const response = await qrcodeApi.generateQr(event.id)
       setCurrentQrValue(buildQrPayload(event.id, response.qrToken))
+      setCurrentPinCode(response.pinCode || '')
 
       qrIntervalRef.current = setInterval(async () => {
         try {
           const res = await qrcodeApi.generateQr(event.id)
           setCurrentQrValue(buildQrPayload(event.id, res.qrToken))
+          setCurrentPinCode(res.pinCode || '')
         } catch (err) {
           console.error('Failed to update QR code:', err)
           clearInterval(qrIntervalRef.current)
@@ -198,6 +202,7 @@ function EventDashboard() {
     if (qrIntervalRef.current) clearInterval(qrIntervalRef.current)
     setQrEvent(null)
     setCurrentQrValue('')
+    setCurrentPinCode('')
   }
 
   const qrValue = currentQrValue
@@ -391,7 +396,6 @@ function EventDashboard() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Tạo QR Điểm danh</h3>
-                <p className="text-sm text-slate-500 mt-1">Sự kiện: {qrEvent.name}</p>
               </div>
               <button
                 type="button"
@@ -411,7 +415,12 @@ function EventDashboard() {
               ) : currentQrValue ? (
                 <>
                   <QRCodeSVG value={currentQrValue} size={280} bgColor="#ffffff" fgColor="#111827" level="H" includeMargin />
-                  <p className="mt-4 text-xs text-center text-slate-500 break-all max-w-[280px] line-clamp-2" title={currentQrValue}>{currentQrValue}</p>
+                  {currentPinCode && (
+                    <div className="mt-4 rounded-xl border border-slate-200 px-4 py-3 text-center dark:border-slate-700">
+                      <p className="text-xs uppercase tracking-widest text-slate-400">PIN điểm danh</p>
+                      <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{currentPinCode}</p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-slate-500 py-10">Mã QR đã hết hạn hoặc có lỗi xảy ra.</p>

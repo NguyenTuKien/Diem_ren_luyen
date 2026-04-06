@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAuthSession } from "../../../api/authApi";
+import { fetchAuthSession, login as apiLogin, register as apiRegister, loginWithSso } from "../../../shared/api/authApi";
 import { apiRequest } from "../../../shared/api/http";
 import { useAuth } from "../context/AuthContext";
 
@@ -131,10 +131,7 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const payload = await apiRequest("/auth/login", {
-        method: "POST",
-        body: JSON.stringify(loginForm),
-      });
+      const payload = await apiLogin({ username: loginForm.email, password: loginForm.password });
       await applyAuthSuccess(payload);
     } catch (err) {
       setError(err.message);
@@ -154,15 +151,12 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      const payload = await apiRequest("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({
-          email: registerForm.email,
-          password: registerForm.password,
-          fullName: registerForm.fullName,
-          studentCode: registerForm.studentCode,
-          classId: Number(registerForm.classId),
-        }),
+      const payload = await apiRegister({
+        email: registerForm.email,
+        password: registerForm.password,
+        fullName: registerForm.fullName,
+        studentCode: registerForm.studentCode,
+        classId: Number(registerForm.classId),
       });
       await applyAuthSuccess(payload);
     } catch (err) {
@@ -181,13 +175,7 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      const payload = await apiRequest("/auth/sso", {
-        method: "POST",
-        body: JSON.stringify({
-          email: loginForm.email,
-          provider,
-        }),
-      });
+      const payload = await loginWithSso({ email: loginForm.email, provider });
       await applyAuthSuccess(payload);
     } catch (err) {
       setError(err.message);

@@ -13,5 +13,6 @@ public class UserInfoResponse {
     private String userId;
     private String fullName;
     private String role;
+    private String profileCode; // MSSV (student), mã GV (lecturer), username (admin)
 }
 
