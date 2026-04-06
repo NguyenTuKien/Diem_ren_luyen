@@ -54,8 +54,8 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+            HttpServletResponse response,
+            Authentication authentication) throws IOException {
         Object principal = authentication.getPrincipal();
         String principalIdentifier = extractUsername(principal, authentication);
         UserEntity userEntity = userService.findByUsernameOrEmail(principalIdentifier)
@@ -67,21 +67,26 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
 
         // Lưu access token vào Redis để đảm bảo 1 thiết bị/1 thời điểm
         String redisKey = "user:" + userEntity.getUsername() + ":session";
-        redisTemplate.opsForValue().set(
-                redisKey,
-                accessToken,
-                refreshExpirationMs,
-                TimeUnit.MILLISECONDS
-        );
+        Boolean locked = redisTemplate.opsForValue().setIfAbsent(redisKey, accessToken, refreshExpirationMs,
+                TimeUnit.MILLISECONDS);
+        if (!Boolean.TRUE.equals(locked)) {
+            String encodedMessage = URLEncoder.encode("SessionConflict", StandardCharsets.UTF_8);
+            String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
+                    .queryParam("error", encodedMessage)
+                    .build(true)
+                    .toUriString();
+            redirectStrategy.sendRedirect(request, response, targetUrl);
+            return;
+        }
 
-            ResponseCookie deviceCookie = ResponseCookie.from(deviceCookieName, deviceToken)
+        ResponseCookie deviceCookie = ResponseCookie.from(deviceCookieName, deviceToken)
                 .path("/")
                 .httpOnly(true)
                 .secure(deviceCookieSecure)
                 .sameSite("Lax")
                 .maxAge(deviceCookieTtlMs / 1000)
                 .build();
-            response.addHeader(HttpHeaders.SET_COOKIE, deviceCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, deviceCookie.toString());
 
         String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
                 .queryParam("accessToken", accessToken)
@@ -94,8 +99,8 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException {
+            HttpServletResponse response,
+            AuthenticationException exception) throws IOException {
         String encodedMessage = URLEncoder.encode(exception.getMessage(), StandardCharsets.UTF_8);
         String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
                 .queryParam("error", encodedMessage)
