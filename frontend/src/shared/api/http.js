@@ -33,6 +33,9 @@ function getTokenFromStorage() {
 function buildMessage(payload, status) {
   if (payload && typeof payload === "object") {
     if (typeof payload.message === "string" && payload.message.trim()) {
+      if (payload.message.trim() === "SYSTEM_ERROR_GROUP") {
+        return "Hệ thống đang gặp lỗi khi xử lý dữ liệu. Vui lòng thử lại sau.";
+      }
       return payload.message;
     }
     if (typeof payload.error === "string" && payload.error.trim()) {

@@ -1,7 +1,16 @@
 package ct01.n06.backend.entity;
 
 import ct01.n06.backend.constant.StudentConstant;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,11 +27,11 @@ import lombok.Setter;
 public class StudentEntity {
 
   @Id
+  @Column(name = StudentConstant.COL_ID)
   private String id;
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @MapsId
-  @JoinColumn(name = StudentConstant.COL_ID)
+  @JoinColumn(name = "user_id", nullable = false, unique = true)
   private UserEntity userEntity;
 
   @Column(name = StudentConstant.COL_STUDENT_CODE, length = 20, unique = true, nullable = false)
@@ -34,4 +43,12 @@ public class StudentEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = StudentConstant.COL_CLASS_ID)
   private ClassEntity classEntity;
+
+  @PrePersist
+  @PreUpdate
+  private void syncIdFromUser() {
+    if (this.userEntity != null) {
+      this.id = this.userEntity.getId();
+    }
+  }
 }

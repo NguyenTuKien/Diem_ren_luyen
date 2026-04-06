@@ -1,6 +1,19 @@
 package ct01.n06.backend.config;
 
-import ct01.n06.backend.repository.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+
 import ct01.n06.backend.entity.ClassEntity;
 import ct01.n06.backend.entity.CriteriaEntity;
 import ct01.n06.backend.entity.EventEntity;
@@ -11,18 +24,14 @@ import ct01.n06.backend.entity.StudentEntity;
 import ct01.n06.backend.entity.UserEntity;
 import ct01.n06.backend.entity.enums.Role;
 import ct01.n06.backend.entity.enums.UserStatus;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
+import ct01.n06.backend.repository.ClassRepository;
+import ct01.n06.backend.repository.CriteriaRepository;
+import ct01.n06.backend.repository.EventRepository;
+import ct01.n06.backend.repository.FacultyRepository;
+import ct01.n06.backend.repository.LecturerRepository;
+import ct01.n06.backend.repository.SemesterRepository;
+import ct01.n06.backend.repository.StudentRepository;
+import ct01.n06.backend.repository.UserRepository;
 
 @Configuration
 public class DataInitialization {
@@ -33,9 +42,9 @@ public class DataInitialization {
   CommandLineRunner initFaculty(FacultyRepository facultyRepository) {
     return args -> {
       List<FacultyEntity> faculties = List.of(
-          FacultyEntity.builder().code("CNTT").name("Cong nghe thong tin").build(),
-          FacultyEntity.builder().code("CB").name("Co ban").build(),
-          FacultyEntity.builder().code("QTKD").name("Quan tri kinh doanh").build()
+          FacultyEntity.builder().code("CNTT").name("Công nghệ thông tin").build(),
+          FacultyEntity.builder().code("CB").name("Cơ bản").build(),
+          FacultyEntity.builder().code("QTKD").name("Quản trị kinh doanh").build()
       );
 
       for (FacultyEntity faculty : faculties) {
@@ -71,7 +80,7 @@ public class DataInitialization {
         lecturerRepository.save(LecturerEntity.builder()
             .userEntity(adminUser)
             .lecturerCode("ADMIN")
-            .fullName("Quan tri vien")
+          .fullName("Quản trị viên")
             .facultyEntity(faculty)
             .build());
       }
@@ -191,7 +200,7 @@ public class DataInitialization {
       lecturerRepository.save(LecturerEntity.builder()
           .userEntity(userEntity)
           .lecturerCode("GV001")
-          .fullName("Giang vien A")
+          .fullName("Giảng viên A")
           .facultyEntity(facultyRepository.findByCode("CNTT").orElseThrow())
           .build());
     };
@@ -239,28 +248,28 @@ public class DataInitialization {
       List<CriteriaEntity> criteriaList = List.of(
           CriteriaEntity.builder()
               .code("HD01")
-              .name("Tham gia hoat dong ngoai khoa")
+              .name("Tham gia hoạt động ngoại khóa")
               .pointPerItem(BigDecimal.valueOf(2.0))
               .maxPoint(BigDecimal.valueOf(20.0))
               .requireEvidence(true)
               .build(),
           CriteriaEntity.builder()
               .code("NCKH")
-              .name("Nghien cuu khoa hoc")
+              .name("Nghiên cứu khoa học")
               .pointPerItem(BigDecimal.valueOf(5.0))
               .maxPoint(BigDecimal.valueOf(10.0))
               .requireEvidence(true)
               .build(),
           CriteriaEntity.builder()
               .code("SV5T")
-              .name("Sinh vien 5 tot")
+              .name("Sinh viên 5 tốt")
               .pointPerItem(BigDecimal.valueOf(10.0))
               .maxPoint(BigDecimal.valueOf(10.0))
               .requireEvidence(true)
               .build(),
           CriteriaEntity.builder()
               .code("CTXH")
-              .name("Cong tac xa hoi")
+              .name("Công tác xã hội")
               .pointPerItem(BigDecimal.valueOf(2.0))
               .maxPoint(BigDecimal.valueOf(10.0))
               .requireEvidence(false)
@@ -305,10 +314,10 @@ public class DataInitialization {
           EventEntity.builder()
               .semester(semester)
               .criteria(criteria)
-              .title("Hoi thao AI trong giao duc")
+            .title("Hội thảo AI trong giáo dục")
               .organizer("Khoa CNTT")
-              .description("Chia se ung dung AI trong giang day va hoc tap")
-              .location("Hoi truong A1")
+            .description("Chia sẻ ứng dụng AI trong giảng dạy và học tập")
+            .location("Hội trường A1")
               .startTime(LocalDateTime.of(2026, 4, 10, 8, 0))
               .endTime(LocalDateTime.of(2026, 4, 10, 11, 30))
               .createdBy(createdBy)
@@ -316,10 +325,10 @@ public class DataInitialization {
           EventEntity.builder()
               .semester(semester)
               .criteria(criteria)
-              .title("Ngay hoi hien mau sinh vien")
-              .organizer("Doan Thanh nien")
-              .description("Hoat dong tinh nguyen hien mau nhan repository danh cho sinh vien")
-              .location("Nha thi dau")
+            .title("Ngày hội hiến máu sinh viên")
+            .organizer("Đoàn Thanh niên")
+            .description("Hoạt động tình nguyện hiến máu nhân đạo dành cho sinh viên")
+            .location("Nhà thi đấu")
               .startTime(LocalDateTime.of(2026, 4, 18, 7, 30))
               .endTime(LocalDateTime.of(2026, 4, 18, 11, 0))
               .createdBy(createdBy)
@@ -327,10 +336,10 @@ public class DataInitialization {
           EventEntity.builder()
               .semester(semester)
               .criteria(criteria)
-              .title("Cuoc thi y tuong khoi nghiep")
-              .organizer("CLB Khoi nghiep")
-              .description("Sinh vien trinh bay y tuong startup va nhan gop y tu giang vien")
-              .location("Phong B302")
+            .title("Cuộc thi ý tưởng khởi nghiệp")
+            .organizer("CLB Khởi nghiệp")
+            .description("Sinh viên trình bày ý tưởng startup và nhận góp ý từ giảng viên")
+              .location("Phòng B302")
               .startTime(LocalDateTime.of(2026, 5, 5, 13, 30))
               .endTime(LocalDateTime.of(2026, 5, 5, 17, 0))
               .createdBy(createdBy)

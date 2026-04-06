@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getMonitorEvaluationClassList,
   getMonitorEvaluationDetail,
@@ -77,7 +77,7 @@ export function useMonitorEvaluation() {
         setSelectedSemesterId(activeSemester?.id ?? null);
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Khong the tai hoc ky.");
+          setError(loadError.message || "Không thể tải học kỳ.");
         }
       } finally {
         if (mounted) {
@@ -106,7 +106,7 @@ export function useMonitorEvaluation() {
       const payload = await getMonitorEvaluationClassList(semesterId);
       setEvaluationRows(Array.isArray(payload) ? payload : []);
     } catch (loadError) {
-      setError(loadError.message || "Khong the tai danh sach phieu cua lop.");
+      setError(loadError.message || "Không thể tải danh sách phiếu của lớp.");
       setEvaluationRows([]);
     } finally {
       setLoadingList(false);
@@ -135,7 +135,7 @@ export function useMonitorEvaluation() {
       });
       setReviewDraft(detailMap);
     } catch (detailError) {
-      setError(detailError.message || "Khong the tai chi tiet phieu.");
+      setError(detailError.message || "Không thể tải chi tiết phiếu.");
     } finally {
       setLoadingDetail(false);
     }
@@ -166,11 +166,11 @@ export function useMonitorEvaluation() {
         adjustedDetails: reviewDraft,
       });
 
-      setSuccessMessage("Da cap nhat danh gia cho sinh vien.");
+      setSuccessMessage("Đã cập nhật đánh giá cho sinh viên.");
       closeReviewModal();
       await loadClassList(selectedSemesterId);
     } catch (reviewError) {
-      setError(reviewError.message || "Khong the gui ket qua review.");
+      setError(reviewError.message || "Không thể gửi kết quả review.");
     } finally {
       setSubmittingReview(false);
     }

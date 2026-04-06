@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import EventDashboard from "../features/lecturer/components/EventDashboard";
@@ -9,11 +9,11 @@ import LecturerStudentManagement from "../features/lecturer/components/LecturerS
 import LecturerTopHeader from "../features/lecturer/components/LecturerTopHeader";
 
 const SIDEBAR_ITEMS = [
-  { key: "dashboard", label: "Tong quan", icon: "dashboard" },
-  { key: "events", label: "Su kien", icon: "calendar_today" },
-  { key: "students", label: "Sinh vien", icon: "group" },
-  { key: "scores", label: "Diem ren luyen", icon: "grade" },
-  { key: "notifications", label: "Thong bao", icon: "notifications", badge: 5 },
+  { key: "dashboard", label: "Tổng quan", icon: "dashboard" },
+  { key: "events", label: "Sự kiện", icon: "calendar_today" },
+  { key: "students", label: "Sinh viên", icon: "group" },
+  { key: "scores", label: "Điểm rèn luyện", icon: "grade" },
+  { key: "notifications", label: "Thông báo", icon: "notifications", badge: 5 },
 ];
 
 function LecturerPlaceholderPanel({ title, description }) {
@@ -32,15 +32,15 @@ const FEATURE_COMPONENTS = {
   scores: {
     Component: LecturerPlaceholderPanel,
     props: {
-      title: "Diem ren luyen",
-      description: "Khu vuc tong hop va duyet diem ren luyen sinh vien se duoc mo rong tai day.",
+      title: "Điểm rèn luyện",
+      description: "Khu vực tổng hợp và duyệt điểm rèn luyện sinh viên sẽ được mở rộng tại đây.",
     },
   },
   notifications: {
     Component: LecturerPlaceholderPanel,
     props: {
-      title: "Thong bao",
-      description: "Ban thong bao cho giang vien dang duoc cap nhat.",
+      title: "Thông báo",
+      description: "Bản thông báo cho giảng viên đang được cập nhật.",
     },
   },
 };
@@ -84,3 +84,4 @@ export default function LecturerPage() {
     </div>
   );
 }
+

@@ -1,20 +1,20 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { useStudentEvaluation } from "../hooks/useStudentEvaluation";
 
 function formatStatusLabel(status) {
   switch (String(status || "").toUpperCase()) {
     case "NOT_SUBMITTED":
-      return "Chua nop";
+      return "Chưa nộp";
     case "DRAFT":
-      return "Dang luu nhap";
+      return "Đang lưu nháp";
     case "SUBMITTED":
-      return "Da nop";
+      return "Đã nộp";
     case "MONITOR_APPROVED":
-      return "Lop truong da duyet";
+      return "Lớp trưởng đã duyệt";
     case "FINALIZED":
-      return "Da chot";
+      return "Đã chốt";
     default:
-      return "Khong xac dinh";
+      return "Không xác định";
   }
 }
 
@@ -53,7 +53,7 @@ export default function StudentEvaluationForm() {
   if (loadingSemesters) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        Dang tai danh sach hoc ky...
+        Đang tải danh sách học kỳ...
       </section>
     );
   }
@@ -63,9 +63,9 @@ export default function StudentEvaluationForm() {
       <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Phieu danh gia ren luyen</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Phiếu đánh giá rèn luyện</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Sinh vien tu danh gia theo hoc ky, cac tieu chi su kien duoc he thong khoa de dam bao dong bo.
+              Sinh viên tự đánh giá theo học kỳ, các tiêu chí sự kiện được hệ thống khóa để đảm bảo đồng bộ.
             </p>
           </div>
 
@@ -78,7 +78,7 @@ export default function StudentEvaluationForm() {
             >
               {semesterOptions.map((semester) => (
                 <option key={semester.id} value={semester.id}>
-                  {semester.name || `Hoc ky ${semester.id}`}
+                  {semester.name || `Học kỳ ${semester.id}`}
                 </option>
               ))}
             </select>
@@ -88,22 +88,22 @@ export default function StudentEvaluationForm() {
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               disabled={loadingForm || submitting}
             >
-              Tai lai
+              Tải lại
             </button>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Diem he thong</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Điểm hệ thống</p>
             <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{totalSystemScore}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Diem tu danh gia</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Điểm tự đánh giá</p>
             <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{totalStudentScore}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Trang thai</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Trạng thái</p>
             <p className="mt-2 text-lg font-bold text-emerald-600 dark:text-emerald-400">
               {formatStatusLabel(formState.status)}
             </p>
@@ -128,9 +128,9 @@ export default function StudentEvaluationForm() {
           <table className="w-full min-w-[680px] divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Tieu chi</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">He thong</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Tu danh gia</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Tiêu chí</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Hệ thống</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Tự đánh giá</th>
               </tr>
             </thead>
 
@@ -138,7 +138,7 @@ export default function StudentEvaluationForm() {
               {loadingForm ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Dang tai du lieu phieu...
+                    Đang tải dữ liệu phiếu...
                   </td>
                 </tr>
               ) : null}
@@ -146,7 +146,7 @@ export default function StudentEvaluationForm() {
               {!loadingForm && detailKeys.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Chua co tieu chi de danh gia cho hoc ky nay.
+                    Chưa có tiêu chí để đánh giá cho học kỳ này.
                   </td>
                 </tr>
               ) : null}
@@ -186,7 +186,7 @@ export default function StudentEvaluationForm() {
             disabled={!isEditable || submitting || loadingForm}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            Luu nhap
+            Lưu nháp
           </button>
           <button
             type="button"
@@ -194,7 +194,7 @@ export default function StudentEvaluationForm() {
             disabled={!isEditable || submitting || loadingForm}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Nop phieu
+            Nộp phiếu
           </button>
         </footer>
       </div>

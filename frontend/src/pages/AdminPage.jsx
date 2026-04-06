@@ -7,7 +7,7 @@ import AdminSidebar from "../features/admin/components/AdminSidebar";
 import AdminTopHeader from "../features/admin/components/AdminTopHeader";
 
 const SIDEBAR_ITEMS = [
-  { key: "dashboard", label: "Tong quan", icon: "dashboard" },
+  { key: "dashboard", label: "Tổng quan", icon: "dashboard" },
 ];
 
 const FEATURE_COMPONENTS = {

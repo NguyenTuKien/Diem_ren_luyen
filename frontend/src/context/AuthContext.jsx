@@ -48,22 +48,78 @@ const ROLE_DASHBOARD = {
   STUDENT: "/student",
 };
 
-function toUser(payload) {
-  const role = payload.role ?? "";
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== "string") {
+    return null;
+  }
+
+  const parts = token.split(".");
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function toUser(payload, accessToken) {
+  const jwtPayload = decodeJwtPayload(accessToken);
+  const resolvedRole = payload.effectiveRole ?? payload.role ?? jwtPayload?.role ?? "";
+  const normalizedRole = String(resolvedRole || "").replace(/^ROLE_/, "");
+  const resolvedUserId = payload.userId ?? payload.id ?? payload.user_id ?? null;
+  const resolvedBackendUserId =
+    payload.backendUserId ??
+    jwtPayload?.lecture_id ??
+    jwtPayload?.student_id ??
+    payload.id ??
+    payload.user_id ??
+    null;
+  const resolvedDisplayName =
+    payload.displayName ??
+    payload.fullName ??
+    payload.fullname ??
+    payload.username ??
+    jwtPayload?.fullname ??
+    "";
+
   return {
-    userId: payload.userId,
+    userId: resolvedUserId,
+    backendUserId: resolvedBackendUserId,
     email: payload.email,
-    role,
-    effectiveRole: payload.effectiveRole,
-    displayName: payload.displayName ?? payload.fullName ?? payload.fullname ?? "",
-    dashboardPath: payload.dashboardPath ?? ROLE_DASHBOARD[role] ?? "/student",
+    role: payload.role ?? resolvedRole,
+    effectiveRole: resolvedRole,
+    displayName: resolvedDisplayName,
+    dashboardPath:
+      normalizedRole === "MONITOR"
+        ? "/student"
+        : payload.dashboardPath ??
+          ROLE_DASHBOARD[resolvedRole] ??
+          ROLE_DASHBOARD[payload.role] ??
+          "/student",
     classCode: payload.classCode,
     status: payload.status,
   };
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(readStoredSession);
+  const [session, setSession] = useState(() => {
+    const stored = readStoredSession();
+    if (!stored?.user) {
+      return stored;
+    }
+
+    const normalizedUser = toUser(stored.user, stored.accessToken);
+    if (JSON.stringify(normalizedUser) === JSON.stringify(stored.user)) {
+      return stored;
+    }
+
+    return { ...stored, user: normalizedUser };
+  });
 
   const persistSession = (nextSession) => {
     setSession(nextSession);
@@ -89,7 +145,7 @@ export function AuthProvider({ children }) {
       refreshToken: session?.refreshToken ?? null,
       login: (payload) => {
         const nextSession = {
-          user: toUser(payload),
+          user: toUser(payload, payload.accessToken),
           accessToken: payload.accessToken ?? null,
           refreshToken: payload.refreshToken ?? null,
         };

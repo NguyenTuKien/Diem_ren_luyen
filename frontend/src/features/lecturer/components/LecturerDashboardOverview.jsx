@@ -1,7 +1,7 @@
-const SUMMARY_CARDS = [
+﻿const SUMMARY_CARDS = [
   {
     id: "events",
-    label: "Tong su kien",
+    label: "Tổng sự kiện",
     value: "24",
     icon: "event",
     color: "text-blue-600",
@@ -9,7 +9,7 @@ const SUMMARY_CARDS = [
   },
   {
     id: "students",
-    label: "Sinh vien tham gia",
+    label: "Sinh viên tham gia",
     value: "1,250",
     icon: "groups",
     color: "text-green-600",
@@ -17,7 +17,7 @@ const SUMMARY_CARDS = [
   },
   {
     id: "pending",
-    label: "Minh chung cho duyet",
+    label: "Minh chứng chờ duyệt",
     value: "15",
     icon: "assignment_late",
     color: "text-amber-600",
@@ -25,7 +25,7 @@ const SUMMARY_CARDS = [
   },
   {
     id: "notice",
-    label: "Thong bao moi",
+    label: "Thông báo mới",
     value: "5",
     icon: "chat_bubble",
     color: "text-violet-600",
@@ -36,47 +36,47 @@ const SUMMARY_CARDS = [
 const UPCOMING_EVENTS = [
   {
     id: 1,
-    name: "Hoi thao AI va Future",
+    name: "Hội thảo AI và Future",
     icon: "rocket_launch",
     iconColor: "text-indigo-600",
     iconBg: "bg-indigo-50 dark:bg-indigo-900/20",
     date: "24/12/2023",
     time: "08:00 - 11:30",
-    location: "Hoi truong A",
+    location: "Hội trường A",
     attendee: "180",
     capacity: "200",
   },
   {
     id: 2,
-    name: "Hien mau nhan dao",
+    name: "Hiến máu nhân đạo",
     icon: "volunteer_activism",
     iconColor: "text-emerald-600",
     iconBg: "bg-emerald-50 dark:bg-emerald-900/20",
     date: "26/12/2023",
     time: "07:00 - 16:00",
-    location: "San truong",
+    location: "Sân trường",
     attendee: "320",
     capacity: "500",
   },
   {
     id: 3,
-    name: "Giai bong ro sinh vien",
+    name: "Giải bóng rổ sinh viên",
     icon: "sports_basketball",
     iconColor: "text-orange-600",
     iconBg: "bg-orange-50 dark:bg-orange-900/20",
     date: "28/12/2023",
     time: "17:00 - 21:00",
-    location: "Nha thi dau",
+    location: "Nhà thi đấu",
     attendee: "50",
     capacity: "50",
   },
 ];
 
 const SCORE_DISTRIBUTION = [
-  { id: "excellent", label: "Xuat sac", value: "15%", color: "bg-primary" },
-  { id: "good", label: "Tot", value: "45%", color: "bg-blue-500" },
-  { id: "fair", label: "Kha", value: "25%", color: "bg-amber-500" },
-  { id: "average", label: "Trung binh", value: "15%", color: "bg-slate-300" },
+  { id: "excellent", label: "Xuất sắc", value: "15%", color: "bg-primary" },
+  { id: "good", label: "Tốt", value: "45%", color: "bg-blue-500" },
+  { id: "fair", label: "Khá", value: "25%", color: "bg-amber-500" },
+  { id: "average", label: "Trung bình", value: "15%", color: "bg-slate-300" },
 ];
 
 export default function LecturerDashboardOverview() {
@@ -102,9 +102,9 @@ export default function LecturerDashboardOverview() {
       <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-8 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Phan bo diem ren luyen</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Phân bố điểm rèn luyện</h3>
             <button type="button" className="text-sm font-semibold text-primary">
-              Chi tiet
+              Chi tiết
             </button>
           </div>
 
@@ -117,7 +117,7 @@ export default function LecturerDashboardOverview() {
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold text-slate-900 dark:text-slate-100">85%</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Dat yeu cau</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Đạt yêu cầu</span>
               </div>
             </div>
 
@@ -137,12 +137,12 @@ export default function LecturerDashboardOverview() {
 
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 xl:col-span-2">
           <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Su kien sap dien ra</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Sự kiện sắp diễn ra</h3>
             <button
               type="button"
               className="rounded-lg px-4 py-2 text-sm font-bold text-primary transition-all hover:bg-primary hover:text-white"
             >
-              Tao su kien moi
+              Tạo sự kiện mới
             </button>
           </div>
 
@@ -150,11 +150,11 @@ export default function LecturerDashboardOverview() {
             <table className="w-full text-left">
               <thead className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800">
                 <tr>
-                  <th className="pb-4">Su kien</th>
-                  <th className="pb-4">Thoi gian</th>
-                  <th className="pb-4">Dia diem</th>
-                  <th className="pb-4">So luong</th>
-                  <th className="pb-4 text-right">Thao tac</th>
+                  <th className="pb-4">Sự kiện</th>
+                  <th className="pb-4">Thời gian</th>
+                  <th className="pb-4">Địa điểm</th>
+                  <th className="pb-4">Số lượng</th>
+                  <th className="pb-4 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -186,7 +186,7 @@ export default function LecturerDashboardOverview() {
                           className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-primary hover:text-white dark:bg-slate-800 dark:text-slate-300"
                         >
                           <span className="material-symbols-outlined text-base">qr_code</span>
-                          Tao QR
+                          Tạo QR
                         </button>
                         <button
                           type="button"
@@ -206,3 +206,4 @@ export default function LecturerDashboardOverview() {
     </div>
   );
 }
+
