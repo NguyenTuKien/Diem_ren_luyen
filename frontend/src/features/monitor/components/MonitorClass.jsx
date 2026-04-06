@@ -233,39 +233,39 @@ export default function MonitorClass() {
       </section>
 
       <section className="monitor-tools-v2">
-            <input
-              type="search"
-              placeholder="Tìm theo tên, MSSV, email..."
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
+        <input
+          type="search"
+          placeholder="Tìm theo tên, MSSV, email..."
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+        />
 
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              {STATUS_FILTERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          {STATUS_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
 
-            <select
-              value={mandatoryFilter}
-              onChange={(event) => setMandatoryFilter(event.target.value)}
-            >
-              {MANDATORY_FILTERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+        <select
+          value={mandatoryFilter}
+          onChange={(event) => setMandatoryFilter(event.target.value)}
+        >
+          {MANDATORY_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
 
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-              {SORT_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          {SORT_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
       </section>
 
       <section className="monitor-content-v2">

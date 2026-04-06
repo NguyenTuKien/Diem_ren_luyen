@@ -98,9 +98,9 @@ function toUser(payload, accessToken) {
       normalizedRole === "MONITOR"
         ? "/student"
         : payload.dashboardPath ??
-          ROLE_DASHBOARD[resolvedRole] ??
-          ROLE_DASHBOARD[payload.role] ??
-          "/student",
+        ROLE_DASHBOARD[resolvedRole] ??
+        ROLE_DASHBOARD[payload.role] ??
+        "/student",
     classCode: payload.classCode,
     status: payload.status,
   };
