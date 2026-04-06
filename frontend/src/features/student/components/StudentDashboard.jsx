@@ -107,7 +107,7 @@ export default function StudentDashboard({ onNavigate }) {
           <div>
             <h1>Chào buổi sáng, {greetingName}!</h1>
             <p>
-              MSSV: {dashboard.studentCode} · Lớp: {dashboard.classCode || "--"} ·{" "}
+              Lớp: {dashboard.classCode || "--"} ·{" "}
               {dashboard.facultyName || "Khoa đang cập nhật"}
             </p>
           </div>
@@ -147,7 +147,11 @@ export default function StudentDashboard({ onNavigate }) {
           </div>
         </article>
 
-        <article className="student-kpi-box">
+        <article
+          className="student-kpi-box"
+          style={{ cursor: 'pointer' }}
+          onClick={() => onNavigate?.("history")}
+        >
           <div className="student-kpi-title">
             <h3>Hoạt động tham gia</h3>
             <span className="material-symbols-outlined">event_available</span>
@@ -167,76 +171,6 @@ export default function StudentDashboard({ onNavigate }) {
       </section>
 
       <section className="student-content-row">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <article className="student-events-box">
-            <div className="student-section-title">
-              <h2>Sự kiện sắp tới</h2>
-              <button type="button">Xem tất cả</button>
-            </div>
-
-          {upcomingEvents.length === 0 ? (
-            <p className="student-empty">Chưa có sự kiện sắp tới.</p>
-          ) : (
-            <div className="student-events-list">
-              {upcomingEvents.map((event) => {
-                const badge = getEventBadge(event.startTime);
-                return (
-                  <div key={event.id} className="student-event-row">
-                    <div className="student-event-badge">
-                      <span>{badge.month}</span>
-                      <strong>{badge.day}</strong>
-                    </div>
-                    <div className="student-event-info">
-                      <strong>{event.title}</strong>
-                      <small>
-                        <span className="material-symbols-outlined">location_on</span>
-                        {event.location || "Đang cập nhật địa điểm"}
-                      </small>
-                    </div>
-                    <span className="student-event-arrow material-symbols-outlined">
-                      chevron_right
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          </article>
-
-          <article className="student-events-box">
-            <div className="student-section-title">
-              <h2>Sự kiện/Hoạt động đã tham gia</h2>
-            </div>
-
-            {attendedEvents.length === 0 ? (
-              <p className="student-empty">Chưa tham gia sự kiện nào.</p>
-            ) : (
-              <div className="student-events-list">
-                {attendedEvents.map((event) => {
-                  const badge = getEventBadge(event.checkinTime);
-                  return (
-                    <div key={event.id} className="student-event-row">
-                      <div className="student-event-badge">
-                        <span>{badge.month}</span>
-                        <strong>{badge.day}</strong>
-                      </div>
-                      <div className="student-event-info">
-                        <strong>{event.title}</strong>
-                        <small>
-                          <span className="material-symbols-outlined">location_on</span>
-                          {event.location || "Không có địa điểm xác định"}
-                        </small>
-                      </div>
-                      <span className="student-event-arrow material-symbols-outlined">
-                        chevron_right
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </article>
-        </div>
 
         <article className="student-history-box">
           <div className="student-section-title student-section-title-history">

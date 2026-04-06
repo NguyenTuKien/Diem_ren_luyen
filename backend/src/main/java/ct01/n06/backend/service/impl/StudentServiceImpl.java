@@ -8,8 +8,8 @@ import ct01.n06.backend.repository.StudentRepository;
 import ct01.n06.backend.repository.StudentSemesterRepository;
 import ct01.n06.backend.dto.student.StudentDashboardResponse;
 import ct01.n06.backend.dto.student.StudentDashboardResponse.ActivityHistoryItem;
-import ct01.n06.backend.dto.student.StudentDashboardResponse.UpcomingEventItem;
 import ct01.n06.backend.dto.student.StudentDashboardResponse.AttendedEventItem;
+import ct01.n06.backend.dto.student.StudentDashboardResponse.UpcomingEventItem;
 import ct01.n06.backend.entity.EventEntity;
 import ct01.n06.backend.entity.RecordEntity;
 import ct01.n06.backend.entity.SemesterEntity;
@@ -160,6 +160,36 @@ public class StudentServiceImpl implements StudentService {
       return "Trung bình";
     }
     return "Cần cải thiện";
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<UpcomingEventItem> getUpcomingEvents(String userId) {
+    // Validate student exists
+    studentRepository.findByUserEntityId(userId)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin sinh viên."));
+
+    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
+
+    return activeSemesterOpt
+        .map(semester -> eventRepository
+            .findTop5BySemester_IdAndStartTimeAfterOrderByStartTimeAsc(semester.getId(), LocalDateTime.now())
+            .stream()
+            .map(this::toUpcomingItem)
+            .toList())
+        .orElse(List.of());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<AttendedEventItem> getAttendedEvents(String userId) {
+    StudentEntity student = studentRepository.findByUserEntityId(userId)
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin sinh viên."));
+
+    return attendenceRepository.findTop10ByStudentIdOrderByCreatedAtDesc(student.getId())
+        .stream()
+        .map(this::toAttendedItem)
+        .toList();
   }
 
   @Override

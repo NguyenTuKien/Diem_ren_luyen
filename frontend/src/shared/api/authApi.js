@@ -59,9 +59,27 @@ export const getStoredUserInfo = () => {
   }
 };
 
-export const getAccessToken = () => localStorage.getItem('accessToken');
+export const getAccessToken = () => {
+  try {
+    const raw = window.localStorage.getItem('drl_auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.accessToken) return parsed.accessToken;
+    }
+  } catch {}
+  return localStorage.getItem('accessToken');
+};
 
-export const getRefreshToken = () => localStorage.getItem('refreshToken');
+export const getRefreshToken = () => {
+  try {
+    const raw = window.localStorage.getItem('drl_auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.refreshToken) return parsed.refreshToken;
+    }
+  } catch {}
+  return localStorage.getItem('refreshToken');
+};
 
 export const setTokens = ({ accessToken, refreshToken }) => {
   if (accessToken) {

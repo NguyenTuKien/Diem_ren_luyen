@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -174,15 +173,18 @@ public class AuthFacade {
             LecturerEntity lecturer = lecturerService.getLecturerByUser(user);
             builder.userId(user.getId());
             builder.fullName(lecturer.getFullName());
+            builder.profileCode(lecturer.getLecturerCode());
         }
         else if (user.getRole() == Role.ROLE_STUDENT || user.getRole() == Role.ROLE_MONITOR) {
             StudentEntity student = studentService.getStudentByUser(user);
             builder.userId(user.getId());
             builder.fullName(student.getFullName());
+            builder.profileCode(student.getStudentCode());
         }
         else if (user.getRole() == Role.ROLE_ADMIN) {
             builder.userId(user.getId());
             builder.fullName("Administrator");
+            builder.profileCode(user.getUsername());
         }
 
         return builder.build();

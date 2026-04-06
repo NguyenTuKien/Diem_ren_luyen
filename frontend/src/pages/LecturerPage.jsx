@@ -52,7 +52,7 @@ export default function LecturerPage() {
   const { Component: FeatureComponent, props } =
     FEATURE_COMPONENTS[activeFeature] || FEATURE_COMPONENTS.dashboard;
   const fullNameLabel = user?.displayName || "Lecturer";
-  const userIdLabel = user?.userId || "---";
+  const userIdLabel = user?.profileCode || user?.userId || "---";
   const avatarLetter = (fullNameLabel || "L").slice(0, 1).toUpperCase();
 
   const handleLogout = async () => {

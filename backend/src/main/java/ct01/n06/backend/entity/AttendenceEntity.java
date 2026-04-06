@@ -10,7 +10,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "attendent")
+@Table(name = "attendent",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uc_attendent_event_student",
+        columnNames = {"event_id", "student_id"}
+    )
+)
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = false)
@@ -23,10 +28,10 @@ public class AttendenceEntity extends BaseJpaAuditingEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "event_id", unique = true)
+    @JoinColumn(name = "event_id")
     private EventEntity event;
 
     @ManyToOne
-    @JoinColumn(name = "student_id", unique = true)
+    @JoinColumn(name = "student_id")
     private StudentEntity student;
 }

@@ -60,6 +60,7 @@ function toUser(payload) {
     dashboardPath: payload.dashboardPath ?? ROLE_DASHBOARD[role] ?? "/student",
     classCode: payload.classCode,
     status: payload.status,
+    profileCode: payload.profileCode ?? null, // MSSV / mã GV / username
   };
 }
 
@@ -136,10 +137,11 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        setSession((prevSession) => ({
-          ...(prevSession ?? {}),
+        const updatedSession = {
+          ...(session ?? {}),
           user: toUser(currentUser),
-        }));
+        };
+        persistSession(updatedSession);
       } finally {
         if (!cancelled) {
           setLoading(false);

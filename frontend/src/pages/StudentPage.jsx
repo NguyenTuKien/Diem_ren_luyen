@@ -7,6 +7,8 @@ import StudentMobileNav from "../features/student/components/StudentMobileNav";
 import StudentPlaceholderPanel from "../features/student/components/StudentPlaceholderPanel";
 import StudentSidebar from "../features/student/components/StudentSidebar";
 import StudentTopHeader from "../features/student/components/StudentTopHeader";
+import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
+import StudentAttendancePanel from "../features/student/components/StudentAttendancePanel";
 
 const SIDEBAR_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
@@ -19,18 +21,8 @@ const SIDEBAR_ITEMS = [
 const FEATURE_COMPONENTS = {
   dashboard: StudentDashboard,
   "scan-qr": QRScanner,
-  events: () => (
-    <StudentPlaceholderPanel
-      title="Su kien"
-      description="Danh sach su kien se duoc bo sung theo API su kien sinh vien."
-    />
-  ),
-  history: () => (
-    <StudentPlaceholderPanel
-      title="Lich su hoat dong"
-      description="Lich su tham gia va ket qua xu ly minh chung se hien thi tai day."
-    />
-  ),
+  events: StudentEventsPanel,
+  history: StudentAttendancePanel,
   evidence: () => (
     <StudentPlaceholderPanel
       title="Khai bao minh chung"
@@ -46,7 +38,7 @@ export default function StudentPage() {
 
   const FeatureComponent = FEATURE_COMPONENTS[activeFeature] || StudentDashboard;
   const fullNameLabel = user?.displayName || "Student";
-  const userIdLabel = user?.userId || "---";
+  const userIdLabel = user?.profileCode || user?.userId || "---";
   const avatarLetter = (fullNameLabel || "S").slice(0, 1).toUpperCase();
 
   const handleLogout = async () => {
