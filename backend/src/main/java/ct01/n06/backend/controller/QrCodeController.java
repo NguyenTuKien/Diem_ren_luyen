@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import ct01.n06.backend.util.CookieUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -124,25 +125,13 @@ public class QrCodeController {
         return ResponseEntity.ok(response);
     }
 
-    private String readDeviceTokenFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            return null;
-        }
-        for (var cookie : request.getCookies()) {
-            if (deviceCookieName.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
-    }
-
     private String readDeviceTokenFromHeader(HttpServletRequest request) {
-        String headerValue = request.getHeader("X-Device-Id");
+        String headerValue = request.getHeader("X-Device-Token");
         return (headerValue == null || headerValue.isBlank()) ? null : headerValue.trim();
     }
 
     private String resolveDeviceIdFromToken(HttpServletRequest request, String userId) {
-        String deviceToken = readDeviceTokenFromCookie(request);
+        String deviceToken = CookieUtils.readDeviceTokenFromCookie(request, deviceCookieName);
         if (deviceToken == null || deviceToken.isBlank()) {
             deviceToken = readDeviceTokenFromHeader(request);
         }

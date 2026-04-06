@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import ct01.n06.backend.util.CookieUtils;
 
 import java.util.Map;
 
@@ -45,14 +46,14 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(
             HttpServletRequest httpRequest,
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceId,
+            @RequestHeader(value = "X-Device-Token", required = false) String deviceId,
             @RequestBody Map<String, String> request) {
         if (request == null || request.get("refreshToken") == null || request.get("refreshToken").isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
         }
         String resolvedDeviceToken = (deviceId != null && !deviceId.isBlank())
                 ? deviceId
-                : readDeviceTokenFromCookie(httpRequest);
+                : CookieUtils.readDeviceTokenFromCookie(httpRequest, deviceCookieName);
         LoginResponse response = authFacade.refreshTokens(
                 request.get("refreshToken").replace("Bearer ", ""),
                 resolvedDeviceToken
@@ -108,15 +109,4 @@ public class AuthController {
                 .body(response);
     }
 
-    private String readDeviceTokenFromCookie(HttpServletRequest request) {
-        if (request == null || request.getCookies() == null) {
-            return null;
-        }
-        for (var cookie : request.getCookies()) {
-            if (deviceCookieName.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
-    }
 }
