@@ -82,18 +82,16 @@ public class AuthFacade {
             String redisKey = "user:" + subject + ":session";
 
             // Yêu cầu 2: Ràng buộc User - Session (Khóa tài khoản) - Xử lý đá session cũ hoặc từ chối login
-            String existingSession = (String) redisTemplate.opsForValue().get(redisKey);
-            if (existingSession != null && !existingSession.isBlank()) {
-                // Cấu hình: Từ chối đăng nhập nghiêm ngặt (Strict Lock)
-                throw new ForbiddenException("Tài khoản đang được đăng nhập trên một thiết bị / phiên làm việc khác");
-            }
-
-            redisTemplate.opsForValue().set(
+            Boolean locked = redisTemplate.opsForValue().setIfAbsent(
                     redisKey,
                     accessToken,
                     refreshExpirationMs,
                     TimeUnit.MILLISECONDS
             );
+
+            if (!Boolean.TRUE.equals(locked)) {
+                throw new ForbiddenException("Tài khoản đang được đăng nhập trên thiết bị khác");
+            }
 
             return LoginResponse.builder()
                     .accessToken(accessToken)
@@ -174,16 +172,16 @@ public class AuthFacade {
 
         if (user.getRole() == Role.ROLE_LECTURER) {
             LecturerEntity lecturer = lecturerService.getLecturerByUser(user);
-            builder.userId(lecturer.getLecturerCode());
+            builder.userId(user.getId());
             builder.fullName(lecturer.getFullName());
         }
         else if (user.getRole() == Role.ROLE_STUDENT || user.getRole() == Role.ROLE_MONITOR) {
             StudentEntity student = studentService.getStudentByUser(user);
-            builder.userId(student.getStudentCode());
+            builder.userId(user.getId());
             builder.fullName(student.getFullName());
         }
         else if (user.getRole() == Role.ROLE_ADMIN) {
-            builder.userId(user.getUsername());
+            builder.userId(user.getId());
             builder.fullName("Administrator");
         }
 

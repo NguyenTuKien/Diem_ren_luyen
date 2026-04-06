@@ -92,7 +92,15 @@ export const login = async ({ username, password }) => {
   });
 
   if (!response.ok) {
-    throw new Error('Tên đăng nhập hoặc mật khẩu không đúng.');
+    let errorMsg = 'Tên đăng nhập hoặc mật khẩu không đúng.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -111,7 +119,15 @@ export const register = async ({ email, password, fullName, studentCode, classId
   });
 
   if (!response.ok) {
-    throw new Error('Không thể đăng ký tài khoản.');
+    let errorMsg = 'Không thể đăng ký tài khoản.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -130,7 +146,15 @@ export const loginWithSso = async ({ email, provider }) => {
   });
 
   if (!response.ok) {
-    throw new Error('Không thể đăng nhập SSO.');
+    let errorMsg = 'Không thể đăng nhập SSO.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -162,7 +186,15 @@ export const refreshTokens = async (refreshToken) => {
   });
 
   if (!response.ok) {
-    throw new Error('Không thể làm mới phiên đăng nhập.');
+    let errorMsg = 'Không thể làm mới phiên đăng nhập.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();

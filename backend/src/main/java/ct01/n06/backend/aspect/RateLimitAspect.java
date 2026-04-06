@@ -32,20 +32,23 @@ public class RateLimitAspect {
         String methodName = joinPoint.getSignature().getName();
         String redisKey;
 
-        // KIỂM TRA CHẾ ĐỘ GLOBAL HAY PER-USER
         if (rateLimit.isGlobal()) {
-            // Chế độ Global: Tất cả request dùng chung 1 key
             redisKey = "ratelimit:global:" + methodName;
         } else {
-            // Chế độ Per-User: Logic cũ (kết hợp User + Device)
+            // 1. Xác định danh tính User (Username hoặc IP nếu chưa login)
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userIdentifier = request.getRemoteAddr();
             if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
                 userIdentifier = auth.getName();
             }
-            String deviceId = request.getHeader("X-Device-Id");
-            String clientIdentifier = (deviceId != null && !deviceId.trim().isEmpty())
-                    ? userIdentifier + ":device:" + deviceId.trim()
+
+            // 2. CHỈNH SỬA: Lấy X-Device-Token thay vì X-Device-Id thô
+            String deviceToken = request.getHeader("X-Device-Token");
+
+            // 3. Tạo định danh: Kết hợp User + Device Token (nếu có)
+            // Việc dùng Token đã ký giúp key ratelimit này khó bị giả mạo hơn
+            String clientIdentifier = (deviceToken != null && !deviceToken.trim().isEmpty())
+                    ? userIdentifier + ":device:" + deviceToken.trim()
                     : userIdentifier;
 
             redisKey = "ratelimit:user:" + methodName + ":" + clientIdentifier;
@@ -56,13 +59,11 @@ public class RateLimitAspect {
                     rateLimitScript,
                     Collections.singletonList(redisKey),
                     String.valueOf(rateLimit.limit()),
-                    String.valueOf(rateLimit.window())
-            );
+                    String.valueOf(rateLimit.window()));
 
             if (result != null && result == 0) {
                 log.warn("Rate limit exceeded for key: {}", redisKey);
 
-                // Tùy chỉnh câu thông báo lỗi dựa theo chế độ
                 String errorMsg = rateLimit.isGlobal()
                         ? "Hệ thống đang xử lý quá nhiều lượt check-in, vui lòng thử lại sau 1 giây!"
                         : "Bạn thao tác quá nhanh, vui lòng thử lại sau ít giây!";
@@ -70,7 +71,10 @@ public class RateLimitAspect {
                 throw new ApiException(HttpStatus.TOO_MANY_REQUESTS, errorMsg);
             }
         } catch (Exception e) {
-            if (e instanceof ApiException) throw e;
+            if (e instanceof ApiException)
+                throw e;
+            // Fail-open: Nếu Redis "ngỏm", vẫn cho phép request đi qua để không làm gián
+            // đoạn dịch vụ
             log.error("Redis Rate Limiter Error - Fail Open allowed", e);
         }
 

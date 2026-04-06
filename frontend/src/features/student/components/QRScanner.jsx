@@ -119,14 +119,7 @@ function QRScanner() {
   }, [])
 
   const handleCheckinError = useCallback((error) => {
-    if (error?.status === 403) {
-      setNotice({
-        type: 'error',
-        message: 'Thiết bị này đã được sử dụng để điểm danh cho sự kiện này!'
-      })
-    } else {
-      setNotice({ type: 'error', message: error?.message || 'Mã không hợp lệ hoặc đã hết hạn.' })
-    }
+    setNotice({ type: 'error', message: error?.message || 'Mã không hợp lệ hoặc đã hết hạn.' })
     scanLockRef.current = false
   }, [])
 

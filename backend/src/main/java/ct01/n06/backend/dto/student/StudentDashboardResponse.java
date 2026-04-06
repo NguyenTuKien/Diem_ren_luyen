@@ -11,7 +11,8 @@ public record StudentDashboardResponse(
     int joinedActivities,
     String rankLabel,
     List<UpcomingEventItem> upcomingEvents,
-    List<ActivityHistoryItem> history
+    List<ActivityHistoryItem> history,
+    List<AttendedEventItem> attendedEvents
 ) {
 
   public record UpcomingEventItem(
@@ -27,6 +28,14 @@ public record StudentDashboardResponse(
       String title,
       String status,
       String createdAt
+  ) {
+  }
+
+  public record AttendedEventItem(
+      Long id,
+      String title,
+      String location,
+      String checkinTime
   ) {
   }
 }

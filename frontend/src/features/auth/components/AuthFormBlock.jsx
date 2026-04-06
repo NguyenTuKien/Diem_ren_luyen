@@ -76,6 +76,7 @@ export default function AuthFormBlock() {
         ...userPayload,
         accessToken: tokenData.accessToken,
         refreshToken: tokenData.refreshToken,
+        deviceToken: tokenData.deviceToken,
       });
 
       // 3. Redirect — HomeRedirect sẽ điều hướng theo role

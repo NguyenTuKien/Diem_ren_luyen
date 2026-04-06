@@ -11,6 +11,7 @@ const OAuthCallback = () => {
     const params = new URLSearchParams(location.search);
     const accessToken = params.get('accessToken');
     const refreshToken = params.get('refreshToken');
+    const deviceToken = params.get('deviceToken');
     const error = params.get('error');
 
     if (error) {
@@ -30,6 +31,7 @@ const OAuthCallback = () => {
               ...userPayload,
               accessToken,
               refreshToken,
+              deviceToken,
             });
             navigate('/', { replace: true });
           } else {

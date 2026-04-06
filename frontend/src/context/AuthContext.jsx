@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState } from "react";
-import { logoutWithTokens } from "../shared/api/authApi";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { fetchCurrentUser, logoutWithTokens } from "../shared/api/authApi";
 
 export const AUTH_STORAGE_KEY = "drl_auth";
 const AuthContext = createContext(null);
@@ -65,9 +65,11 @@ function toUser(payload) {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(readStoredSession);
+  const [loading, setLoading] = useState(() => Boolean(readStoredSession()?.accessToken));
 
   const persistSession = (nextSession) => {
     setSession(nextSession);
+    setLoading(false);
 
     if (typeof window === "undefined") {
       return;
@@ -84,6 +86,7 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(
     () => ({
+      loading,
       session,
       user: session?.user ?? null,
       accessToken: session?.accessToken ?? null,
@@ -110,8 +113,46 @@ export function AuthProvider({ children }) {
         }
       },
     }),
-    [session],
+    [loading, session],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      const accessToken = session?.accessToken ?? null;
+      const refreshToken = session?.refreshToken ?? null;
+
+      if (!accessToken || !refreshToken) {
+        if (!cancelled) {
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const currentUser = await fetchCurrentUser();
+        if (cancelled || !currentUser) {
+          return;
+        }
+
+        setSession((prevSession) => ({
+          ...(prevSession ?? {}),
+          user: toUser(currentUser),
+        }));
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.accessToken, session?.refreshToken]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

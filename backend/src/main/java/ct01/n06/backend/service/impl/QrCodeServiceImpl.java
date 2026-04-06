@@ -94,7 +94,10 @@ public class QrCodeServiceImpl implements QrCodeService {
         if (!request.getEventId().equals(qrCode.getEventId())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "eventId không khớp với mã QR");
         }
-        performCheckin(qrCode.getEventId(), studentUserId, normalizedDeviceId);
+        StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
+
+        performCheckin(qrCode.getEventId(), student, normalizedDeviceId);
     }
 
     @Override
@@ -123,7 +126,10 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Mã PIN không tồn tại hoặc đã hết hạn");
         }
 
-        performCheckin(eventId, studentUserId, normalizedDeviceId);
+        StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
+
+        performCheckin(eventId, student, normalizedDeviceId);
     }
 
     @Override
@@ -160,12 +166,10 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Mã TOTP đã được sử dụng");
         }
 
-        performCheckin(request.getEventId(), studentUserId, normalizedDeviceId);
+        performCheckin(request.getEventId(), student, normalizedDeviceId);
     }
 
-    private void performCheckin(Long eventId, String studentUserId, String deviceId) {
-        StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
+    private void performCheckin(Long eventId, StudentEntity student, String deviceId) {
 
         EventEntity event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sự kiện"));

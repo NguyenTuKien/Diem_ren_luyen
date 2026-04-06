@@ -73,7 +73,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType("application/json");
                     response.setCharacterEncoding("UTF-8");
-                    response.getWriter().write("{\"error\": \"Tài khoản đã được đăng nhập ở một thiết bị khác hoặc phiên đã hết hạn.\"}");
+                    String errorJson = "{"
+                            + "\"success\": false, "
+                            + "\"message\": \"Tài khoản đã bị ngắt kết nối hoặc đăng nhập ở thiết bị khác.\", "
+                            + "\"type\": \"about:blank\", "
+                            + "\"title\": \"Unauthorized\", "
+                            + "\"detail\": \"Tài khoản đã bị ngắt kết nối hoặc đăng nhập ở thiết bị khác.\""
+                            + "}";
+                    response.getWriter().write(errorJson);
                     return; // DỪNG LUỒNG CHẠY NGAY LẬP TỨC
                 }
                 // ==========================================

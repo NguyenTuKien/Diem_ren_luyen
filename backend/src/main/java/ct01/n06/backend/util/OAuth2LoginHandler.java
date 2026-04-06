@@ -2,12 +2,15 @@ package ct01.n06.backend.util;
 
 import ct01.n06.backend.entity.UserEntity;
 import ct01.n06.backend.security.JwtService;
+import ct01.n06.backend.service.DeviceSecurityService;
 import ct01.n06.backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -21,6 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -29,6 +33,7 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
 
     private final JwtService jwtService;
     private final UserService userService;
+    private final DeviceSecurityService deviceSecurityService;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
@@ -37,6 +42,15 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
 
     @Value("${jwt.refresh-expiration-ms:604800000}")
     private long refreshExpirationMs;
+
+    @Value("${device.security.cookie-name:device_token}")
+    private String deviceCookieName;
+
+    @Value("${device.security.cookie-secure:true}")
+    private boolean deviceCookieSecure;
+
+    @Value("${device.binding.ttl-ms:604800000}")
+    private long deviceCookieTtlMs;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -48,6 +62,8 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
                 .orElseThrow(() -> new RuntimeException("User not found: " + principalIdentifier));
         String accessToken = jwtService.generateAccessToken(userEntity);
         String refreshToken = jwtService.generateRefreshToken(userEntity.getUsername());
+        String fallbackDeviceId = "oauth:" + userEntity.getId() + ":" + UUID.randomUUID();
+        String deviceToken = deviceSecurityService.generateDeviceToken(fallbackDeviceId);
 
         // Lưu access token vào Redis để đảm bảo 1 thiết bị/1 thời điểm
         String redisKey = "user:" + userEntity.getUsername() + ":session";
@@ -58,9 +74,19 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
                 TimeUnit.MILLISECONDS
         );
 
+            ResponseCookie deviceCookie = ResponseCookie.from(deviceCookieName, deviceToken)
+                .path("/")
+                .httpOnly(true)
+                .secure(deviceCookieSecure)
+                .sameSite("Lax")
+                .maxAge(deviceCookieTtlMs / 1000)
+                .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, deviceCookie.toString());
+
         String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
+                .queryParam("deviceToken", deviceToken)
                 .build(true)
                 .toUriString();
         redirectStrategy.sendRedirect(request, response, targetUrl);

@@ -1,9 +1,11 @@
 package ct01.n06.backend.entity;
 
 import ct01.n06.backend.constant.LecturerConstant;
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,8 +16,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = false)
 @Builder
-public class LecturerEntity {
+public class LecturerEntity extends BaseJpaAuditingEntity {
 
   @Id
   private String id;
