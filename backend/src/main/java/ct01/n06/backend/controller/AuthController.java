@@ -63,7 +63,7 @@ public class AuthController {
                 .path("/")
                 .httpOnly(true)
                 .secure(deviceCookieSecure)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .maxAge(0)
                 .build();
         return ResponseEntity.noContent()
@@ -90,7 +90,7 @@ public class AuthController {
                 .path("/")
                 .httpOnly(true)
                 .secure(deviceCookieSecure)
-                .sameSite("Strict")
+                .sameSite("Lax")
                 .maxAge(deviceCookieTtlMs / 1000)
                 .build();
 

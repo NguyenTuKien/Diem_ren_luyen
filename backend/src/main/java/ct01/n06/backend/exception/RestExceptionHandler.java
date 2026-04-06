@@ -1,6 +1,7 @@
 package ct01.n06.backend.exception;
 
 import java.time.Instant;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@Slf4j
 public class RestExceptionHandler {
 
   @ExceptionHandler(ApiException.class)
@@ -39,6 +41,7 @@ public class RestExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorBody> handleGeneralException(Exception ex) {
+    log.error("Unhandled exception", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(new ErrorBody(HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "Lỗi hệ thống không mong muốn.",

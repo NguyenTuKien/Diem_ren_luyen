@@ -71,7 +71,7 @@ public class RateLimitAspect {
             }
         } catch (Exception e) {
             if (e instanceof ApiException) throw e;
-            log.error("Redis Rate Limiter Error - Fail Open allowed: {}", e.getMessage());
+            log.error("Redis Rate Limiter Error - Fail Open allowed", e);
         }
 
         return joinPoint.proceed();

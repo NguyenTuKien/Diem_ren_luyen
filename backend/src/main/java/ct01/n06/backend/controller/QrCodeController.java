@@ -62,8 +62,7 @@ public class QrCodeController {
                 .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
-        String deviceToken = readDeviceTokenFromCookie(request);
-        String resolvedDeviceId = resolveDeviceIdFromToken(deviceToken, user.getId());
+        String resolvedDeviceId = resolveDeviceIdFromToken(request, user.getId());
 
         qrCodeService.scanQr(requestBody, user.getId(), resolvedDeviceId);
 
@@ -89,8 +88,7 @@ public class QrCodeController {
                 .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
-        String deviceToken = readDeviceTokenFromCookie(request);
-        String resolvedDeviceId = resolveDeviceIdFromToken(deviceToken, user.getId());
+        String resolvedDeviceId = resolveDeviceIdFromToken(request, user.getId());
 
         qrCodeService.scanTotp(requestBody, user.getId(), resolvedDeviceId);
 
@@ -116,8 +114,7 @@ public class QrCodeController {
                 .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
-        String deviceToken = readDeviceTokenFromCookie(request);
-        String resolvedDeviceId = resolveDeviceIdFromToken(deviceToken, user.getId());
+        String resolvedDeviceId = resolveDeviceIdFromToken(request, user.getId());
 
         qrCodeService.checkinByCode(requestBody, user.getId(), resolvedDeviceId);
 
@@ -139,7 +136,16 @@ public class QrCodeController {
         return null;
     }
 
-    private String resolveDeviceIdFromToken(String deviceToken, String userId) {
+    private String readDeviceTokenFromHeader(HttpServletRequest request) {
+        String headerValue = request.getHeader("X-Device-Id");
+        return (headerValue == null || headerValue.isBlank()) ? null : headerValue.trim();
+    }
+
+    private String resolveDeviceIdFromToken(HttpServletRequest request, String userId) {
+        String deviceToken = readDeviceTokenFromCookie(request);
+        if (deviceToken == null || deviceToken.isBlank()) {
+            deviceToken = readDeviceTokenFromHeader(request);
+        }
         if (deviceToken == null || deviceToken.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu device token");
         }

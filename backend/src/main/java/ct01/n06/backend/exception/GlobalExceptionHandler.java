@@ -46,6 +46,7 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ResponseGeneral<Object>> handleException(Exception ex) {
+    log.error("Unhandled exception", ex);
 
     String detailMessage = ExceptionConstant.GROUP_CODE_SYSTEM;
 
