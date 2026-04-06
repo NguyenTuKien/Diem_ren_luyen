@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { evaluationService } from '../../services/evaluationService';
 
@@ -26,13 +26,7 @@ export default function EvaluationReviewForm({ isLecturer = false }) {
 
   const [feedback, setFeedback] = useState('');
 
-  useEffect(() => {
-    if (evaluationId) {
-      loadReviewForm();
-    }
-  }, [evaluationId, isLecturer]);
-
-  const loadReviewForm = async () => {
+  const loadReviewForm = useCallback(async () => {
     try {
       setLoading(true);
       const res = isLecturer 
@@ -53,7 +47,13 @@ export default function EvaluationReviewForm({ isLecturer = false }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [evaluationId, isLecturer]);
+
+  useEffect(() => {
+    if (evaluationId) {
+      loadReviewForm();
+    }
+  }, [evaluationId, loadReviewForm]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });

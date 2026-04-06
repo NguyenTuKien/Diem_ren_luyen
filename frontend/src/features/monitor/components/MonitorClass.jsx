@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { apiRequest } from "../../../shared/api/http";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useMonitorData } from "../hooks/useMonitorData";
 import "../../../styles/MonitorClass.css";
@@ -53,15 +52,16 @@ export default function MonitorClass() {
   const [sortBy, setSortBy] = useState("NAME_ASC");
   const [notice, setNotice] = useState("");
 
-  const members = useMemo(() => (Array.isArray(data?.members) ? data.members : []), [data?.members]);
+  const membersSource = data?.members;
+  const members = useMemo(() => (Array.isArray(membersSource) ? membersSource : []), [membersSource]);
 
   const filteredMembers = useMemo(() => {
-    if (!data?.members) {
+    if (!members.length) {
       return [];
     }
 
     const normalized = keyword.trim().toLowerCase();
-    const result = data.members
+    const result = members
       .filter((member) => {
         const haystack = `${member.studentCode} ${member.fullName} ${member.email}`.toLowerCase();
         return !normalized || haystack.includes(normalized);
@@ -90,7 +90,7 @@ export default function MonitorClass() {
       });
 
     return result;
-  }, [data?.members, keyword, mandatoryFilter, sortBy, statusFilter]);
+  }, [members, keyword, mandatoryFilter, sortBy, statusFilter]);
 
   const stats = useMemo(() => {
     const total = members.length;

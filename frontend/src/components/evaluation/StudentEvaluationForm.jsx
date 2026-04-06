@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { evaluationService } from '../../services/evaluationService';
 
 export default function StudentEvaluationForm({ semesterId = 1 }) {
@@ -19,11 +19,7 @@ export default function StudentEvaluationForm({ semesterId = 1 }) {
     VOLUNTEER: 0
   });
 
-  useEffect(() => {
-    loadFormData();
-  }, [semesterId]);
-
-  const loadFormData = async () => {
+  const loadFormData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await evaluationService.getStudentForm(semesterId);
@@ -41,7 +37,11 @@ export default function StudentEvaluationForm({ semesterId = 1 }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [semesterId]);
+
+  useEffect(() => {
+    loadFormData();
+  }, [loadFormData]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });

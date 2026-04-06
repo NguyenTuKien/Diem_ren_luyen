@@ -80,6 +80,14 @@ jwt:
   expiration-ms: ${JWT_EXPIRATION_MS:900000}
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
 
+device:
+  security:
+    hmac-secret: ${DEVICE_HMAC_SECRET:ChangeThisDeviceSecretKey}
+    cookie-name: ${DEVICE_COOKIE_NAME:device_token}
+    cookie-secure: ${DEVICE_COOKIE_SECURE:true}
+  binding:
+    ttl-ms: ${DEVICE_BINDING_TTL_MS:604800000}
+
 server:
   servlet:
     context-path: /api
@@ -102,4 +110,3 @@ management:
   endpoint:
     health:
       show-details: always
-

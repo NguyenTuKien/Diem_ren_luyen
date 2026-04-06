@@ -8,8 +8,11 @@ import ct01.n06.backend.entity.StudentEntity;
 import ct01.n06.backend.entity.UserEntity;
 import ct01.n06.backend.entity.enums.Role;
 import ct01.n06.backend.security.JwtService;
+import ct01.n06.backend.service.DeviceBindingService;
+import ct01.n06.backend.service.DeviceSecurityService;
 import ct01.n06.backend.service.LecturerService;
 import ct01.n06.backend.service.StudentService;
+import ct01.n06.backend.service.TotpService;
 import ct01.n06.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,9 +41,12 @@ public class AuthFacade {
     private final UserService userService;
     private final LecturerService lecturerService;
     private final StudentService studentService;
+    private final TotpService totpService;
     private final RedisTemplate<Object, Object> redisTemplate;
+    private final DeviceSecurityService deviceSecurityService;
+    private final DeviceBindingService deviceBindingService;
 
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, String deviceId) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
@@ -48,6 +54,17 @@ public class AuthFacade {
             String subject = authentication.getName();
             UserEntity userEntity = userService.findByUsernameOrEmail(subject)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+
+            if (deviceId == null || deviceId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu deviceId");
+            }
+            String deviceToken = deviceSecurityService.generateDeviceToken(deviceId.trim());
+            deviceBindingService.bindOrValidate(userEntity.getId(), deviceToken);
+
+            if (userEntity.getTotpSecret() == null || userEntity.getTotpSecret().isBlank()) {
+                userEntity.setTotpSecret(totpService.generateSecretKey());
+                userEntity = userService.save(userEntity);
+            }
 
             // 1. Tạo Token cho thiết bị mới (Device B)
             String accessToken = jwtService.generateAccessToken(userEntity);
@@ -65,6 +82,8 @@ public class AuthFacade {
             return LoginResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
+                    .totpSecret(userEntity.getTotpSecret())
+                    .deviceToken(deviceToken)
                     .build();
         } catch (org.springframework.security.core.AuthenticationException ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai tên đăng nhập hoặc mật khẩu");
@@ -101,9 +120,12 @@ public class AuthFacade {
                 TimeUnit.MILLISECONDS
         );
 
+        String deviceToken = deviceBindingService.getBoundToken(userEntity.getId());
+
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
+                .deviceToken(deviceToken)
                 .build();
     }
 

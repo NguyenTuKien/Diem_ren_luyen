@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { qrcodeApi } from '../../../shared/api/qrcodeApi'
-import { getOrCreateDeviceId } from '../../../shared/utils/deviceId'
 
 const SCANNER_REGION_ID = 'unipoint-qr-reader'
 const IS_PIN_ONLY = false
@@ -61,8 +60,8 @@ function resolveScanPayload(decodedText, fallbackEventId) {
   return { qrData, eventId }
 }
 
-const handleCheckinSubmit = async ({ qrData, eventId, deviceId }) => {
-  const response = await qrcodeApi.scanQRCode({ qrData, eventId, deviceId })
+const handleCheckinSubmit = async ({ qrData, eventId }) => {
+  const response = await qrcodeApi.scanQRCode({ qrData, eventId })
   return {
     success: true,
     message: response.message || 'Điểm danh thành công'
@@ -99,7 +98,7 @@ function QRScanner() {
     if (scannerRef.current) {
       try {
         scannerRef.current.clear()
-      } catch (e) {
+      } catch {
         // Ignore clear errors
       }
       scannerRef.current = null
@@ -154,9 +153,8 @@ function QRScanner() {
 
     await stopScanner()
     try {
-      const deviceId = getOrCreateDeviceId()
       const payload = resolveScanPayload(decodedText, fallbackEventId)
-      await processCheckin({ ...payload, deviceId })
+      await processCheckin({ ...payload })
     } catch (error) {
       setNotice({ type: 'error', message: error.message || 'Mã QR không hợp lệ hoặc đã hết hạn.' })
       scanLockRef.current = false
@@ -215,7 +213,7 @@ function QRScanner() {
     }
   }, [stopScanner])
 
-  const handlePinSubmit = async () => {
+  const handlePinSubmit = useCallback(async () => {
     const pinCode = pinDigits.join('')
     if (pinCode.length < 6) {
       setNotice({ type: 'error', message: 'Mã PIN phải đủ 6 chữ số.' })
@@ -227,15 +225,14 @@ function QRScanner() {
 
     try {
       await stopScanner()
-      const deviceId = getOrCreateDeviceId()
-      const response = await qrcodeApi.checkinByCode({ pinCode, deviceId })
+      const response = await qrcodeApi.checkinByCode({ pinCode })
       handleCheckinSuccess(response.message || 'Điểm danh thành công')
     } catch (error) {
       handleCheckinError(error)
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [handleCheckinError, handleCheckinSuccess, pinDigits, stopScanner])
 
   const handleResetQRTab = async () => {
     setPinDigits(Array(6).fill(''))
@@ -294,7 +291,7 @@ function QRScanner() {
     if (pinCode.length === 6 && !isProcessing && !scanCompleted) {
       handlePinSubmit()
     }
-  }, [isProcessing, pinDigits, scanCompleted])
+  }, [handlePinSubmit, isProcessing, pinDigits, scanCompleted])
 
   const activeTabClass = "flex-1 py-4 text-sm font-bold border-b-[3px] border-primary text-primary transition-all flex items-center justify-center gap-2"
   const inactiveTabClass = "flex-1 py-4 text-sm font-medium text-slate-500 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 border-b-[3px] border-transparent"

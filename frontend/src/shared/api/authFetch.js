@@ -65,6 +65,7 @@ export const authFetch = async (url, options = {}) => {
 
   let response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: buildHeaders(options.headers, accessToken),
   });
 
@@ -95,6 +96,7 @@ export const authFetch = async (url, options = {}) => {
 
     response = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers: buildHeaders(options.headers, accessToken),
     });
 
@@ -110,4 +112,3 @@ export const authFetch = async (url, options = {}) => {
     return response;
   }
 };
-

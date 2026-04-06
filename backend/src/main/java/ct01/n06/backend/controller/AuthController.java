@@ -6,6 +6,9 @@ import ct01.n06.backend.dto.auth.UserInfoResponse;
 import ct01.n06.backend.facade.AuthFacade;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,9 +25,21 @@ public class AuthController {
 
     private final AuthFacade authFacade;
 
+    @Value("${device.security.cookie-name:device_token}")
+    private String deviceCookieName;
+
+    @Value("${device.security.cookie-secure:true}")
+    private boolean deviceCookieSecure;
+
+    @Value("${device.binding.ttl-ms:604800000}")
+    private long deviceCookieTtlMs;
+
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authFacade.login(request));
+    public ResponseEntity<LoginResponse> login(
+            @RequestHeader(value = "X-Device-Id", required = false) String deviceId,
+            @RequestBody LoginRequest request) {
+        LoginResponse response = authFacade.login(request, deviceId);
+        return withDeviceCookie(response);
     }
 
     @PostMapping("/refresh")
@@ -32,7 +47,8 @@ public class AuthController {
         if (request == null || request.get("refreshToken") == null || request.get("refreshToken").isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
         }
-        return ResponseEntity.ok(authFacade.refreshTokens(request.get("refreshToken").replace("Bearer ", "")));
+        LoginResponse response = authFacade.refreshTokens(request.get("refreshToken").replace("Bearer ", ""));
+        return withDeviceCookie(response);
     }
 
     @PostMapping("/logout")
@@ -43,7 +59,16 @@ public class AuthController {
                 ? authHeader.substring(7) : null;
         String refreshToken = (body != null) ? body.get("refreshToken") : null;
         authFacade.logout(accessToken, refreshToken);
-        return ResponseEntity.noContent().build();
+        ResponseCookie clearCookie = ResponseCookie.from(deviceCookieName, "")
+                .path("/")
+                .httpOnly(true)
+                .secure(deviceCookieSecure)
+                .sameSite("Strict")
+                .maxAge(0)
+                .build();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+                .build();
     }
 
     @GetMapping("/me")
@@ -54,5 +79,23 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(authFacade.getCurrentUserInfo(authentication));
+    }
+
+    private ResponseEntity<LoginResponse> withDeviceCookie(LoginResponse response) {
+        if (response == null || response.getDeviceToken() == null || response.getDeviceToken().isBlank()) {
+            return ResponseEntity.ok(response);
+        }
+
+        ResponseCookie cookie = ResponseCookie.from(deviceCookieName, response.getDeviceToken())
+                .path("/")
+                .httpOnly(true)
+                .secure(deviceCookieSecure)
+                .sameSite("Strict")
+                .maxAge(deviceCookieTtlMs / 1000)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(response);
     }
 }

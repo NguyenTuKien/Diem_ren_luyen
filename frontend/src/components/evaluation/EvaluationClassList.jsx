@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { evaluationService } from '../../services/evaluationService';
 
@@ -12,11 +12,7 @@ export default function EvaluationClassList({ isLecturer = false, semesterId = 1
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    loadClassList();
-  }, [isLecturer, semesterId, classId]);
-
-  const loadClassList = async () => {
+  const loadClassList = useCallback(async () => {
     try {
       setLoading(true);
       const res = isLecturer 
@@ -31,7 +27,11 @@ export default function EvaluationClassList({ isLecturer = false, semesterId = 1
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId, isLecturer, semesterId]);
+
+  useEffect(() => {
+    loadClassList();
+  }, [loadClassList]);
 
   const getStatusBadge = (status) => {
     switch (status) {

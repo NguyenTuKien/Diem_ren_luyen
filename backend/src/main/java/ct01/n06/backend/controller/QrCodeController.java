@@ -4,11 +4,15 @@ import ct01.n06.backend.annotation.RateLimit;
 import ct01.n06.backend.dto.qrcode.CheckinByCodeRequest;
 import ct01.n06.backend.dto.qrcode.ScanQrRequest;
 import ct01.n06.backend.dto.qrcode.GenerateQrResponse;
+import ct01.n06.backend.dto.qrcode.ScanTotpRequest;
 import ct01.n06.backend.repository.UserRepository;
 import ct01.n06.backend.entity.UserEntity;
 import ct01.n06.backend.exception.ApiException;
 import ct01.n06.backend.service.QrCodeService;
+import ct01.n06.backend.service.DeviceBindingService;
+import ct01.n06.backend.service.DeviceSecurityService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import java.util.HashMap;
@@ -28,6 +33,11 @@ public class QrCodeController {
 
     private final QrCodeService qrCodeService;
     private final UserRepository userRepository; // Dùng để lookup user id (student_id)
+    private final DeviceSecurityService deviceSecurityService;
+    private final DeviceBindingService deviceBindingService;
+
+    @Value("${device.security.cookie-name:device_token}")
+    private String deviceCookieName;
 
     @GetMapping("/generate")
     @PreAuthorize("hasAnyRole('LECTURER', 'ADMIN', 'STAFF')")
@@ -40,8 +50,8 @@ public class QrCodeController {
     @PreAuthorize("hasRole('STUDENT')")
     @RateLimit(limit = 100, window = 1, isGlobal = true)
     public ResponseEntity<Map<String, Object>> scanQr(
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceIdHeader,
-            @RequestBody ScanQrRequest request) {
+            HttpServletRequest request,
+            @RequestBody ScanQrRequest requestBody) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
@@ -52,11 +62,10 @@ public class QrCodeController {
                 .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
-        String resolvedDeviceId = (deviceIdHeader != null && !deviceIdHeader.trim().isEmpty())
-            ? deviceIdHeader.trim()
-            : request.getDeviceId();
+        String deviceToken = readDeviceTokenFromCookie(request);
+        String resolvedDeviceId = resolveDeviceIdFromToken(deviceToken, user.getId());
 
-        qrCodeService.scanQr(request, user.getId(), resolvedDeviceId);
+        qrCodeService.scanQr(requestBody, user.getId(), resolvedDeviceId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -64,12 +73,12 @@ public class QrCodeController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/checkin/code")
+    @PostMapping("/scan/totp")
     @PreAuthorize("hasRole('STUDENT')")
     @RateLimit(limit = 100, window = 1, isGlobal = true)
-    public ResponseEntity<Map<String, Object>> checkinByCode(
-            @RequestHeader(value = "X-Device-Id", required = false) String deviceIdHeader,
-            @Valid @RequestBody CheckinByCodeRequest request) {
+    public ResponseEntity<Map<String, Object>> scanTotp(
+            HttpServletRequest request,
+            @RequestBody ScanTotpRequest requestBody) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
@@ -80,15 +89,64 @@ public class QrCodeController {
                 .or(() -> userRepository.findByEmailIgnoreCase(principal))
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
 
-        String resolvedDeviceId = (deviceIdHeader != null && !deviceIdHeader.trim().isEmpty())
-            ? deviceIdHeader.trim()
-            : null;
+        String deviceToken = readDeviceTokenFromCookie(request);
+        String resolvedDeviceId = resolveDeviceIdFromToken(deviceToken, user.getId());
 
-        qrCodeService.checkinByCode(request, user.getId(), resolvedDeviceId);
+        qrCodeService.scanTotp(requestBody, user.getId(), resolvedDeviceId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Điểm danh TOTP thành công!");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/checkin/code")
+    @PreAuthorize("hasRole('STUDENT')")
+    @RateLimit(limit = 100, window = 1, isGlobal = true)
+    public ResponseEntity<Map<String, Object>> checkinByCode(
+            HttpServletRequest request,
+            @Valid @RequestBody CheckinByCodeRequest requestBody) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
+        }
+
+        String principal = authentication.getName();
+        UserEntity user = userRepository.findByUsernameIgnoreCase(principal)
+                .or(() -> userRepository.findByEmailIgnoreCase(principal))
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Phiên đăng nhập không hợp lệ"));
+
+        String deviceToken = readDeviceTokenFromCookie(request);
+        String resolvedDeviceId = resolveDeviceIdFromToken(deviceToken, user.getId());
+
+        qrCodeService.checkinByCode(requestBody, user.getId(), resolvedDeviceId);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("message", "Điểm danh bằng PIN thành công!");
         return ResponseEntity.ok(response);
+    }
+
+    private String readDeviceTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+        for (var cookie : request.getCookies()) {
+            if (deviceCookieName.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    private String resolveDeviceIdFromToken(String deviceToken, String userId) {
+        if (deviceToken == null || deviceToken.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu device token");
+        }
+        if (!deviceSecurityService.verifyDeviceToken(deviceToken)) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Device token không hợp lệ");
+        }
+        deviceBindingService.bindOrValidate(userId, deviceToken);
+        return deviceSecurityService.extractDeviceId(deviceToken);
     }
 }

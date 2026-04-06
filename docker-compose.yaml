@@ -87,7 +87,10 @@ services:
       - ttcs
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_PROXY_TARGET=http://backend:8080
     image: ${DOCKER_REGISTRY:-ngtukien218}/ttcs-frontend:${TAG:-latest}
     restart: always
     ports:

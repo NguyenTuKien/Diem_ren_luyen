@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../../../shared/api/http";
 import { useAuth } from "../../../context/AuthContext";
 import { useLecturerData } from "../hooks/useLecturerData";
@@ -84,7 +84,7 @@ export default function LecturerStudentManagement() {
         classId: prev.classId || String(options.classes[0].id),
       }));
     }
-  }, [options.classes]);
+  }, [options.classes, manualForm.classId]);
 
   useEffect(() => {
     setCurrentPage(1);

@@ -63,14 +63,14 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
 
         if (isEditMode) {
           setFormData({
-            title: initialEvent.title || '',
-            organizer: initialEvent.organizer || '',
-            description: initialEvent.description || '',
-            startTime: toDateTimeLocal(initialEvent.startTime),
-            endTime: toDateTimeLocal(initialEvent.endTime),
-            location: initialEvent.location || '',
-            semesterId: initialEvent.semesterId ? String(initialEvent.semesterId) : (semesterData[0] ? String(semesterData[0].id) : ''),
-            criteriaId: initialEvent.criteriaId ? String(initialEvent.criteriaId) : (criteriaData[0] ? String(criteriaData[0].id) : '')
+            title: initialEvent?.title || '',
+            organizer: initialEvent?.organizer || '',
+            description: initialEvent?.description || '',
+            startTime: toDateTimeLocal(initialEvent?.startTime),
+            endTime: toDateTimeLocal(initialEvent?.endTime),
+            location: initialEvent?.location || '',
+            semesterId: initialEvent?.semesterId ? String(initialEvent.semesterId) : (semesterData[0] ? String(semesterData[0].id) : ''),
+            criteriaId: initialEvent?.criteriaId ? String(initialEvent.criteriaId) : (criteriaData[0] ? String(criteriaData[0].id) : '')
           })
         } else {
           setFormData(prev => ({
@@ -89,7 +89,7 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
     } else {
       resetForm()
     }
-  }, [isOpen]);
+  }, [initialEvent, isEditMode, isOpen]);
 
   if (!isOpen) {
     return null

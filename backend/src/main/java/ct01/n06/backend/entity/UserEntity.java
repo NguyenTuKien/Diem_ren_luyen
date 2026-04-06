@@ -38,4 +38,7 @@ public class UserEntity extends BaseJpaAuditingEntity {
   @Enumerated(EnumType.STRING)
   @Column(name = UserConstant.COL_STATUS, length = 20)
   private UserStatus status;
+
+  @Column(name = UserConstant.COL_TOTP_SECRET, length = 64)
+  private String totpSecret;
 }

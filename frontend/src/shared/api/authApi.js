@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './http';
+import { getHardwareFingerprint } from '../utils/deviceId';
 
 const AUTH_API_BASE = `${API_BASE_URL}/v1/auth`;
 const USER_INFO_KEY = 'currentUserInfo';
@@ -79,10 +80,13 @@ export const clearTokens = () => {
 };
 
 export const login = async ({ username, password }) => {
+  const deviceId = await getHardwareFingerprint();
   const response = await fetch(`${AUTH_API_BASE}/login`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
     },
     body: JSON.stringify({ username, password }),
   });
@@ -94,9 +98,48 @@ export const login = async ({ username, password }) => {
   return response.json();
 };
 
+export const register = async ({ email, password, fullName, studentCode, classId }) => {
+  const deviceId = await getHardwareFingerprint();
+  const response = await fetch(`${AUTH_API_BASE}/register`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
+    },
+    body: JSON.stringify({ email, password, fullName, studentCode, classId }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Không thể đăng ký tài khoản.');
+  }
+
+  return response.json();
+};
+
+export const loginWithSso = async ({ email, provider }) => {
+  const deviceId = await getHardwareFingerprint();
+  const response = await fetch(`${AUTH_API_BASE}/sso`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
+    },
+    body: JSON.stringify({ email, provider }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Không thể đăng nhập SSO.');
+  }
+
+  return response.json();
+};
+
 export const refreshTokens = async (refreshToken) => {
   const response = await fetch(`${AUTH_API_BASE}/refresh`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -117,6 +160,7 @@ export const fetchCurrentUser = async () => {
   }
 
   const response = await fetch(`${AUTH_API_BASE}/me`, {
+    credentials: 'include',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -138,6 +182,7 @@ export const logout = async () => {
   try {
     await fetch(`${AUTH_API_BASE}/logout`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -156,6 +201,7 @@ export const fetchAuthSession = async (accessToken) => {
 
   const response = await fetch(`${API_BASE_URL}/auth/session`, {
     method: 'GET',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       Authorization: `Bearer ${accessToken}`,
