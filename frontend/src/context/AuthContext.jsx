@@ -88,11 +88,13 @@ export function AuthProvider({ children }) {
       user: session?.user ?? null,
       accessToken: session?.accessToken ?? null,
       refreshToken: session?.refreshToken ?? null,
+      deviceToken: session?.deviceToken ?? null,
       login: (payload) => {
         const nextSession = {
           user: toUser(payload),
           accessToken: payload.accessToken ?? null,
           refreshToken: payload.refreshToken ?? null,
+          deviceToken: payload.deviceToken ?? null,
         };
         persistSession(nextSession);
       },

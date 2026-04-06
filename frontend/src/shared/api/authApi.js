@@ -137,12 +137,27 @@ export const loginWithSso = async ({ email, provider }) => {
 };
 
 export const refreshTokens = async (refreshToken) => {
+  // Fallback: đọc deviceToken từ localStorage để gửi qua header
+  // vì cookie Secure không hoạt động trên Chrome Android qua HTTP
+  let deviceToken = null;
+  try {
+    const raw = window.localStorage.getItem('drl_auth');
+    if (raw) {
+      deviceToken = JSON.parse(raw)?.deviceToken ?? null;
+    }
+  } catch {
+    // ignore
+  }
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (deviceToken) {
+    headers['X-Device-Token'] = deviceToken;
+  }
+
   const response = await fetch(`${AUTH_API_BASE}/refresh`, {
     method: 'POST',
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({ refreshToken }),
   });
 
