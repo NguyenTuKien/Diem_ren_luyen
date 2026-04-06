@@ -49,8 +49,8 @@ export default function StudentPage() {
   const userIdLabel = user?.userId || "---";
   const avatarLetter = (fullNameLabel || "S").slice(0, 1).toUpperCase();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth", { replace: true });
   };
 

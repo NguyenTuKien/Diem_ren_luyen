@@ -78,11 +78,11 @@ spring:
 jwt:
   secret: ${JWT_SECRET:VGhpc0lzQURldlNlY3JldEtleUZvckpXVFNpZ25pbmdPbmx5ISE=}
   expiration-ms: ${JWT_EXPIRATION_MS:900000}
-  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:86400000}
 
 device:
   security:
-    hmac-secret: ${DEVICE_HMAC_SECRET:ChangeThisDeviceSecretKey}
+    hmac-secret: ${DEVICE_HMAC_SECRET:r2T8xP9q$W#5mK!L&vD3z@bN7y*Jc1fG4hA%6sU0eO+XpI}
     cookie-name: ${DEVICE_COOKIE_NAME:device_token}
     cookie-secure: ${DEVICE_COOKIE_SECURE:true}
   binding:

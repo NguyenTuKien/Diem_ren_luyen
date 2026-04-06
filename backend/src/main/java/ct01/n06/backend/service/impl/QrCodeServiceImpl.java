@@ -181,12 +181,15 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn đã điểm danh sự kiện này rồi!");
         }
 
-        String finalDeviceLockKey = "event_checkin:" + event.getId() + ":device:" + deviceId;
+        // Yêu cầu 3: Ràng buộc Device - Event (Chống mượn máy điểm danh)
+        String finalDeviceLockKey = "event_device_checkin:" + event.getId() + ":" + deviceId;
+        Duration lockTtl = ttlDuration.plusHours(12); // Set ttl hợp lý: Bằng thời gian sự kiện + 12 tiếng
+        
         Boolean finalLockAcquired = stringRedisTemplate.opsForValue()
-                .setIfAbsent(finalDeviceLockKey, student.getId(), ttlDuration);
+                .setIfAbsent(finalDeviceLockKey, student.getId(), lockTtl);
         if (!Boolean.TRUE.equals(finalLockAcquired)) {
             log.info("Check-in blocked by device lock: eventId={}, studentId={}, deviceId={}", eventId, student.getId(), deviceId);
-            throw new ApiException(HttpStatus.FORBIDDEN, "Thiết bị này đã được sử dụng để điểm danh");
+            throw new ApiException(HttpStatus.FORBIDDEN, "Thiết bị này đã được sử dụng để điểm danh cho sự kiện này!");
         }
 
         QrCheckinMessage message = QrCheckinMessage.builder()

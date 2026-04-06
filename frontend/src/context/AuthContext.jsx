@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useMemo, useState } from "react";
+import { logoutWithTokens } from "../shared/api/authApi";
 
 export const AUTH_STORAGE_KEY = "drl_auth";
 const AuthContext = createContext(null);
@@ -95,8 +96,16 @@ export function AuthProvider({ children }) {
         };
         persistSession(nextSession);
       },
-      logout: () => {
-        persistSession(null);
+      logout: async () => {
+        const currentAccessToken = session?.accessToken ?? null;
+        const currentRefreshToken = session?.refreshToken ?? null;
+        try {
+          await logoutWithTokens(currentAccessToken, currentRefreshToken);
+        } catch (error) {
+          console.error("Logout API failed:", error);
+        } finally {
+          persistSession(null);
+        }
       },
     }),
     [session],

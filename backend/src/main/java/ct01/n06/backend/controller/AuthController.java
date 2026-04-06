@@ -9,12 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import ct01.n06.backend.exception.RequestException;
+import ct01.n06.backend.exception.UnauthorizedException;
 import ct01.n06.backend.util.CookieUtils;
 
 import java.util.Map;
@@ -49,7 +49,7 @@ public class AuthController {
             @RequestHeader(value = "X-Device-Token", required = false) String deviceId,
             @RequestBody Map<String, String> request) {
         if (request == null || request.get("refreshToken") == null || request.get("refreshToken").isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
+            throw new RequestException("Thiếu refresh token.");
         }
         String resolvedDeviceToken = (deviceId != null && !deviceId.isBlank())
                 ? deviceId
@@ -85,7 +85,7 @@ public class AuthController {
     public ResponseEntity<UserInfoResponse> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");
+            throw new UnauthorizedException("Chưa xác thực.");
         }
 
         return ResponseEntity.ok(authFacade.getCurrentUserInfo(authentication));

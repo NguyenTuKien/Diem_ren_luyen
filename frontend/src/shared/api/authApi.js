@@ -194,6 +194,26 @@ export const logout = async () => {
   }
 };
 
+/**
+ * Logout with explicitly provided tokens (bypasses localStorage).
+ * Use this when tokens are stored in a session context, not in localStorage.
+ */
+export const logoutWithTokens = async (accessToken, refreshToken) => {
+  try {
+    await fetch(`${AUTH_API_BASE}/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify({ refreshToken: refreshToken ?? null }),
+    });
+  } finally {
+    clearTokens();
+  }
+};
+
 export const fetchAuthSession = async (accessToken) => {
   if (!accessToken) {
     return null;

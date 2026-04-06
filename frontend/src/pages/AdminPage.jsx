@@ -23,8 +23,8 @@ export default function AdminPage() {
   const userIdLabel = user?.userId || "admin";
   const avatarLetter = (fullNameLabel || "A").slice(0, 1).toUpperCase();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth", { replace: true });
   };
 

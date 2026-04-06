@@ -8,7 +8,6 @@ import ct01.n06.backend.entity.StudentEntity;
 import ct01.n06.backend.entity.UserEntity;
 import ct01.n06.backend.entity.enums.Role;
 import ct01.n06.backend.security.JwtService;
-import ct01.n06.backend.service.DeviceBindingService;
 import ct01.n06.backend.service.DeviceSecurityService;
 import ct01.n06.backend.service.LecturerService;
 import ct01.n06.backend.service.StudentService;
@@ -25,7 +24,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import ct01.n06.backend.exception.ForbiddenException;
+import ct01.n06.backend.exception.NotFoundException;
+import ct01.n06.backend.exception.RequestException;
+import ct01.n06.backend.exception.ServerException;
+import ct01.n06.backend.exception.UnauthorizedException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -49,7 +52,6 @@ public class AuthFacade {
     private final TotpService totpService;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final DeviceSecurityService deviceSecurityService;
-    private final DeviceBindingService deviceBindingService;
 
     public LoginResponse login(LoginRequest request, String deviceId) {
         try {
@@ -59,13 +61,12 @@ public class AuthFacade {
             );
             String subject = authentication.getName();
             UserEntity userEntity = userService.findByUsernameOrEmail(subject)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                    .orElseThrow(() -> new NotFoundException("User not found"));
 
             if (deviceId == null || deviceId.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "App phiên bản cũ không được hỗ trợ");
+                throw new RequestException("App phiên bản cũ không được hỗ trợ");
             }
             String deviceToken = deviceSecurityService.generateDeviceToken(deviceId.trim());
-            deviceBindingService.bindOrValidate(userEntity.getId(), deviceToken);
 
             String totpSecretToReturn = null;
             if (userEntity.getTotpSecret() == null || userEntity.getTotpSecret().isBlank()) {
@@ -79,6 +80,13 @@ public class AuthFacade {
             String refreshToken = jwtService.generateRefreshToken(subject);
 
             String redisKey = "user:" + subject + ":session";
+
+            // Yêu cầu 2: Ràng buộc User - Session (Khóa tài khoản) - Xử lý đá session cũ hoặc từ chối login
+            String existingSession = (String) redisTemplate.opsForValue().get(redisKey);
+            if (existingSession != null && !existingSession.isBlank()) {
+                // Cấu hình: Từ chối đăng nhập nghiêm ngặt (Strict Lock)
+                throw new ForbiddenException("Tài khoản đang được đăng nhập trên một thiết bị / phiên làm việc khác");
+            }
 
             redisTemplate.opsForValue().set(
                     redisKey,
@@ -94,9 +102,11 @@ public class AuthFacade {
                     .deviceToken(deviceToken)
                     .build();
         } catch (org.springframework.security.core.AuthenticationException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sai tên đăng nhập hoặc mật khẩu");
+            throw new UnauthorizedException("Sai tên đăng nhập hoặc mật khẩu");
+        } catch (RuntimeException ex) {
+            throw ex;
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống: " + ex.getMessage());
+            throw new ServerException("Lỗi hệ thống: " + ex.getMessage());
         }
     }
 
@@ -106,23 +116,22 @@ public class AuthFacade {
         try {
             username = jwtService.extractUsername(refreshToken);
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
+            throw new UnauthorizedException("Invalid refresh token");
         }
 
         if (!jwtService.isRefreshTokenValid(refreshToken, username)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is expired or revoked");
+            throw new UnauthorizedException("Refresh token is expired or revoked");
         }
 
         UserEntity userEntity = userService.findByUsernameOrEmail(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         if (deviceToken == null || deviceToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu device token");
+            throw new RequestException("Thiếu device token");
         }
         if (!deviceSecurityService.verifyDeviceToken(deviceToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Device token không hợp lệ");
+            throw new UnauthorizedException("Device token không hợp lệ");
         }
-        deviceBindingService.bindOrValidate(userEntity.getId(), deviceToken);
 
         String newAccessToken = jwtService.generateAccessToken(userEntity);
         String newRefreshToken = jwtService.generateRefreshToken(username);
@@ -157,7 +166,7 @@ public class AuthFacade {
 
         // 1. Tìm User chính
         UserEntity user = userService.findByUsernameOrEmail(principalIdentifier)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
 
         // 2. Khởi tạo Builder với các thông tin cơ bản
         UserInfoResponse.UserInfoResponseBuilder builder = UserInfoResponse.builder()
@@ -182,19 +191,48 @@ public class AuthFacade {
     }
 
     public void logout(String accessToken, String refreshToken) {
+        String usernameToClear = null;
+
         if (accessToken != null && !accessToken.isBlank()) {
             try {
-                String username = jwtService.extractUsername(accessToken);
-                String redisKey = "user:" + username + ":session";
-                redisTemplate.delete(redisKey); // XÓA REDIS
+                usernameToClear = jwtService.extractUsername(accessToken);
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                if (e.getClaims() != null) {
+                    usernameToClear = e.getClaims().getSubject();
+                }
             } catch (Exception e) {
+                log.warn("Lỗi khi extract accessToken lúc logout: {}", e.getMessage());
             }
-
-            jwtService.blacklist(accessToken);
+            
+            try {
+                jwtService.blacklist(accessToken);
+            } catch (Exception ignore) {}
         }
 
         if (refreshToken != null && !refreshToken.isBlank()) {
-            jwtService.blacklist(refreshToken);
+            if (usernameToClear == null) {
+                try {
+                    usernameToClear = jwtService.extractUsername(refreshToken);
+                } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                    if (e.getClaims() != null) {
+                        usernameToClear = e.getClaims().getSubject();
+                    }
+                } catch (Exception e) {
+                    log.warn("Lỗi khi extract refreshToken lúc logout: {}", e.getMessage());
+                }
+            }
+            
+            try {
+                jwtService.blacklist(refreshToken);
+            } catch (Exception ignore) {}
+        }
+
+        if (usernameToClear != null) {
+            String redisKey = "user:" + usernameToClear + ":session";
+            Boolean deleted = redisTemplate.delete(redisKey);
+            log.info("LOGOUT: Deleted Redis key '{}' -> result={}", redisKey, deleted);
+        } else {
+            log.warn("LOGOUT: Could not extract username from tokens - Redis lock NOT cleared!");
         }
         SecurityContextHolder.clearContext();
     }

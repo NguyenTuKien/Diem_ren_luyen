@@ -1,62 +1,41 @@
 package ct01.n06.backend.exception;
 
-import ct01.n06.backend.constant.exception.ExceptionConstant;
-import ct01.n06.backend.dto.ResponseGeneral;
-import ct01.n06.backend.exception.base.BaseException;
-import java.time.LocalDateTime;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(BaseException.class)
-  public ResponseEntity<ResponseGeneral<Object>> handleBaseException(BaseException ex) {
+    @ExceptionHandler(RequestException.class)
+    public ErrorResponse handleRequestException(RequestException ex) {
+        ex.printStackTrace();
+        return ErrorResponse.create(ex, HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
 
-    String detailMessage = ex.getMessage();
+    @ExceptionHandler(UnauthorizedException.class)
+    public ErrorResponse handleUnauthorizedException(UnauthorizedException ex) {
+        ex.printStackTrace();
+        return ErrorResponse.create(ex, HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
 
-    ResponseGeneral<Object> response = ResponseGeneral.of(
-        ex.getHttpStatus().value(),
-        detailMessage,
-        null,
-        LocalDateTime.now().toString()
-    );
+    @ExceptionHandler(ForbiddenException.class)
+    public ErrorResponse handleForbiddenException(ForbiddenException ex) {
+        System.err.println("FORBIDDEN EXCEPTION CAUGHT: " + ex.getMessage());
+        ex.printStackTrace();
+        return ErrorResponse.create(ex, HttpStatus.FORBIDDEN, ex.getMessage());
+    }
 
-    return ResponseEntity.status(ex.getHttpStatus()).body(response);
-  }
+    @ExceptionHandler(NotFoundException.class)
+    public ErrorResponse handleNotFoundException(NotFoundException ex) {
+        ex.printStackTrace();
+        return ErrorResponse.create(ex, HttpStatus.NOT_FOUND, ex.getMessage());
+    }
 
-  @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ResponseEntity<ResponseGeneral<Object>> handleHttpMessageNotReadableException(
-      HttpMessageNotReadableException ex) {
-
-    ResponseGeneral<Object> response = ResponseGeneral.of(
-        HttpStatus.BAD_REQUEST.value(),
-        ExceptionConstant.MISSING_REQUEST_BODY,
-        null,
-        LocalDateTime.now().toString()
-    );
-
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-  }
-
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ResponseGeneral<Object>> handleException(Exception ex) {
-    log.error("Unhandled exception", ex);
-
-    String detailMessage = ExceptionConstant.GROUP_CODE_SYSTEM;
-
-    ResponseGeneral<Object> response = ResponseGeneral.of(
-        HttpStatus.INTERNAL_SERVER_ERROR.value(),
-        detailMessage,
-        null,
-        LocalDateTime.now().toString()
-    );
-
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-  }
+    @ExceptionHandler(ServerException.class)
+    public ErrorResponse handleServerException(ServerException ex) {
+        ex.printStackTrace();
+        return ErrorResponse.create(ex, HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
 }

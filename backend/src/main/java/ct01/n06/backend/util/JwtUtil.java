@@ -32,7 +32,7 @@ public class JwtUtil {
     @Value("${jwt.expiration-ms:900000}")
     private long expirationMs;
 
-    @Value("${jwt.refresh-expiration-ms:604800000}")
+    @Value("${jwt.refresh-expiration-ms:86400000}")
     private long refreshExpirationMs;
 
     public String extractUsername(String token) {
@@ -62,8 +62,7 @@ public class JwtUtil {
                 claims.put("fullname", lecturer.getFullName());
                 claims.put("lecture_id", lecturer.getId()); // Ghi đúng ID của bảng Lecturer
             });
-        }
-        else if (userEntity.getRole() == Role.ROLE_STUDENT || userEntity.getRole() == Role.ROLE_MONITOR) {
+        } else if (userEntity.getRole() == Role.ROLE_STUDENT || userEntity.getRole() == Role.ROLE_MONITOR) {
             studentRepository.findByUserEntity(userEntity).ifPresent(student -> {
                 claims.put("fullname", student.getFullName());
                 claims.put("student_id", student.getId()); // Ghi đúng ID của bảng Student

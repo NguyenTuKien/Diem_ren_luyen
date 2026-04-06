@@ -1,6 +1,7 @@
 package ct01.n06.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nimbusds.oauth2.sdk.TokenIntrospectionSuccessResponse;
 import ct01.n06.backend.constant.UserConstant;
 import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.n06.backend.entity.enums.Role;
