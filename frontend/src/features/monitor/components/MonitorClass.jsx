@@ -44,8 +44,8 @@ function parseMandatoryStatus(text) {
 }
 
 export default function MonitorClass() {
-  const { user, logout } = useAuth();
-  const { data, loading, error } = useMonitorData(user?.userId);
+  const { user } = useAuth();
+  const { data, loading, error } = useMonitorData(user?.backendUserId ?? user?.userId);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [mandatoryFilter, setMandatoryFilter] = useState("ALL");
@@ -180,205 +180,182 @@ export default function MonitorClass() {
   }
 
   return (
-    <div className="monitor-shell-v2">
-      <header className="monitor-global-header-v2">
-        <div className="monitor-brand-v2">
-          <span className="monitor-brand-dot-v2" />
-          <strong>EduPortal</strong>
+    <section className="space-y-3">
+      <section className="student-hero-card">
+        <div className="student-hero-left">
+          <div className="student-hero-avatar">
+            <span className="material-symbols-outlined">groups</span>
+          </div>
+          <div>
+            <h1>Quản lý lớp {data.classCode}</h1>
+            <p>
+              Theo dõi thành viên, rà soát hoạt động bắt buộc và nhắc nhở sinh viên chưa hoàn thành.
+            </p>
+          </div>
         </div>
 
-        <div className="monitor-header-actions-v2">
-          <button type="button" className="monitor-primary-btn-v2" onClick={handleExportExcel}>
+        <div className="student-hero-actions">
+          <button type="button" className="student-hero-btn primary" onClick={handleExportExcel}>
+            <span className="material-symbols-outlined">download</span>
             Xuất Excel
           </button>
-          <button type="button" className="monitor-ghost-btn-v2" onClick={logout}>
-            Đăng xuất
-          </button>
         </div>
-      </header>
+      </section>
 
-      <div className="monitor-body-v2">
-        <aside className="monitor-sidebar-v2">
-          <button type="button" className="monitor-nav-item-v2 active">
-            Tổng quan lớp
-          </button>
-          <button type="button" className="monitor-nav-item-v2">Thành viên lớp</button>
-          <button type="button" className="monitor-nav-item-v2">Theo dõi bắt buộc</button>
-          <button type="button" className="monitor-nav-item-v2">Báo cáo nhanh</button>
+      {notice && <div className="monitor-notice-v2">{notice}</div>}
 
-          <div className="monitor-support-v2">
-            <p>Lớp đang quản lý</p>
-            <strong>{data.classCode}</strong>
-            <small>{data.facultyName}</small>
+      <section className="student-kpi-row">
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Tổng thành viên</h3>
+            <span className="material-symbols-outlined">groups</span>
           </div>
-        </aside>
+          <p className="student-kpi-number">{stats.total}</p>
+          <small>Thành viên trong lớp</small>
+        </article>
 
-        <main className="monitor-main-v2">
-          <section className="monitor-hero-v2">
-            <div>
-              <p className="monitor-hero-subtitle-v2">Không gian lớp trưởng</p>
-              <h1>Quản lý lớp {data.classCode}</h1>
-              <span>
-                Theo dõi thành viên, rà soát hoạt động bắt buộc và nhắc nhở sinh viên chưa hoàn thành.
-              </span>
-            </div>
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Tài khoản hoạt động</h3>
+            <span className="material-symbols-outlined">verified_user</span>
+          </div>
+          <p className="student-kpi-number">{stats.active}</p>
+          <small>Đang sử dụng</small>
+        </article>
 
-            <div className="monitor-hero-badges-v2">
-              <span>{data.facultyName}</span>
-              <span>{stats.total} thành viên</span>
-            </div>
-          </section>
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Thiếu bắt buộc</h3>
+            <span className="material-symbols-outlined">warning</span>
+          </div>
+          <p className="student-kpi-number">{stats.missingMandatory}</p>
+          <small>Cần nhắc nhở</small>
+        </article>
+      </section>
 
-          {notice && <div className="monitor-notice-v2">{notice}</div>}
+      <section className="monitor-tools-v2">
+        <input
+          type="search"
+          placeholder="Tìm theo tên, MSSV, email..."
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+        />
 
-          <section className="monitor-stats-v2">
-            <article>
-              <p>Tổng thành viên</p>
-              <strong>{stats.total}</strong>
-            </article>
-            <article>
-              <p>Tài khoản hoạt động</p>
-              <strong>{stats.active}</strong>
-            </article>
-            <article>
-              <p>Lớp trưởng trong danh sách</p>
-              <strong>{stats.monitorCount}</strong>
-            </article>
-            <article>
-              <p>Thiếu bắt buộc</p>
-              <strong>{stats.missingMandatory}</strong>
-            </article>
-          </section>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          {STATUS_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
 
-          <section className="monitor-tools-v2">
-            <input
-              type="search"
-              placeholder="Tìm theo tên, MSSV, email..."
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
+        <select
+          value={mandatoryFilter}
+          onChange={(event) => setMandatoryFilter(event.target.value)}
+        >
+          {MANDATORY_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
 
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              {STATUS_FILTERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          {SORT_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </section>
 
-            <select
-              value={mandatoryFilter}
-              onChange={(event) => setMandatoryFilter(event.target.value)}
-            >
-              {MANDATORY_FILTERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+      <section className="monitor-content-v2">
+        <article className="monitor-table-box-v2">
+          <div className="monitor-section-title-v2">
+            <h2>Danh sách thành viên lớp</h2>
+            <small>{filteredMembers.length} kết quả theo bộ lọc</small>
+          </div>
 
-            <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-              {SORT_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </section>
-
-          <section className="monitor-content-v2">
-            <article className="monitor-table-box-v2">
-              <div className="monitor-section-title-v2">
-                <h2>Danh sách thành viên lớp</h2>
-                <small>{filteredMembers.length} kết quả theo bộ lọc</small>
-              </div>
-
-              <div className="monitor-table-wrap-v2">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>MSSV</th>
-                      <th>Họ tên</th>
-                      <th>Email</th>
-                      <th>Điểm</th>
-                      <th>Bắt buộc</th>
-                      <th>Vai trò</th>
-                      <th>Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredMembers.length === 0 ? (
-                      <tr>
-                        <td colSpan={7}>Không có sinh viên phù hợp.</td>
+          <div className="monitor-table-wrap-v2">
+            <table>
+              <thead>
+                <tr>
+                  <th>MSSV</th>
+                  <th>Họ tên</th>
+                  <th>Email</th>
+                  <th>Điểm</th>
+                  <th>Bắt buộc</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>Không có sinh viên phù hợp.</td>
+                  </tr>
+                ) : (
+                  filteredMembers.map((member) => {
+                    const mandatory = parseMandatoryStatus(member.mandatoryParticipation);
+                    return (
+                      <tr key={member.studentId}>
+                        <td>{member.studentCode}</td>
+                        <td>{member.fullName}</td>
+                        <td>{member.email}</td>
+                        <td>{member.totalPoint ?? 0}</td>
+                        <td>
+                          <span
+                            className={`monitor-pill-v2 mandatory ${mandatory.passed ? "passed" : "missing"}`}
+                          >
+                            {mandatory.ratio}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`monitor-pill-v2 role ${member.monitor ? "monitor" : "student"}`}
+                          >
+                            {member.monitor ? "Monitor" : "Student"}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`monitor-pill-v2 status ${String(member.accountStatus || "ACTIVE").toLowerCase()}`}
+                          >
+                            {STATUS_LABEL[member.accountStatus] || member.accountStatus}
+                          </span>
+                        </td>
                       </tr>
-                    ) : (
-                      filteredMembers.map((member) => {
-                        const mandatory = parseMandatoryStatus(member.mandatoryParticipation);
-                        return (
-                          <tr key={member.studentId}>
-                            <td>{member.studentCode}</td>
-                            <td>{member.fullName}</td>
-                            <td>{member.email}</td>
-                            <td>{member.totalPoint ?? 0}</td>
-                            <td>
-                              <span
-                                className={`monitor-pill-v2 mandatory ${mandatory.passed ? "passed" : "missing"
-                                  }`}
-                              >
-                                {mandatory.ratio}
-                              </span>
-                            </td>
-                            <td>
-                              <span
-                                className={`monitor-pill-v2 role ${member.monitor ? "monitor" : "student"
-                                  }`}
-                              >
-                                {member.monitor ? "Monitor" : "Student"}
-                              </span>
-                            </td>
-                            <td>
-                              <span
-                                className={`monitor-pill-v2 status ${String(
-                                  member.accountStatus || "ACTIVE",
-                                ).toLowerCase()}`}
-                              >
-                                {STATUS_LABEL[member.accountStatus] || member.accountStatus}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </article>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
 
-            <article className="monitor-attention-box-v2">
-              <div className="monitor-section-title-v2">
-                <h2>Cần nhắc nhở</h2>
-                <small>Top 5 thành viên thiếu bắt buộc</small>
-              </div>
+        <article className="monitor-attention-box-v2">
+          <div className="monitor-section-title-v2">
+            <h2>Cần nhắc nhở</h2>
+            <small>Top 5 thành viên thiếu bắt buộc</small>
+          </div>
 
-              {topSupportList.length === 0 ? (
-                <p className="monitor-empty-v2">Không có thành viên cần nhắc nhở.</p>
-              ) : (
-                <ul>
-                  {topSupportList.map((member) => (
-                    <li key={member.studentId}>
-                      <div>
-                        <strong>{member.fullName}</strong>
-                        <small>{member.studentCode}</small>
-                      </div>
-                      <span>{parseMandatoryStatus(member.mandatoryParticipation).ratio}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
-          </section>
-        </main>
-      </div>
-    </div>
+          {topSupportList.length === 0 ? (
+            <p className="monitor-empty-v2">Không có thành viên cần nhắc nhở.</p>
+          ) : (
+            <ul>
+              {topSupportList.map((member) => (
+                <li key={member.studentId}>
+                  <div>
+                    <strong>{member.fullName}</strong>
+                    <small>{member.studentCode}</small>
+                  </div>
+                  <span>{parseMandatoryStatus(member.mandatoryParticipation).ratio}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+      </section>
+    </section>
   );
 }

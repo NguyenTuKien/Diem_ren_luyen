@@ -21,10 +21,10 @@ export default function AdminSidebar({ items, activeFeature, onSelect }) {
       })}
 
       <div className="mt-auto p-4 bg-primary/5 rounded-xl border border-primary/10">
-        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">He thong</p>
+        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Hệ thống</p>
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-sm">security</span>
-          <span className="text-xs font-medium">Quan tri va phan quyen</span>
+          <span className="text-xs font-medium">Quản trị và phân quyền</span>
         </div>
       </div>
     </aside>

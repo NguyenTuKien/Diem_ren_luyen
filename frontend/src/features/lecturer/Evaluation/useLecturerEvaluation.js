@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   finalizeLecturerEvaluations,
   getLecturerEvaluationClassList,
@@ -115,7 +115,7 @@ export function useLecturerEvaluation(lecturerId) {
         setSelectedClassId(classes[0]?.id ?? null);
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Khong the tai bo loc lop/hoc ky.");
+          setError(loadError.message || "Không thể tải bộ lọc lớp/học kỳ.");
         }
       } finally {
         if (mounted) {
@@ -145,7 +145,7 @@ export function useLecturerEvaluation(lecturerId) {
       const payload = await getLecturerEvaluationClassList({ classId, semesterId });
       setEvaluationRows(Array.isArray(payload) ? payload : []);
     } catch (loadError) {
-      setError(loadError.message || "Khong the tai danh sach danh gia.");
+      setError(loadError.message || "Không thể tải danh sách đánh giá.");
       setEvaluationRows([]);
     } finally {
       setLoadingList(false);
@@ -173,7 +173,7 @@ export function useLecturerEvaluation(lecturerId) {
       });
       setReviewDraft(details);
     } catch (detailError) {
-      setError(detailError.message || "Khong the tai chi tiet phieu.");
+      setError(detailError.message || "Không thể tải chi tiết phiếu.");
     } finally {
       setLoadingDetail(false);
     }
@@ -204,11 +204,11 @@ export function useLecturerEvaluation(lecturerId) {
         adjustedDetails: reviewDraft,
       });
 
-      setSuccessMessage("Da duyet phieu danh gia thanh cong.");
+      setSuccessMessage("Đã duyệt phiếu đánh giá thành công.");
       closeReview();
       await loadList(selectedClassId, selectedSemesterId);
     } catch (submitError) {
-      setError(submitError.message || "Khong the luu ket qua duyet.");
+      setError(submitError.message || "Không thể lưu kết quả duyệt.");
     } finally {
       setSubmittingReview(false);
     }
@@ -229,10 +229,10 @@ export function useLecturerEvaluation(lecturerId) {
         semesterId: selectedSemesterId,
       });
 
-      setSuccessMessage("Da chot diem ren luyen cho lop da chon.");
+      setSuccessMessage("Đã chốt điểm rèn luyện cho lớp đã chọn.");
       await loadList(selectedClassId, selectedSemesterId);
     } catch (finalizeError) {
-      setError(finalizeError.message || "Khong the chot diem cho lop.");
+      setError(finalizeError.message || "Không thể chốt điểm cho lớp.");
     } finally {
       setFinalizing(false);
     }

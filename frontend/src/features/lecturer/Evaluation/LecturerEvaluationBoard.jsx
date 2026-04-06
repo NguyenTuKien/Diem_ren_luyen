@@ -1,19 +1,19 @@
-import { useLecturerEvaluation } from "./useLecturerEvaluation";
+﻿import { useLecturerEvaluation } from "./useLecturerEvaluation";
 
 function formatStatusLabel(status) {
   switch (String(status || "").toUpperCase()) {
     case "NOT_SUBMITTED":
-      return "Chua nop";
+      return "Chưa nộp";
     case "SUBMITTED":
-      return "Da nop";
+      return "Đã nộp";
     case "MONITOR_APPROVED":
-      return "Monitor da duyet";
+      return "Monitor đã duyệt";
     case "LECTURER_APPROVED":
-      return "Giang vien da duyet";
+      return "Giảng viên đã duyệt";
     case "FINALIZED":
-      return "Da chot";
+      return "Đã chốt";
     default:
-      return "Khong xac dinh";
+      return "Không xác định";
   }
 }
 
@@ -45,23 +45,23 @@ function LecturerReviewModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
       <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Duyet phieu danh gia</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Duyệt phiếu đánh giá</h3>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg px-2 py-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
           >
-            Dong
+            Đóng
           </button>
         </div>
 
         <div className="max-h-[65vh] overflow-y-auto px-5 py-4">
           {loadingDetail ? (
-            <p className="text-sm text-slate-500">Dang tai chi tiet phieu...</p>
+            <p className="text-sm text-slate-500">Đang tải chi tiết phiếu...</p>
           ) : null}
 
           {!loadingDetail && keys.length === 0 ? (
-            <p className="text-sm text-slate-500">Khong co tieu chi de duyet.</p>
+            <p className="text-sm text-slate-500">Không có tiêu chí để duyệt.</p>
           ) : null}
 
           {!loadingDetail && keys.length > 0 ? (
@@ -93,7 +93,7 @@ function LecturerReviewModal({
             disabled={submitting}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            Huy
+            Hủy
           </button>
           <button
             type="button"
@@ -101,7 +101,7 @@ function LecturerReviewModal({
             disabled={submitting || loadingDetail}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
           >
-            {submitting ? "Dang luu..." : "Xac nhan duyet"}
+            {submitting ? "Đang lưu..." : "Xác nhận duyệt"}
           </button>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Lecturer evaluation board</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Loc theo lop hoc va hoc ky de duyet tung phieu, sau do chot diem toan lop.
+              Lọc theo lớp học và học kỳ để duyệt từng phiếu, sau đó chốt điểm toàn lớp.
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
             >
               {semesterOptions.map((semester) => (
                 <option key={semester.id} value={semester.id}>
-                  {semester.name || `Hoc ky ${semester.id}`}
+                  {semester.name || `Học kỳ ${semester.id}`}
                 </option>
               ))}
             </select>
@@ -180,7 +180,7 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               disabled={loadingList || loadingFilters}
             >
-              Tai lai
+              Tải lại
             </button>
 
             <button
@@ -189,26 +189,26 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
               className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
               disabled={finalizing || loadingFilters || !selectedClassId || !selectedSemesterId}
             >
-              {finalizing ? "Dang chot..." : "Chot diem"}
+              {finalizing ? "Đang chốt..." : "Chốt điểm"}
             </button>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Tong phieu</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Tổng phiếu</p>
             <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{summary.total}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Da duyet</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Đã duyệt</p>
             <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{summary.reviewed}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Da chot</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Đã chốt</p>
             <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary.finalized}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Diem TB</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Điểm TB</p>
             <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{summary.average}</p>
           </article>
         </div>
@@ -245,7 +245,7 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
               {loadingFilters || loadingList ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Dang tai du lieu danh gia...
+                    Đang tải dữ liệu đánh giá...
                   </td>
                 </tr>
               ) : null}
@@ -253,7 +253,7 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
               {!loadingFilters && !loadingList && evaluationRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Khong co phieu nao phu hop bo loc hien tai.
+                    Không có phiếu nào phù hợp bộ lọc hiện tại.
                   </td>
                 </tr>
               ) : null}
@@ -281,7 +281,7 @@ export default function LecturerEvaluationBoard({ lecturerId }) {
                         disabled={!row.evaluationId || finalizing}
                         className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Duyet
+                        Duyệt
                       </button>
                     </td>
                   </tr>

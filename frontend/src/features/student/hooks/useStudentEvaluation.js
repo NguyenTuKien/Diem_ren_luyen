@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getStudentEvaluationForm,
   submitStudentEvaluation,
@@ -112,7 +112,7 @@ export function useStudentEvaluation() {
       });
       setDetailInputs(nextDetails);
     } catch (fetchError) {
-      setError(fetchError.message || "Khong the tai phieu danh gia.");
+      setError(fetchError.message || "Không thể tải phiếu đánh giá.");
     } finally {
       setLoadingForm(false);
     }
@@ -139,7 +139,7 @@ export function useStudentEvaluation() {
         setSelectedSemesterId(selectedSemester?.id ?? null);
       } catch (fetchError) {
         if (mounted) {
-          setError(fetchError.message || "Khong the tai hoc ky.");
+          setError(fetchError.message || "Không thể tải học kỳ.");
         }
       } finally {
         if (mounted) {
@@ -171,7 +171,7 @@ export function useStudentEvaluation() {
   const submit = useCallback(
     async (isDraft) => {
       if (!selectedSemesterId) {
-        setError("Khong xac dinh duoc hoc ky de gui phieu.");
+        setError("Không xác định được học kỳ để gửi phiếu.");
         return;
       }
 
@@ -199,12 +199,12 @@ export function useStudentEvaluation() {
           isDraft,
         });
 
-        setSuccessMessage(isDraft ? "Da luu nhap phieu danh gia." : "Da nop phieu danh gia.");
+        setSuccessMessage(isDraft ? "Đã lưu nháp phiếu đánh giá." : "Đã nộp phiếu đánh giá.");
         if (!isDraft) {
           setFormState((prev) => ({ ...prev, status: "SUBMITTED" }));
         }
       } catch (submitError) {
-        setError(submitError.message || "Khong the gui phieu danh gia.");
+        setError(submitError.message || "Không thể gửi phiếu đánh giá.");
       } finally {
         setSubmitting(false);
       }

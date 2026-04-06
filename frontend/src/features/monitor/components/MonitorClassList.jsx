@@ -1,18 +1,18 @@
-import EvaluationReviewModal from "./EvaluationReviewModal";
+﻿import EvaluationReviewModal from "./EvaluationReviewModal";
 import { useMonitorEvaluation } from "../hooks/useMonitorEvaluation";
 
 function formatStatusLabel(status) {
   switch (String(status || "").toUpperCase()) {
     case "NOT_SUBMITTED":
-      return "Chua nop";
+      return "Chưa nộp";
     case "SUBMITTED":
-      return "Da nop";
+      return "Đã nộp";
     case "MONITOR_APPROVED":
-      return "Da duyet";
+      return "Đã duyệt";
     case "FINALIZED":
-      return "Da chot";
+      return "Đã chốt";
     default:
-      return "Khong xac dinh";
+      return "Không xác định";
   }
 }
 
@@ -45,7 +45,7 @@ export default function MonitorClassList() {
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Monitor evaluation board</h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Tong hop phieu theo hoc ky, review tung sinh vien truoc khi chuyen cap giang vien.
+              Tổng hợp phiếu theo học kỳ, review từng sinh viên trước khi chuyển cấp giảng viên.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export default function MonitorClassList() {
             >
               {semesterOptions.map((semester) => (
                 <option key={semester.id} value={semester.id}>
-                  {semester.name || `Hoc ky ${semester.id}`}
+                  {semester.name || `Học kỳ ${semester.id}`}
                 </option>
               ))}
             </select>
@@ -67,22 +67,22 @@ export default function MonitorClassList() {
               onClick={refreshList}
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
             >
-              Tai lai
+              Tải lại
             </button>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Tong phieu</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Tổng phiếu</p>
             <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{summary.total}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Cho review</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Chờ review</p>
             <p className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">{summary.submitted}</p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Da duyet</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">Đã duyệt</p>
             <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{summary.reviewed}</p>
           </article>
         </div>
@@ -118,7 +118,7 @@ export default function MonitorClassList() {
               {loadingList ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Dang tai danh sach phieu...
+                    Đang tải danh sách phiếu...
                   </td>
                 </tr>
               ) : null}
@@ -126,7 +126,7 @@ export default function MonitorClassList() {
               {!loadingList && evaluationRows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                    Chua co phieu danh gia trong hoc ky da chon.
+                    Chưa có phiếu đánh giá trong học kỳ đã chọn.
                   </td>
                 </tr>
               ) : null}

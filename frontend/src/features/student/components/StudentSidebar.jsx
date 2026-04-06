@@ -21,10 +21,10 @@ export default function StudentSidebar({ items, activeFeature, onSelect }) {
       })}
 
       <div className="mt-auto p-4 bg-primary/5 rounded-xl border border-primary/10">
-        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Ho tro</p>
+        <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Hỗ trợ</p>
         <div className="flex items-center gap-2 text-primary">
           <span className="material-symbols-outlined text-sm">help</span>
-          <span className="text-xs font-medium">Trung tam tro giup</span>
+          <span className="text-xs font-medium">Trung tâm trợ giúp</span>
         </div>
       </div>
     </aside>
