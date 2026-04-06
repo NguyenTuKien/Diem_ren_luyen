@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { apiRequest } from "../../../shared/api/http";
 
-export function useLecturerData(userId, filters) {
+export function useLecturerData(lecturerId, filters) {
   const [options, setOptions] = useState({ faculties: [], classes: [] });
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({
@@ -14,16 +14,16 @@ export function useLecturerData(userId, filters) {
   const [flash, setFlash] = useState({ type: "", message: "" });
 
   const loadOptions = useCallback(async () => {
-    if (!userId) return null;
-    const data = await apiRequest(`/lecturer/students/options?lecturerId=${userId}`);
+    if (!lecturerId) return null;
+    const data = await apiRequest(`/lecturer/students/options?lecturerId=${lecturerId}`);
     setOptions(data);
     return data;
-  }, [userId]);
+  }, [lecturerId]);
 
   const loadStudents = useCallback(async () => {
-    if (!userId) return;
+    if (!lecturerId) return;
     const params = new URLSearchParams();
-    params.set("lecturerId", userId);
+    params.set("lecturerId", lecturerId);
 
     if (filters.keyword.trim()) params.set("keyword", filters.keyword.trim());
     if (filters.facultyId) params.set("facultyId", filters.facultyId);
@@ -38,10 +38,21 @@ export function useLecturerData(userId, filters) {
       lockedStudents: data.lockedStudents || 0,
       monitorStudents: data.monitorStudents || 0,
     });
-  }, [filters.classId, filters.facultyId, filters.keyword, filters.status, userId]);
+  }, [filters.classId, filters.facultyId, filters.keyword, filters.status, lecturerId]);
 
   useEffect(() => {
     let ignore = false;
+
+    if (!lecturerId) {
+      setLoading(false);
+      setFlash({
+        type: "error",
+        message: "Không xác định được định danh nội bộ của giảng viên. Vui lòng đăng nhập lại.",
+      });
+      return () => {
+        ignore = true;
+      };
+    }
 
     async function bootstrap() {
       setLoading(true);
@@ -56,10 +67,10 @@ export function useLecturerData(userId, filters) {
       }
     }
 
-    if (userId) bootstrap();
+    bootstrap();
 
     return () => { ignore = true; };
-  }, [loadOptions, loadStudents, userId]);
+  }, [loadOptions, loadStudents, lecturerId]);
 
   return { options, rows, summary, loading, flash, setFlash, loadStudents };
 }

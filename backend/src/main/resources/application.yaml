@@ -1,16 +1,26 @@
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import:
+#      - optional:file:.env[.properties]
+      - optional:file:./backend/.env[.properties]
   main:
     banner-mode: "off"
     time-zone: Asia/Ho_Chi_Minh
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?prepareThreshold=0
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://${POSTGRES_HOST:aws-1-ap-southeast-1.pooler.supabase.com}:${POSTGRES_PORT:6543}/${POSTGRES_DB:test1}?prepareThreshold=0
+    username: ${POSTGRES_USER:postgres.xhuvxyfehnsxnwljwtwq}
+    password: ${POSTGRES_PASSWORD:Matkhau@1234qwer!}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      max-lifetime: ${DB_HIKARI_MAX_LIFETIME_MS:900000}
+      idle-timeout: ${DB_HIKARI_IDLE_TIMEOUT_MS:600000}
+      keepalive-time: ${DB_HIKARI_KEEPALIVE_TIME_MS:120000}
+      connection-timeout: ${DB_HIKARI_CONNECTION_TIMEOUT_MS:30000}
+      validation-timeout: ${DB_HIKARI_VALIDATION_TIMEOUT_MS:5000}
+      minimum-idle: ${DB_HIKARI_MIN_IDLE:2}
+      maximum-pool-size: ${DB_HIKARI_MAX_POOL_SIZE:10}
 
   jpa:
     hibernate:
@@ -24,15 +34,18 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
+      host: ${REDIS_HOST:redis-18097.c276.us-east-1-2.ec2.cloud.redislabs.com}
+      port: ${REDIS_PORT:18097}
+      password: ${REDIS_PASSWORD:VFzqHirkG4WP7UzBFTI5Vwbqj0mUHo1F}
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    host: ${RABBITMQ_HOST:capybara.lmq.cloudamqp.com}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USERNAME:zkwyimih}
+    password: ${RABBITMQ_PASSWORD:V8gv8wLhBgYzvvTiQQaEeKp1LQbZAZYy}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:zkwyimih}
+    ssl:
+      enabled: ${RABBITMQ_SSL_ENABLED:true}
 
   security:
     oauth2:
@@ -78,8 +91,8 @@ cors:
 
 logging:
   level:
-    root: info
-    ct01.unipoint.backend: info
+    root: warn
+    ct01.n06.backend: info
 
 management:
   endpoints:

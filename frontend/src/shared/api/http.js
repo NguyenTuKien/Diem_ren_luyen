@@ -33,6 +33,9 @@ function getTokenFromStorage() {
 function buildMessage(payload, status) {
   if (payload && typeof payload === "object") {
     if (typeof payload.message === "string" && payload.message.trim()) {
+      if (payload.message.trim() === "SYSTEM_ERROR_GROUP") {
+        return "Hệ thống đang gặp lỗi khi xử lý dữ liệu. Vui lòng thử lại sau.";
+      }
       return payload.message;
     }
     if (typeof payload.error === "string" && payload.error.trim()) {
@@ -102,7 +105,25 @@ export async function apiRequest(path, options = {}) {
   const payload = await readPayload(response);
 
   if (!response.ok) {
-    throw new Error(buildMessage(payload, response.status));
+    const errorMessage = buildMessage(payload, response.status);
+
+    // Xử lý lỗi 401: phiên hết hạn hoặc đăng nhập ở thiết bị khác
+    if (response.status === 401) {
+      // Hiển thị alert
+      alert(errorMessage);
+
+      // Xóa localStorage
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem("accessToken");
+        window.localStorage.removeItem("refreshToken");
+
+        // Redirect về /auth
+        window.location.href = "/auth";
+      }
+    }
+
+    throw new Error(errorMessage);
   }
 
   return payload;

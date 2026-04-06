@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
     const userRole = normalizeRole(user.effectiveRole || user.role);
     if (!allowedRoles.includes(userRole)) {
-      return <Navigate to={user.dashboardPath || "/dashboard/student"} replace />;
+      return <Navigate to={user.dashboardPath || "/student"} replace />;
     }
   }
 

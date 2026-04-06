@@ -149,6 +149,27 @@ export const logout = async () => {
   }
 };
 
+export const fetchAuthSession = async (accessToken) => {
+  if (!accessToken) {
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/session`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await response.json();
+  return payload && typeof payload === 'object' ? payload : null;
+};
+
 export const startMicrosoftOAuthLogin = () => {
   // Luôn dùng API_BASE_URL để đảm bảo đúng domain
   const oauthPath = '/oauth2/authorization/microsoft';

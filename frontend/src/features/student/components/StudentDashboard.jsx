@@ -1,15 +1,6 @@
-import { useEffect, useState } from "react";
-import { apiRequest } from "../../../shared/api/http";
 import { useAuth } from "../../../context/AuthContext";
 import { useStudentDashboard } from "../hooks/useStudentDashboard";
 import "../../../styles/StudentDashboard.css";
-
-const NAV_ITEMS = [
-  { label: "Dashboard", icon: "dashboard" },
-  { label: "Sự kiện", icon: "calendar_month" },
-  { label: "Lịch sử hoạt động", icon: "history" },
-  { label: "Khai báo minh chứng", icon: "verified_user" },
-];
 
 function getGreetingName(name) {
   if (!name) {
@@ -84,8 +75,8 @@ function getHistoryHint(status) {
   }
 }
 
-export default function StudentDashboard() {
-  const { user, logout } = useAuth();
+export default function StudentDashboard({ onNavigate }) {
+  const { user } = useAuth();
   const { dashboard, loading, error } = useStudentDashboard(user?.userId);
 
   if (loading) {
@@ -106,178 +97,136 @@ export default function StudentDashboard() {
   const greetingName = getGreetingName(dashboard.fullName);
 
   return (
-    <div className="student-shell">
-      <header className="student-global-header">
-        <div className="student-global-brand">
-          <span className="student-global-brand-icon material-symbols-outlined">school</span>
-          <strong>EduPortal</strong>
-        </div>
-
-        <div className="student-global-actions">
-          <button type="button" className="student-header-icon-btn" aria-label="Thông báo">
-            <span className="material-symbols-outlined">notifications</span>
-          </button>
-          <button type="button" className="student-header-icon-btn" aria-label="Cài đặt">
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-
-          <div className="student-header-user">
-            <div>
-              <strong>{dashboard.fullName}</strong>
-              <small>{dashboard.studentCode}</small>
-            </div>
-            <button type="button" className="student-logout-top-btn" onClick={logout}>
-              Đăng xuất
-            </button>
+    <main className="student-main">
+      <section className="student-hero-card">
+        <div className="student-hero-left">
+          <div className="student-hero-avatar">
+            <span className="material-symbols-outlined">school</span>
+          </div>
+          <div>
+            <h1>Chào buổi sáng, {greetingName}!</h1>
+            <p>
+              MSSV: {dashboard.studentCode} · Lớp: {dashboard.classCode || "--"} ·{" "}
+              {dashboard.facultyName || "Khoa đang cập nhật"}
+            </p>
           </div>
         </div>
-      </header>
 
-      <div className="student-shell-body">
-        <aside className="student-sidebar">
-          <nav className="student-sidebar-nav">
-            {NAV_ITEMS.map((item, index) => (
-              <button
-                key={item.label}
-                type="button"
-                className={`student-sidebar-item ${index === 0 ? "active" : ""}`}
-              >
-                <span className="material-symbols-outlined">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
+        <div className="student-hero-actions">
+          <button
+            type="button"
+            className="student-hero-btn primary"
+            onClick={() => onNavigate?.("scan-qr")}
+          >
+            <span className="material-symbols-outlined">qr_code_scanner</span>
+            Quét QR
+          </button>
+          <button
+            type="button"
+            className="student-hero-btn outline"
+            onClick={() => onNavigate?.("evidence")}
+          >
+            <span className="material-symbols-outlined">task_alt</span>
+            Minh chứng
+          </button>
+        </div>
+      </section>
 
-          <div className="student-sidebar-support">
-            <p>Hỗ trợ</p>
-            <small>Trung tâm trợ giúp</small>
+      <section className="student-kpi-row">
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Điểm rèn luyện</h3>
+            <span>+{(safeScore / 15).toFixed(1)}</span>
           </div>
-        </aside>
+          <p className="student-kpi-number">
+            {safeScore}/100 <em>Tốt</em>
+          </p>
+          <div className="student-kpi-progress">
+            <span style={{ width: `${safeScore}%` }} />
+          </div>
+        </article>
 
-        <main className="student-main">
-          <section className="student-hero-card">
-            <div className="student-hero-left">
-              <div className="student-hero-avatar">
-                <span className="material-symbols-outlined">school</span>
-              </div>
-              <div>
-                <h1>Chào buổi sáng, {greetingName}!</h1>
-                <p>
-                  MSSV: {dashboard.studentCode} · Lớp: {dashboard.classCode || "--"} ·{" "}
-                  {dashboard.facultyName || "Khoa đang cập nhật"}
-                </p>
-              </div>
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Hoạt động tham gia</h3>
+            <span className="material-symbols-outlined">event_available</span>
+          </div>
+          <p className="student-kpi-number">{dashboard.joinedActivities}</p>
+          <small>Trong học kỳ này</small>
+        </article>
+
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Xếp loại dự kiến</h3>
+            <span className="material-symbols-outlined">workspace_premium</span>
+          </div>
+          <p className="student-kpi-number">{dashboard.rankLabel}</p>
+          <small>Top 5% toàn khoa</small>
+        </article>
+      </section>
+
+      <section className="student-content-row">
+        <article className="student-events-box">
+          <div className="student-section-title">
+            <h2>Sự kiện sắp tới</h2>
+            <button type="button">Xem tất cả</button>
+          </div>
+
+          {upcomingEvents.length === 0 ? (
+            <p className="student-empty">Chưa có sự kiện sắp tới.</p>
+          ) : (
+            <div className="student-events-list">
+              {upcomingEvents.map((event) => {
+                const badge = getEventBadge(event.startTime);
+                return (
+                  <div key={event.id} className="student-event-row">
+                    <div className="student-event-badge">
+                      <span>{badge.month}</span>
+                      <strong>{badge.day}</strong>
+                    </div>
+                    <div className="student-event-info">
+                      <strong>{event.title}</strong>
+                      <small>
+                        <span className="material-symbols-outlined">location_on</span>
+                        {event.location || "Đang cập nhật địa điểm"}
+                      </small>
+                    </div>
+                    <span className="student-event-arrow material-symbols-outlined">
+                      chevron_right
+                    </span>
+                  </div>
+                );
+              })}
             </div>
+          )}
+        </article>
 
-            <div className="student-hero-actions">
-              <button type="button" className="student-hero-btn primary">
-                <span className="material-symbols-outlined">qr_code_scanner</span>
-                Quét QR
-              </button>
-              <button type="button" className="student-hero-btn outline">
-                <span className="material-symbols-outlined">task_alt</span>
-                Minh chứng
-              </button>
-            </div>
-          </section>
+        <article className="student-history-box">
+          <div className="student-section-title student-section-title-history">
+            <h2>Lịch sử hoạt động</h2>
+          </div>
 
-          <section className="student-kpi-row">
-            <article className="student-kpi-box">
-              <div className="student-kpi-title">
-                <h3>Điểm rèn luyện</h3>
-                <span>+{(safeScore / 15).toFixed(1)}</span>
-              </div>
-              <p className="student-kpi-number">
-                {safeScore}/100 <em>Tốt</em>
-              </p>
-              <div className="student-kpi-progress">
-                <span style={{ width: `${safeScore}%` }} />
-              </div>
-            </article>
-
-            <article className="student-kpi-box">
-              <div className="student-kpi-title">
-                <h3>Hoạt động tham gia</h3>
-                <span className="material-symbols-outlined">event_available</span>
-              </div>
-              <p className="student-kpi-number">{dashboard.joinedActivities}</p>
-              <small>Trong học kỳ này</small>
-            </article>
-
-            <article className="student-kpi-box">
-              <div className="student-kpi-title">
-                <h3>Xếp loại dự kiến</h3>
-                <span className="material-symbols-outlined">workspace_premium</span>
-              </div>
-              <p className="student-kpi-number">{dashboard.rankLabel}</p>
-              <small>Top 5% toàn khoa</small>
-            </article>
-          </section>
-
-          <section className="student-content-row">
-            <article className="student-events-box">
-              <div className="student-section-title">
-                <h2>Sự kiện sắp tới</h2>
-                <button type="button">Xem tất cả</button>
-              </div>
-
-              {upcomingEvents.length === 0 ? (
-                <p className="student-empty">Chưa có sự kiện sắp tới.</p>
-              ) : (
-                <div className="student-events-list">
-                  {upcomingEvents.map((event) => {
-                    const badge = getEventBadge(event.startTime);
-                    return (
-                      <div key={event.id} className="student-event-row">
-                        <div className="student-event-badge">
-                          <span>{badge.month}</span>
-                          <strong>{badge.day}</strong>
-                        </div>
-                        <div className="student-event-info">
-                          <strong>{event.title}</strong>
-                          <small>
-                            <span className="material-symbols-outlined">location_on</span>
-                            {event.location || "Đang cập nhật địa điểm"}
-                          </small>
-                        </div>
-                        <span className="student-event-arrow material-symbols-outlined">
-                          chevron_right
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </article>
-
-            <article className="student-history-box">
-              <div className="student-section-title student-section-title-history">
-                <h2>Lịch sử hoạt động</h2>
-              </div>
-
-              {history.length === 0 ? (
-                <p className="student-empty">Chưa có hoạt động.</p>
-              ) : (
-                <ul className="student-history-timeline">
-                  {history.map((item) => {
-                    const status = (item.status || "PENDING").toLowerCase();
-                    return (
-                      <li key={item.id} className={`student-history-row ${status}`}>
-                        <span className="student-history-dot" />
-                        <div className="student-history-text">
-                          <p>{getHistoryDateLabel(item.createdAt)}</p>
-                          <strong>{item.title}</strong>
-                          <small>{getHistoryHint((item.status || "PENDING").toUpperCase())}</small>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </article>
-          </section>
-        </main>
-      </div>
-    </div>
+          {history.length === 0 ? (
+            <p className="student-empty">Chưa có hoạt động.</p>
+          ) : (
+            <ul className="student-history-timeline">
+              {history.map((item) => {
+                const status = (item.status || "PENDING").toLowerCase();
+                return (
+                  <li key={item.id} className={`student-history-row ${status}`}>
+                    <span className="student-history-dot" />
+                    <div className="student-history-text">
+                      <p>{getHistoryDateLabel(item.createdAt)}</p>
+                      <strong>{item.title}</strong>
+                      <small>{getHistoryHint((item.status || "PENDING").toUpperCase())}</small>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </article>
+      </section>
+    </main>
   );
 }

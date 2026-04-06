@@ -1,0 +1,28 @@
+package ct01.n06.backend.controller;
+
+import ct01.n06.backend.dto.event.EventResponse;
+import ct01.n06.backend.service.EventService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/v1/events")
+@RequiredArgsConstructor
+public class EventController {
+    private final EventService eventService;
+
+
+    @GetMapping("")
+    public Page<EventResponse> getAllEvent(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size){
+        Pageable pageable = Pageable.ofSize(size).withPage(page);
+        Page<EventResponse> eventPage = eventService.getAllEvents(pageable);
+
+        return eventPage;
+    }
+
+}

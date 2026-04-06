@@ -1,13 +1,16 @@
 import { refreshTokens } from './authApi';
+import { AUTH_STORAGE_KEY } from '../../context/AuthContext';
 
-const AUTH_STORAGE_KEY = 'unipoint_auth';
+const LEGACY_AUTH_STORAGE_KEY = 'unipoint_auth';
 
 let refreshPromise = null;
 
 // Read from the single AuthContext session store
 function getSessionTokens() {
   try {
-    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(AUTH_STORAGE_KEY)
+      || window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
     if (!raw) return { accessToken: null, refreshToken: null };
     const parsed = JSON.parse(raw);
     return {
@@ -22,13 +25,16 @@ function getSessionTokens() {
 // Merge new tokens back into the session store (preserves user info)
 function patchSessionTokens({ accessToken, refreshToken }) {
   try {
-    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    const raw =
+      window.localStorage.getItem(AUTH_STORAGE_KEY)
+      || window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
     const existing = raw ? JSON.parse(raw) : {};
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
       ...existing,
       accessToken: accessToken ?? existing.accessToken,
       refreshToken: refreshToken ?? existing.refreshToken,
     }));
+    window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
   } catch {
     // ignore
   }
@@ -36,6 +42,7 @@ function patchSessionTokens({ accessToken, refreshToken }) {
 
 function clearSession() {
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
 }
 
 const redirectToLogin = () => {

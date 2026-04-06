@@ -16,7 +16,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - unipoint
+      - ttcs
   
   redis:
     image: redis:7-alpine
@@ -32,7 +32,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - unipoint
+      - ttcs
 
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
@@ -51,11 +51,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - unipoint
+      - ttcs
 
   backend:
     build: ./backend
-    image: ${DOCKER_REGISTRY:-ngtukien218}/unipoint-backend:${TAG:-latest}
+    image: ${DOCKER_REGISTRY:-ngtukien218}/ttcs-backend:${TAG:-latest}
     restart: always
     ports:
       - "8080:8080"
@@ -68,6 +68,7 @@ services:
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
+
     depends_on:
       database:
         condition: service_healthy
@@ -83,11 +84,11 @@ services:
     volumes:
       - logs:/app/logs
     networks:
-      - unipoint
+      - ttcs
 
   frontend:
     build: ./frontend
-    image: ${DOCKER_REGISTRY:-ngtukien218}/unipoint-frontend:${TAG:-latest}
+    image: ${DOCKER_REGISTRY:-ngtukien218}/ttcs-frontend:${TAG:-latest}
     restart: always
     ports:
       - "80:80"
@@ -95,7 +96,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - unipoint
+      - ttcs
 
   cloudflare:
     image: cloudflare/cloudflared:2024.6.0
@@ -104,7 +105,7 @@ services:
     depends_on:
       - frontend
     networks:
-      - unipoint
+      - ttcs
 
 volumes:
   logs:
@@ -113,7 +114,7 @@ volumes:
   rabbitmq_data:
 
 networks:
-  unipoint:
+  ttcs:
     driver: bridge
   
 

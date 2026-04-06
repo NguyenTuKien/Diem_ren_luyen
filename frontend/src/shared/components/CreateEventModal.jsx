@@ -27,7 +27,7 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
     startTime: '',
     endTime: '',
     location: '',
-    semesterId: '', 
+    semesterId: '',
     criteriaId: ''
   })
   const [loading, setLoading] = useState(false)

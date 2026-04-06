@@ -32,13 +32,19 @@ const DEFAULT_MANUAL_FORM = {
   password: "",
 };
 
-function csvEscape(value) {
-  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+function htmlEscape(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 export default function LecturerStudentManagement() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const fileInputRef = useRef(null);
+  const lecturerId = user?.backendUserId ?? user?.userId ?? "";
 
   const [filters, setFilters] = useState({
     keyword: "",
@@ -47,7 +53,7 @@ export default function LecturerStudentManagement() {
     status: "",
   });
 
-  const { options, rows, summary, loading, flash, setFlash, loadStudents } = useLecturerData(user?.userId, filters);
+  const { options, rows, summary, loading, flash, setFlash, loadStudents } = useLecturerData(lecturerId, filters);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -119,7 +125,7 @@ export default function LecturerStudentManagement() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const result = await apiRequest(`/lecturer/students/import?lecturerId=${user.userId}`, {
+      const result = await apiRequest(`/lecturer/students/import?lecturerId=${lecturerId}`, {
         method: "POST",
         body: formData,
       });
@@ -141,38 +147,55 @@ export default function LecturerStudentManagement() {
   };
 
   const handleExport = () => {
-    const headers = [
-      "MSSV",
-      "Họ tên",
-      "Email",
-      "Lớp",
-      "Vai trò",
-      "Trạng thái",
-      "Tổng điểm",
-      "Sự kiện bắt buộc",
-    ];
+    const tableHeader = `
+      <tr>
+        <th>MSSV</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Lớp</th>
+        <th>Vai trò</th>
+        <th>Trạng thái</th>
+        <th>Tổng điểm</th>
+        <th>Sự kiện bắt buộc</th>
+      </tr>
+    `;
 
-    const lines = rows.map((row) =>
-      [
-        row.studentCode,
-        row.fullName,
-        row.email,
-        row.classCode,
-        ROLE_LABEL[row.role] || row.role,
-        STATUS_LABEL[row.accountStatus] || row.accountStatus,
-        row.totalPoint ?? 0,
-        row.mandatoryStatus,
-      ]
-        .map(csvEscape)
-        .join(","),
-    );
+    const tableRows = rows
+      .map(
+        (row) => `
+          <tr>
+            <td>${htmlEscape(row.studentCode)}</td>
+            <td>${htmlEscape(row.fullName)}</td>
+            <td>${htmlEscape(row.email)}</td>
+            <td>${htmlEscape(row.classCode)}</td>
+            <td>${htmlEscape(ROLE_LABEL[row.role] || row.role)}</td>
+            <td>${htmlEscape(STATUS_LABEL[row.accountStatus] || row.accountStatus)}</td>
+            <td>${htmlEscape(row.totalPoint ?? 0)}</td>
+            <td>${htmlEscape(row.mandatoryStatus)}</td>
+          </tr>
+        `,
+      )
+      .join("");
 
-    const csv = `\uFEFF${[headers.join(","), ...lines].join("\n")}`;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8" />
+        </head>
+        <body>
+          <table border="1">
+            ${tableHeader}
+            ${tableRows}
+          </table>
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "danh-sach-sinh-vien.csv";
+    link.download = "danh-sach-sinh-vien.xls";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -182,7 +205,7 @@ export default function LecturerStudentManagement() {
 
     await runAction(
       () =>
-        apiRequest(`/lecturer/students/manual?lecturerId=${user.userId}`, {
+        apiRequest(`/lecturer/students/manual?lecturerId=${lecturerId}`, {
           method: "POST",
           body: JSON.stringify({
             classId: Number(manualForm.classId),
@@ -207,290 +230,238 @@ export default function LecturerStudentManagement() {
   }
 
   return (
-    <div className="lecturer-layout">
-      <aside className="lecturer-sidebar">
-        <h2>EduManage</h2>
-
-        <div className="sidebar-group">
-          <p>Chính</p>
-          <button type="button" className="sidebar-link active">
-            Danh sách Sinh viên
-          </button>
-          <button type="button" className="sidebar-link">
-            Quản lý Lớp
-          </button>
-          <button type="button" className="sidebar-link" onClick={() => fileInputRef.current?.click()}>
-            Nhập dữ liệu Excel
-          </button>
-        </div>
-
-        <div className="sidebar-group">
-          <p>Hệ thống</p>
-          <button type="button" className="sidebar-link">
-            Lịch sử hoạt động
-          </button>
-          <button type="button" className="sidebar-link" onClick={logout}>
-            Đăng xuất
-          </button>
-        </div>
-
-
-      </aside>
-
-      <section className="lecturer-main">
-        <header className="lecturer-topbar">
-          <nav>
-            <button type="button" className="tab active">
-              Sinh viên
-            </button>
-            <button type="button" className="tab">
-              Lớp học
-            </button>
-            <button type="button" className="tab">
-              Khoa Đào tạo
-            </button>
-            <button type="button" className="tab">
-              Báo cáo
-            </button>
-          </nav>
-          <div className="topbar-user">
-            <strong>{user.displayName || "Giảng viên"}</strong>
-            <small>Vai trò: {user.effectiveRole}</small>
-          </div>
-        </header>
-
-        <section className="lecturer-section">
-          <div className="section-head">
-            <div>
-              <h1>Quản lý Sinh viên</h1>
-              <p>
-                Tổng số: <strong>{summary.totalStudents}</strong> sinh viên
-              </p>
-            </div>
-
-            <div className="head-actions">
-              <button type="button" className="btn-outline" onClick={handleExport}>
-                Xuất Excel
-              </button>
-              <button
-                type="button"
-                className="btn-outline danger"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Import Excel
-              </button>
-              <button type="button" className="btn-danger" onClick={() => setShowManualModal(true)}>
-                Thêm thủ công
-              </button>
-            </div>
+    <section className="lecturer-main">
+      <section className="lecturer-section">
+        <div className="section-head">
+          <div>
+            <h1>Quản lý Sinh viên</h1>
+            <p>
+              Tổng số: <strong>{summary.totalStudents}</strong> sinh viên
+            </p>
           </div>
 
+          <div className="head-actions">
+            <button type="button" className="btn-outline" onClick={handleExport}>
+              Xuất Excel
+            </button>
+            <button
+              type="button"
+              className="btn-outline danger"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import Excel
+            </button>
+            <button type="button" className="btn-danger" onClick={() => setShowManualModal(true)}>
+              Thêm thủ công
+            </button>
+          </div>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          hidden
+          accept=".xlsx,.xls"
+          onChange={handleImport}
+        />
+
+        <div className="summary-pills">
+          <span>Hoạt động: {summary.activeStudents}</span>
+          <span>Bị khóa: {summary.lockedStudents}</span>
+          <span>Monitor: {summary.monitorStudents}</span>
+        </div>
+
+        <div className="filter-row">
           <input
-            ref={fileInputRef}
-            type="file"
-            hidden
-            accept=".xlsx,.xls"
-            onChange={handleImport}
+            type="search"
+            placeholder="Tên, MSSV hoặc Email..."
+            value={filters.keyword}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, keyword: event.target.value }))
+            }
           />
 
-          <div className="summary-pills">
-            <span>Hoạt động: {summary.activeStudents}</span>
-            <span>Bị khóa: {summary.lockedStudents}</span>
-            <span>Monitor: {summary.monitorStudents}</span>
-          </div>
+          <select
+            value={filters.facultyId}
+            onChange={(event) =>
+              setFilters((prev) => ({
+                ...prev,
+                facultyId: event.target.value,
+                classId: "",
+              }))
+            }
+          >
+            <option value="">Tất cả Khoa</option>
+            {options.faculties.map((faculty) => (
+              <option key={faculty.id} value={faculty.id}>
+                {faculty.name}
+              </option>
+            ))}
+          </select>
 
-          <div className="filter-row">
-            <input
-              type="search"
-              placeholder="Tên, MSSV hoặc Email..."
-              value={filters.keyword}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, keyword: event.target.value }))
-              }
-            />
+          <select
+            value={filters.classId}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, classId: event.target.value }))
+            }
+          >
+            <option value="">Tất cả Lớp</option>
+            {classOptions.map((classItem) => (
+              <option key={classItem.id} value={classItem.id}>
+                {classItem.classCode}
+              </option>
+            ))}
+          </select>
 
-            <select
-              value={filters.facultyId}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  facultyId: event.target.value,
-                  classId: "",
-                }))
-              }
-            >
-              <option value="">Tất cả Khoa</option>
-              {options.faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.id}>
-                  {faculty.name}
-                </option>
-              ))}
-            </select>
+          <select
+            value={filters.status}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, status: event.target.value }))
+            }
+          >
+            {STATUS_FILTERS.map((status) => (
+              <option key={status.value || "all"} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-            <select
-              value={filters.classId}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, classId: event.target.value }))
-              }
-            >
-              <option value="">Tất cả Lớp</option>
-              {classOptions.map((classItem) => (
-                <option key={classItem.id} value={classItem.id}>
-                  {classItem.classCode}
-                </option>
-              ))}
-            </select>
+        {flash.message && <div className={`flash ${flash.type}`}>{flash.message}</div>}
 
-            <select
-              value={filters.status}
-              onChange={(event) =>
-                setFilters((prev) => ({ ...prev, status: event.target.value }))
-              }
-            >
-              {STATUS_FILTERS.map((status) => (
-                <option key={status.value || "all"} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {flash.message && <div className={`flash ${flash.type}`}>{flash.message}</div>}
-
-          <div className="table-panel">
-            <table>
-              <thead>
+        <div className="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>Sinh viên</th>
+                <th>MSSV / Lớp</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Điểm</th>
+                <th>Sự kiện bắt buộc</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.length === 0 ? (
                 <tr>
-                  <th>Sinh viên</th>
-                  <th>MSSV / Lớp</th>
-                  <th>Vai trò</th>
-                  <th>Trạng thái</th>
-                  <th>Điểm</th>
-                  <th>Sự kiện bắt buộc</th>
-                  <th>Thao tác</th>
+                  <td colSpan={7}>Không có sinh viên phù hợp bộ lọc.</td>
                 </tr>
-              </thead>
-              <tbody>
-                {pageRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7}>Không có sinh viên phù hợp bộ lọc.</td>
+              ) : (
+                pageRows.map((row) => (
+                  <tr key={row.studentId}>
+                    <td>
+                      <strong>{row.fullName}</strong>
+                      <small>{row.email}</small>
+                    </td>
+                    <td>
+                      <strong>{row.studentCode}</strong>
+                      <small>{row.classCode}</small>
+                    </td>
+                    <td>
+                      <span className={`pill role ${row.role.toLowerCase()}`}>
+                        {ROLE_LABEL[row.role] || row.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`pill status ${row.accountStatus.toLowerCase()}`}>
+                        {STATUS_LABEL[row.accountStatus] || row.accountStatus}
+                      </span>
+                    </td>
+                    <td>{row.totalPoint ?? 0}</td>
+                    <td>{row.mandatoryStatus}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          title="Gán lớp trưởng"
+                          onClick={() =>
+                            runAction(
+                              () =>
+                                apiRequest(
+                                  `/lecturer/students/${row.studentId}/monitor?lecturerId=${lecturerId}`,
+                                  { method: "PUT" },
+                                ),
+                              `Đã gán ${row.fullName} làm lớp trưởng.`,
+                            )
+                          }
+                        >
+                          ☆
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          title={row.accountStatus === "LOCKED" ? "Mở khóa" : "Khóa"}
+                          onClick={() =>
+                            runAction(
+                              () =>
+                                apiRequest(
+                                  `/lecturer/students/${row.studentId}/status?lecturerId=${lecturerId}`,
+                                  {
+                                    method: "PUT",
+                                    body: JSON.stringify({
+                                      status: row.accountStatus === "LOCKED" ? "ACTIVE" : "LOCKED",
+                                    }),
+                                  },
+                                ),
+                              row.accountStatus === "LOCKED"
+                                ? `Đã mở khóa ${row.fullName}.`
+                                : `Đã khóa ${row.fullName}.`,
+                            )
+                          }
+                        >
+                          {row.accountStatus === "LOCKED" ? "🔓" : "🔒"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          className="danger"
+                          title="Xóa mềm"
+                          onClick={() =>
+                            runAction(
+                              () =>
+                                apiRequest(
+                                  `/lecturer/students/${row.studentId}?lecturerId=${lecturerId}`,
+                                  { method: "DELETE" },
+                                ),
+                              `Đã xóa mềm ${row.fullName}.`,
+                            )
+                          }
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ) : (
-                  pageRows.map((row) => (
-                    <tr key={row.studentId}>
-                      <td>
-                        <strong>{row.fullName}</strong>
-                        <small>{row.email}</small>
-                      </td>
-                      <td>
-                        <strong>{row.studentCode}</strong>
-                        <small>{row.classCode}</small>
-                      </td>
-                      <td>
-                        <span className={`pill role ${row.role.toLowerCase()}`}>
-                          {ROLE_LABEL[row.role] || row.role}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`pill status ${row.accountStatus.toLowerCase()}`}>
-                          {STATUS_LABEL[row.accountStatus] || row.accountStatus}
-                        </span>
-                      </td>
-                      <td>{row.totalPoint ?? 0}</td>
-                      <td>{row.mandatoryStatus}</td>
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            title="Gán lớp trưởng"
-                            onClick={() =>
-                              runAction(
-                                () =>
-                                  apiRequest(
-                                    `/lecturer/students/${row.studentId}/monitor?lecturerId=${user.userId}`,
-                                    { method: "PUT" },
-                                  ),
-                                `Đã gán ${row.fullName} làm lớp trưởng.`,
-                              )
-                            }
-                          >
-                            ☆
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            title={row.accountStatus === "LOCKED" ? "Mở khóa" : "Khóa"}
-                            onClick={() =>
-                              runAction(
-                                () =>
-                                  apiRequest(
-                                    `/lecturer/students/${row.studentId}/status?lecturerId=${user.userId}`,
-                                    {
-                                      method: "PUT",
-                                      body: JSON.stringify({
-                                        status: row.accountStatus === "LOCKED" ? "ACTIVE" : "LOCKED",
-                                      }),
-                                    },
-                                  ),
-                                row.accountStatus === "LOCKED"
-                                  ? `Đã mở khóa ${row.fullName}.`
-                                  : `Đã khóa ${row.fullName}.`,
-                              )
-                            }
-                          >
-                            {row.accountStatus === "LOCKED" ? "🔓" : "🔒"}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            className="danger"
-                            title="Xóa mềm"
-                            onClick={() =>
-                              runAction(
-                                () =>
-                                  apiRequest(
-                                    `/lecturer/students/${row.studentId}?lecturerId=${user.userId}`,
-                                    { method: "DELETE" },
-                                  ),
-                                `Đã xóa mềm ${row.fullName}.`,
-                              )
-                            }
-                          >
-                            🗑
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                ))
+              )}
+            </tbody>
+          </table>
 
-            <footer className="table-footer">
-              <span>
-                Hiển thị {(currentPage - 1) * PAGE_SIZE + (pageRows.length ? 1 : 0)} - {(currentPage - 1) * PAGE_SIZE + pageRows.length} trong tổng số {filteredCount} sinh viên
-              </span>
-              <div className="pagination">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  ‹
-                </button>
-                <span>{currentPage}</span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  ›
-                </button>
-              </div>
-            </footer>
-          </div>
-        </section>
+          <footer className="table-footer">
+            <span>
+              Hiển thị {(currentPage - 1) * PAGE_SIZE + (pageRows.length ? 1 : 0)} - {(currentPage - 1) * PAGE_SIZE + pageRows.length} trong tổng số {filteredCount} sinh viên
+            </span>
+            <div className="pagination">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                ‹
+              </button>
+              <span>{currentPage}</span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                ›
+              </button>
+            </div>
+          </footer>
+        </div>
       </section>
 
       {showManualModal && (
@@ -505,6 +476,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, fullName: event.target.value }))
                 }
+                maxLength={100}
                 required
               />
             </label>
@@ -516,6 +488,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, studentCode: event.target.value }))
                 }
+                maxLength={20}
                 required
               />
             </label>
@@ -528,6 +501,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, email: event.target.value }))
                 }
+                maxLength={100}
                 required
               />
             </label>
@@ -559,6 +533,7 @@ export default function LecturerStudentManagement() {
                 onChange={(event) =>
                   setManualForm((prev) => ({ ...prev, password: event.target.value }))
                 }
+                maxLength={255}
               />
             </label>
 
@@ -573,6 +548,6 @@ export default function LecturerStudentManagement() {
           </form>
         </div>
       )}
-    </div>
+    </section>
   );
 }
