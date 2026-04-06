@@ -208,7 +208,7 @@ public class QrCodeServiceImpl implements QrCodeService {
     }
 
     private String generateUniquePinCode(Long eventId) {
-        while (true) {
+        for (int attempt = 0; attempt < 10; attempt++) {
             String pinCode = generate6DigitPin();
             String pinKey = buildPinKey(pinCode);
             Boolean registered = stringRedisTemplate.opsForValue()
@@ -217,6 +217,7 @@ public class QrCodeServiceImpl implements QrCodeService {
                 return pinCode;
             }
         }
+        throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Lỗi tạo mã PIN, vui lòng thử lại");
     }
 
     private String buildPinKey(String pinCode) {

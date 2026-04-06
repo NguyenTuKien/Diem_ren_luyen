@@ -15,6 +15,7 @@ import ct01.n06.backend.service.StudentService;
 import ct01.n06.backend.service.TotpService;
 import ct01.n06.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -31,10 +32,14 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthFacade {
 
     @Value("${jwt.refresh-expiration-ms:604800000}")
     private long refreshExpirationMs;
+
+    @Value("${device.security.hmac-secret:ChangeThisDeviceSecretKey}")
+    private String deviceHmacSecret;
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -48,6 +53,7 @@ public class AuthFacade {
 
     public LoginResponse login(LoginRequest request, String deviceId) {
         try {
+            warnIfDefaultDeviceSecret();
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
@@ -56,14 +62,16 @@ public class AuthFacade {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
             if (deviceId == null || deviceId.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu deviceId");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "App phiên bản cũ không được hỗ trợ");
             }
             String deviceToken = deviceSecurityService.generateDeviceToken(deviceId.trim());
             deviceBindingService.bindOrValidate(userEntity.getId(), deviceToken);
 
+            String totpSecretToReturn = null;
             if (userEntity.getTotpSecret() == null || userEntity.getTotpSecret().isBlank()) {
                 userEntity.setTotpSecret(totpService.generateSecretKey());
                 userEntity = userService.save(userEntity);
+                totpSecretToReturn = userEntity.getTotpSecret();
             }
 
             // 1. Tạo Token cho thiết bị mới (Device B)
@@ -82,7 +90,7 @@ public class AuthFacade {
             return LoginResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
-                    .totpSecret(userEntity.getTotpSecret())
+                    .totpSecret(totpSecretToReturn)
                     .deviceToken(deviceToken)
                     .build();
         } catch (org.springframework.security.core.AuthenticationException ex) {
@@ -93,7 +101,7 @@ public class AuthFacade {
     }
 
 
-    public LoginResponse refreshTokens(String refreshToken) {
+    public LoginResponse refreshTokens(String refreshToken, String deviceToken) {
         String username;
         try {
             username = jwtService.extractUsername(refreshToken);
@@ -108,6 +116,14 @@ public class AuthFacade {
         UserEntity userEntity = userService.findByUsernameOrEmail(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
+        if (deviceToken == null || deviceToken.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu device token");
+        }
+        if (!deviceSecurityService.verifyDeviceToken(deviceToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Device token không hợp lệ");
+        }
+        deviceBindingService.bindOrValidate(userEntity.getId(), deviceToken);
+
         String newAccessToken = jwtService.generateAccessToken(userEntity);
         String newRefreshToken = jwtService.generateRefreshToken(username);
 
@@ -120,13 +136,20 @@ public class AuthFacade {
                 TimeUnit.MILLISECONDS
         );
 
-        String deviceToken = deviceBindingService.getBoundToken(userEntity.getId());
-
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .deviceToken(deviceToken)
                 .build();
+    }
+
+    private void warnIfDefaultDeviceSecret() {
+        if (deviceHmacSecret == null) {
+            return;
+        }
+        if ("ChangeThisDeviceSecretKey".equals(deviceHmacSecret.trim())) {
+            log.warn("Cảnh báo: Đang dùng HMAC secret mặc định!");
+        }
     }
 
     public UserInfoResponse getCurrentUserInfo(Authentication authentication) {

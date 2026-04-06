@@ -77,7 +77,7 @@ public class QrCodeController {
     @RateLimit(limit = 100, window = 1, isGlobal = true)
     public ResponseEntity<Map<String, Object>> scanTotp(
             HttpServletRequest request,
-            @RequestBody ScanTotpRequest requestBody) {
+            @Valid @RequestBody ScanTotpRequest requestBody) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "Chưa xác thực.");

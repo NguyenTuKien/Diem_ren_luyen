@@ -43,11 +43,20 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(@RequestBody Map<String, String> request) {
+    public ResponseEntity<LoginResponse> refresh(
+            HttpServletRequest httpRequest,
+            @RequestHeader(value = "X-Device-Id", required = false) String deviceId,
+            @RequestBody Map<String, String> request) {
         if (request == null || request.get("refreshToken") == null || request.get("refreshToken").isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Thiếu refresh token.");
         }
-        LoginResponse response = authFacade.refreshTokens(request.get("refreshToken").replace("Bearer ", ""));
+        String resolvedDeviceToken = (deviceId != null && !deviceId.isBlank())
+                ? deviceId
+                : readDeviceTokenFromCookie(httpRequest);
+        LoginResponse response = authFacade.refreshTokens(
+                request.get("refreshToken").replace("Bearer ", ""),
+                resolvedDeviceToken
+        );
         return withDeviceCookie(response);
     }
 
@@ -97,5 +106,17 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(response);
+    }
+
+    private String readDeviceTokenFromCookie(HttpServletRequest request) {
+        if (request == null || request.getCookies() == null) {
+            return null;
+        }
+        for (var cookie : request.getCookies()) {
+            if (deviceCookieName.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }
