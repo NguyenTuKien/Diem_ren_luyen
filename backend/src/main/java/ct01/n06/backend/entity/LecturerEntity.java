@@ -1,5 +1,6 @@
 package ct01.n06.backend.entity;
 
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.n06.backend.constant.LecturerConstant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

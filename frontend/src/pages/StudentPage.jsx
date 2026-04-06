@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import MonitorClass from "../features/monitor/components/MonitorClass";
@@ -6,8 +6,6 @@ import StudentDashboard from "../features/student/components/StudentDashboard";
 import QRScanner from "../features/student/components/QRScanner";
 import StudentMobileNav from "../features/student/components/StudentMobileNav";
 import StudentPlaceholderPanel from "../features/student/components/StudentPlaceholderPanel";
-import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
-import StudentHistoryPanel from "../features/student/components/StudentHistoryPanel";
 import StudentSidebar from "../features/student/components/StudentSidebar";
 import StudentTopHeader from "../features/student/components/StudentTopHeader";
 import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
