@@ -32,7 +32,10 @@ const buildQrPayload = (eventId, qrToken) => {
   })
 }
 
-function EventDashboard() {
+function EventDashboard({
+  shouldOpenCreateEventModal = false,
+  onCreateEventRequestHandled,
+}) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
   const [qrEvent, setQrEvent] = useState(null)
@@ -326,6 +329,18 @@ function EventDashboard() {
   useEffect(() => {
     loadEvents(currentPage)
   }, [currentPage, loadEvents])
+
+  useEffect(() => {
+    if (!shouldOpenCreateEventModal) {
+      return
+    }
+
+    setEditingEvent(null)
+    setIsModalOpen(true)
+    if (typeof onCreateEventRequestHandled === 'function') {
+      onCreateEventRequestHandled()
+    }
+  }, [onCreateEventRequestHandled, shouldOpenCreateEventModal])
 
   const content = (
     <div className="flex-1 overflow-y-auto p-8">

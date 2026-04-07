@@ -87,7 +87,7 @@ public class QrCodeServiceImpl implements QrCodeService {
 
         LocalDateTime now = LocalDateTime.now();
         Duration ttlDuration = Duration.between(now, event.getEndTime());
-        if (!ttlDuration.isPositive()) {
+        if (ttlDuration.isZero() || ttlDuration.isNegative()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Sự kiện đã kết thúc, không thể điểm danh");
         }
 

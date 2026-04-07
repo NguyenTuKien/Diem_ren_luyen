@@ -1,6 +1,8 @@
 package ct01.n06.backend.service.impl;
 
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,9 +14,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import ct01.n06.backend.repository.*;
-import ct01.n06.backend.service.UserService;
-import lombok.AllArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -28,10 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import lombok.extern.slf4j.Slf4j;
 
 import ct01.n06.backend.dto.common.SimpleMessageResponse;
 import ct01.n06.backend.dto.lecturer.ImportStudentsResponse;
+import ct01.n06.backend.dto.lecturer.LecturerDashboardSummaryResponse;
 import ct01.n06.backend.dto.lecturer.LecturerStudentListResponse;
 import ct01.n06.backend.dto.lecturer.LecturerStudentOptionsResponse;
 import ct01.n06.backend.dto.lecturer.LecturerStudentOptionsResponse.ClassOptionItem;
@@ -39,24 +38,41 @@ import ct01.n06.backend.dto.lecturer.LecturerStudentOptionsResponse.FacultyOptio
 import ct01.n06.backend.dto.lecturer.LecturerStudentRowResponse;
 import ct01.n06.backend.dto.lecturer.ManualCreateStudentRequest;
 import ct01.n06.backend.entity.ClassEntity;
+import ct01.n06.backend.entity.EventEntity;
 import ct01.n06.backend.entity.FacultyEntity;
 import ct01.n06.backend.entity.LecturerEntity;
 import ct01.n06.backend.entity.RecordEntity;
 import ct01.n06.backend.entity.SemesterEntity;
-import ct01.n06.backend.entity.StudentSemesterEntity;
 import ct01.n06.backend.entity.StudentEntity;
+import ct01.n06.backend.entity.StudentSemesterEntity;
 import ct01.n06.backend.entity.UserEntity;
+import ct01.n06.backend.entity.enums.NotificationType;
 import ct01.n06.backend.entity.enums.RecordStatus;
 import ct01.n06.backend.entity.enums.Role;
 import ct01.n06.backend.entity.enums.UserStatus;
 import ct01.n06.backend.exception.ApiException;
 import ct01.n06.backend.exception.business.ResourceNotFoundException;
+import ct01.n06.backend.repository.ClassRepository;
+import ct01.n06.backend.repository.EventRepository;
+import ct01.n06.backend.repository.LecturerRepository;
+import ct01.n06.backend.repository.NotificationRepository;
+import ct01.n06.backend.repository.RecordRepository;
+import ct01.n06.backend.repository.SemesterRepository;
+import ct01.n06.backend.repository.StudentRepository;
+import ct01.n06.backend.repository.StudentSemesterRepository;
+import ct01.n06.backend.repository.UserRepository;
 import ct01.n06.backend.service.LecturerService;
+import ct01.n06.backend.service.UserService;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 @AllArgsConstructor
 public class LecturerServiceImpl implements LecturerService {
+
+  private static final DateTimeFormatter UI_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+  private static final DateTimeFormatter UI_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
   private final LecturerRepository lecturerRepository;
   private final ClassRepository classRepository;
@@ -66,6 +82,7 @@ public class LecturerServiceImpl implements LecturerService {
   private final StudentSemesterRepository studentSemesterRepository;
   private final EventRepository eventRepository;
   private final RecordRepository recordRepository;
+  private final NotificationRepository notificationRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserService userService;
 
@@ -112,6 +129,59 @@ public class LecturerServiceImpl implements LecturerService {
 
     classItems.sort(Comparator.comparing(ClassOptionItem::classCode, String.CASE_INSENSITIVE_ORDER));
     return new LecturerStudentOptionsResponse(new ArrayList<>(facultyMap.values()), classItems);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public LecturerDashboardSummaryResponse getDashboardSummary() {
+    String currentUserId = userService.requireCurrentUserId();
+    String lecturerId = ensureLecturerAccessForCurrentUser(currentUserId);
+
+    List<StudentEntity> students = studentRepository.findAllByLecturerIdWithDetails(lecturerId);
+    List<String> studentIds = students.stream().map(StudentEntity::getId).toList();
+    Optional<SemesterEntity> activeSemesterOpt = semesterRepository.findFirstByIsActiveTrueOrderByStartDateDesc();
+
+    long totalEvents = eventRepository.countByCreatedBy_Id(currentUserId);
+    long participatingStudents = 0;
+    long pendingEvidence = 0;
+
+    if (activeSemesterOpt.isPresent() && !studentIds.isEmpty()) {
+      Long semesterId = activeSemesterOpt.get().getId();
+      List<RecordEntity> approvedRecords =
+          recordRepository.findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+              semesterId,
+              studentIds,
+              RecordStatus.APPROVED
+          );
+      participatingStudents = approvedRecords.stream()
+          .map(record -> record.getStudent().getId())
+          .distinct()
+          .count();
+
+      pendingEvidence = recordRepository.countBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+          semesterId,
+          studentIds,
+          RecordStatus.PENDING
+      );
+    }
+
+    long newNotifications = notificationRepository.countByTargetTypeInAndCreatedAtAfter(
+        List.of(NotificationType.ALL, NotificationType.CLASS),
+        LocalDateTime.now().minusDays(7)
+    );
+    DashboardScoreSnapshot scoreSnapshot = buildDashboardScoreSnapshot(students, activeSemesterOpt);
+    List<LecturerDashboardSummaryResponse.UpcomingEventItem> upcomingEvents =
+        buildUpcomingDashboardEvents();
+
+    return new LecturerDashboardSummaryResponse(
+        totalEvents,
+        participatingStudents,
+        pendingEvidence,
+        newNotifications,
+        scoreSnapshot.passRate(),
+        scoreSnapshot.distribution(),
+        upcomingEvents
+    );
   }
 
   @Override
@@ -465,6 +535,110 @@ public class LecturerServiceImpl implements LecturerService {
     return fullName.contains(keyword) || studentCode.contains(keyword) || email.contains(keyword);
   }
 
+  private DashboardScoreSnapshot buildDashboardScoreSnapshot(
+      List<StudentEntity> students,
+      Optional<SemesterEntity> activeSemesterOpt
+  ) {
+    if (students.isEmpty()) {
+      return new DashboardScoreSnapshot(
+          0,
+          List.of(
+              new LecturerDashboardSummaryResponse.ScoreDistributionItem("excellent", "Xuất sắc", 0),
+              new LecturerDashboardSummaryResponse.ScoreDistributionItem("good", "Tốt", 0),
+              new LecturerDashboardSummaryResponse.ScoreDistributionItem("fair", "Khá", 0),
+              new LecturerDashboardSummaryResponse.ScoreDistributionItem("average", "Trung bình", 0)
+          )
+      );
+    }
+
+    Map<String, Integer> scoreByStudent = buildScoreMap(students, activeSemesterOpt);
+    long excellent = 0;
+    long good = 0;
+    long fair = 0;
+    long average = 0;
+    long passCount = 0;
+
+    for (StudentEntity student : students) {
+      int score = scoreByStudent.getOrDefault(student.getId(), 0);
+      if (score >= 90) {
+        excellent++;
+      } else if (score >= 80) {
+        good++;
+      } else if (score >= 65) {
+        fair++;
+      } else {
+        average++;
+      }
+
+      if (score >= 50) {
+        passCount++;
+      }
+    }
+
+    long total = students.size();
+    return new DashboardScoreSnapshot(
+        toPercent(passCount, total),
+        List.of(
+            new LecturerDashboardSummaryResponse.ScoreDistributionItem(
+                "excellent",
+                "Xuất sắc",
+                toPercent(excellent, total)
+            ),
+            new LecturerDashboardSummaryResponse.ScoreDistributionItem(
+                "good",
+                "Tốt",
+                toPercent(good, total)
+            ),
+            new LecturerDashboardSummaryResponse.ScoreDistributionItem(
+                "fair",
+                "Khá",
+                toPercent(fair, total)
+            ),
+            new LecturerDashboardSummaryResponse.ScoreDistributionItem(
+                "average",
+                "Trung bình",
+                toPercent(average, total)
+            )
+        )
+    );
+  }
+
+  private List<LecturerDashboardSummaryResponse.UpcomingEventItem> buildUpcomingDashboardEvents() {
+    return eventRepository.findTop5ByStartTimeAfterOrderByStartTimeAsc(LocalDateTime.now()).stream()
+        .map(this::toUpcomingDashboardEventItem)
+        .toList();
+  }
+
+  private LecturerDashboardSummaryResponse.UpcomingEventItem toUpcomingDashboardEventItem(
+      EventEntity event
+  ) {
+    long attendeeCount = recordRepository.countDistinctStudent_IdByEvent_IdAndStatus(
+        event.getId(),
+        RecordStatus.APPROVED
+    );
+
+    String dateLabel = event.getStartTime() != null ? event.getStartTime().format(UI_DATE_FORMAT) : "";
+    String startTime = event.getStartTime() != null ? event.getStartTime().format(UI_TIME_FORMAT) : "--:--";
+    String endTime = event.getEndTime() != null ? event.getEndTime().format(UI_TIME_FORMAT) : "--:--";
+    String timeLabel = startTime + " - " + endTime;
+
+    return new LecturerDashboardSummaryResponse.UpcomingEventItem(
+        event.getId(),
+        event.getTitle(),
+        event.getLocation(),
+        dateLabel,
+        timeLabel,
+        attendeeCount
+    );
+  }
+
+  private double toPercent(long value, long total) {
+    if (total <= 0) {
+      return 0;
+    }
+    return Math.round((value * 1000.0) / total) / 10.0;
+  }
+
   private Map<String, Integer> buildScoreMap(List<StudentEntity> students,
       Optional<SemesterEntity> activeSemesterOpt) {
     if (students.isEmpty() || activeSemesterOpt.isEmpty()) {
@@ -474,11 +648,20 @@ public class LecturerServiceImpl implements LecturerService {
     return studentSemesterRepository.findBySemester_IdAndStudent_IdIn(activeSemesterOpt.get().getId(),
             studentIds)
         .stream()
+        .filter(eval -> eval.getStudent() != null
+            && eval.getStudent().getId() != null
+            && eval.getFinalScore() != null)
         .collect(Collectors.toMap(
             eval -> eval.getStudent().getId(),
-        StudentSemesterEntity::getFinalScore,
+            StudentSemesterEntity::getFinalScore,
             (first, second) -> first
         ));
+  }
+
+  private record DashboardScoreSnapshot(
+      double passRate,
+      List<LecturerDashboardSummaryResponse.ScoreDistributionItem> distribution
+  ) {
   }
 
   private Map<String, Integer> buildMandatoryAttendanceMap(List<StudentEntity> students,
@@ -584,4 +767,5 @@ public class LecturerServiceImpl implements LecturerService {
     return value == null ? "" : value.trim();
   }
 }
+
 

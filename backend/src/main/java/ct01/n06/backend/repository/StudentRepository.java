@@ -1,14 +1,17 @@
 package ct01.n06.backend.repository;
 
-import ct01.n06.backend.entity.StudentEntity;
-import ct01.n06.backend.entity.UserEntity;
 import java.util.List;
 import java.util.Optional;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import ct01.n06.backend.entity.StudentEntity;
+import ct01.n06.backend.entity.UserEntity;
+import ct01.n06.backend.entity.enums.UserStatus;
 
 @Repository
 public interface StudentRepository extends JpaRepository<StudentEntity, String> {
@@ -25,8 +28,15 @@ public interface StudentRepository extends JpaRepository<StudentEntity, String> 
 
   List<StudentEntity> findByClassEntity_Id(Long classId);
 
+  int countByUserEntity_Status(UserStatus status);
+
+  int countByUserEntity_Role(ct01.n06.backend.entity.enums.Role role);
+
   @EntityGraph(attributePaths = {"userEntity", "classEntity", "classEntity.facultyEntity"})
   List<StudentEntity> findAllByClassEntityId(Long classId);
+
+  @EntityGraph(attributePaths = {"userEntity", "classEntity", "classEntity.facultyEntity"})
+  List<StudentEntity> findAllByOrderByFullNameAsc();
 
   @Query("""
       select s

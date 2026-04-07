@@ -154,15 +154,6 @@ export default function StudentDashboard({ onNavigate }) {
           <p className="student-kpi-number">{dashboard.joinedActivities}</p>
           <small>Trong học kỳ này</small>
         </article>
-
-        <article className="student-kpi-box">
-          <div className="student-kpi-title">
-            <h3>Xếp loại dự kiến</h3>
-            <span className="material-symbols-outlined">workspace_premium</span>
-          </div>
-          <p className="student-kpi-number">{dashboard.rankLabel}</p>
-          <small>Top 5% toàn khoa</small>
-        </article>
       </section>
 
       <section className="student-content-row">
