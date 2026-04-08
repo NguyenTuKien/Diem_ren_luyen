@@ -30,6 +30,7 @@ export default function LecturerPage() {
   const { user, logout } = useAuth();
   const [activeFeature, setActiveFeature] = useState("dashboard");
   const [shouldOpenCreateEventModal, setShouldOpenCreateEventModal] = useState(false);
+  const [dashboardSummaryLoading, setDashboardSummaryLoading] = useState(true);
   const [dashboardSummary, setDashboardSummary] = useState({
     totalEvents: 0,
     participatingStudents: 0,
@@ -44,6 +45,9 @@ export default function LecturerPage() {
     let ignore = false;
 
     async function loadDashboardSummary() {
+      if (!ignore) {
+        setDashboardSummaryLoading(true);
+      }
       try {
         const data = await apiRequest("/v1/lecturer/dashboard");
         if (!ignore && data) {
@@ -59,14 +63,20 @@ export default function LecturerPage() {
         }
       } catch {
         // Keep zero fallback when dashboard summary cannot be loaded.
+      } finally {
+        if (!ignore) {
+          setDashboardSummaryLoading(false);
+        }
       }
     }
 
-    loadDashboardSummary();
+    if (activeFeature === "dashboard") {
+      loadDashboardSummary();
+    }
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [activeFeature]);
 
   const handleCreateEventFromOverview = () => {
     setShouldOpenCreateEventModal(true);
@@ -98,7 +108,11 @@ export default function LecturerPage() {
   const featureComponents = {
     dashboard: {
       Component: LecturerDashboardOverview,
-      props: { summary: dashboardSummary, onCreateEvent: handleCreateEventFromOverview },
+      props: {
+        summary: dashboardSummary,
+        onCreateEvent: handleCreateEventFromOverview,
+        loadingSummary: dashboardSummaryLoading,
+      },
     },
     events: {
       Component: EventDashboard,

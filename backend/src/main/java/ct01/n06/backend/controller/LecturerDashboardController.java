@@ -20,4 +20,3 @@ public class LecturerDashboardController {
     return lecturerService.getDashboardSummary();
   }
 }
-

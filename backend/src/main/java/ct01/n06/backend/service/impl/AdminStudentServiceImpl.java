@@ -74,8 +74,8 @@ public class AdminStudentServiceImpl implements AdminStudentService {
   @Transactional(readOnly = true)
   public AdminStudentListResponse getStudents(Long facultyId, Long classId, String status, String keyword) {
     List<StudentEntity> students = studentRepository.findAllByOrderByFullNameAsc();
-    UserStatus statusFilter = parseStatus(status, false);
-    String normalizedKeyword = normalizeKeyword(keyword);
+    UserStatus statusFilter = AdminServiceUtils.parseStatus(status, false);
+    String normalizedKeyword = AdminServiceUtils.normalizeKeyword(keyword);
 
     List<StudentEntity> filtered = students.stream()
         .filter(student -> facultyId == null || (student.getClassEntity() != null
@@ -83,14 +83,14 @@ public class AdminStudentServiceImpl implements AdminStudentService {
             && Objects.equals(student.getClassEntity().getFacultyEntity().getId(), facultyId)))
         .filter(student -> classId == null || (student.getClassEntity() != null && Objects.equals(student.getClassEntity().getId(), classId)))
         .filter(student -> {
-          UserStatus userStatus = normalizeStatus(student.getUserEntity().getStatus());
+          UserStatus userStatus = AdminServiceUtils.normalizeStatus(student.getUserEntity().getStatus());
           return statusFilter == null ? userStatus != UserStatus.DELETED : userStatus == statusFilter;
         })
         .filter(student -> matchesKeyword(student, normalizedKeyword))
         .toList();
 
     List<AdminStudentRowResponse> rows = filtered.stream()
-      .map(this::toRow)
+        .map(this::toRow)
         .toList();
 
     return new AdminStudentListResponse(
@@ -162,9 +162,9 @@ public class AdminStudentServiceImpl implements AdminStudentService {
 
     return new AdminStudentStatsResponse(
         students.size(),
-        (int) students.stream().filter(student -> normalizeStatus(student.getUserEntity().getStatus()) == UserStatus.ACTIVE).count(),
-        (int) students.stream().filter(student -> normalizeStatus(student.getUserEntity().getStatus()) == UserStatus.LOCKED).count(),
-        (int) students.stream().filter(student -> normalizeStatus(student.getUserEntity().getStatus()) == UserStatus.DELETED).count(),
+        (int) students.stream().filter(student -> AdminServiceUtils.normalizeStatus(student.getUserEntity().getStatus()) == UserStatus.ACTIVE).count(),
+        (int) students.stream().filter(student -> AdminServiceUtils.normalizeStatus(student.getUserEntity().getStatus()) == UserStatus.LOCKED).count(),
+        (int) students.stream().filter(student -> AdminServiceUtils.normalizeStatus(student.getUserEntity().getStatus()) == UserStatus.DELETED).count(),
         (int) students.stream().filter(student -> normalizeRole(student.getUserEntity().getRole()) == Role.ROLE_MONITOR).count(),
         facultyItems.size(),
         classBreakdown.size(),
@@ -189,7 +189,7 @@ public class AdminStudentServiceImpl implements AdminStudentService {
     String studentCode = request.studentCode().trim().toUpperCase(Locale.ROOT);
     String email = request.email().trim().toLowerCase(Locale.ROOT);
     String username = resolveUsername(request.username(), email, studentCode);
-    UserStatus status = parseStatus(request.status(), true);
+    UserStatus status = AdminServiceUtils.parseStatus(request.status(), true);
     Role role = parseRole(request.role());
 
     validateUniqueness(email, username, studentCode);
@@ -244,7 +244,7 @@ public class AdminStudentServiceImpl implements AdminStudentService {
     String username = StringUtils.hasText(request.username())
         ? request.username().trim().toLowerCase(Locale.ROOT)
         : user.getUsername();
-    UserStatus status = parseStatus(request.status(), true);
+    UserStatus status = AdminServiceUtils.parseStatus(request.status(), true);
     Role role = parseRole(request.role());
 
     validateUpdateUniqueness(student, user, email, username, studentCode);
@@ -298,7 +298,7 @@ public class AdminStudentServiceImpl implements AdminStudentService {
         student.getFullName(),
         user.getEmail(),
         user.getUsername(),
-        normalizeStatus(user.getStatus()).name(),
+        AdminServiceUtils.normalizeStatus(user.getStatus()).name(),
         normalizeRole(user.getRole()).name().replace("ROLE_", ""),
         classEntity != null ? classEntity.getId() : null,
         classEntity != null ? classEntity.getClassCode() : null,
@@ -310,10 +310,6 @@ public class AdminStudentServiceImpl implements AdminStudentService {
     );
   }
 
-  private String normalizeKeyword(String keyword) {
-    return StringUtils.hasText(keyword) ? keyword.trim().toLowerCase(Locale.ROOT) : null;
-  }
-
   private boolean matchesKeyword(StudentEntity student, String keyword) {
     if (keyword == null) {
       return true;
@@ -322,29 +318,13 @@ public class AdminStudentServiceImpl implements AdminStudentService {
     UserEntity user = student.getUserEntity();
     ClassEntity classEntity = student.getClassEntity();
     FacultyEntity faculty = classEntity != null ? classEntity.getFacultyEntity() : null;
-    return contains(student.getFullName(), keyword)
-        || contains(student.getStudentCode(), keyword)
-        || contains(user.getEmail(), keyword)
-        || contains(user.getUsername(), keyword)
-        || contains(classEntity != null ? classEntity.getClassCode() : null, keyword)
-        || contains(faculty != null ? faculty.getCode() : null, keyword)
-        || contains(faculty != null ? faculty.getName() : null, keyword);
-  }
-
-  private boolean contains(String value, String keyword) {
-    return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
-  }
-
-  private UserStatus parseStatus(String status, boolean allowDefaultActive) {
-    if (!StringUtils.hasText(status)) {
-      return allowDefaultActive ? UserStatus.ACTIVE : null;
-    }
-
-    try {
-      return UserStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException ex) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, "Trạng thái không hợp lệ.");
-    }
+    return AdminServiceUtils.contains(student.getFullName(), keyword)
+        || AdminServiceUtils.contains(student.getStudentCode(), keyword)
+        || AdminServiceUtils.contains(user.getEmail(), keyword)
+        || AdminServiceUtils.contains(user.getUsername(), keyword)
+        || AdminServiceUtils.contains(classEntity != null ? classEntity.getClassCode() : null, keyword)
+        || AdminServiceUtils.contains(faculty != null ? faculty.getCode() : null, keyword)
+        || AdminServiceUtils.contains(faculty != null ? faculty.getName() : null, keyword);
   }
 
   private Role parseRole(String role) {
@@ -360,10 +340,6 @@ public class AdminStudentServiceImpl implements AdminStudentService {
 
   private Role normalizeRole(Role role) {
     return role == null ? Role.ROLE_STUDENT : role;
-  }
-
-  private UserStatus normalizeStatus(UserStatus status) {
-    return status == null ? UserStatus.ACTIVE : status;
   }
 
   private String resolvePassword(String password) {

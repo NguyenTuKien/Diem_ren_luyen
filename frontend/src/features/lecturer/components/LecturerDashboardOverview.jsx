@@ -97,7 +97,7 @@ function normalizeDistribution(summary) {
   }));
 }
 
-export default function LecturerDashboardOverview({ summary, onCreateEvent }) {
+export default function LecturerDashboardOverview({ summary, onCreateEvent, loadingSummary = false }) {
   const resolvedSummary = {
     totalEvents: summary?.totalEvents ?? 0,
     participatingStudents: summary?.participatingStudents ?? 0,
@@ -196,7 +196,31 @@ export default function LecturerDashboardOverview({ summary, onCreateEvent }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {upcomingEvents.length === 0 ? (
+                {loadingSummary ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <tr key={`loading-event-${index}`} className="animate-pulse">
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-slate-700" />
+                          <div className="h-4 w-40 rounded bg-slate-200 dark:bg-slate-700" />
+                        </div>
+                      </td>
+                      <td className="py-4">
+                        <div className="mb-2 h-3 w-24 rounded bg-slate-200 dark:bg-slate-700" />
+                        <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="py-4">
+                        <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="py-4">
+                        <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                      <td className="py-4 text-right">
+                        <div className="ml-auto h-6 w-12 rounded bg-slate-200 dark:bg-slate-700" />
+                      </td>
+                    </tr>
+                  ))
+                ) : upcomingEvents.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-sm text-slate-500">
                       Chưa có sự kiện sắp diễn ra.

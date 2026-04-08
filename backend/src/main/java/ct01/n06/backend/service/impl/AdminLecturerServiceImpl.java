@@ -66,14 +66,15 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
   public AdminLecturerListResponse getLecturers(Long facultyId, String status, String keyword) {
     List<LecturerEntity> lecturers = loadLecturers();
     Map<String, Integer> classCountMap = buildClassCountMap();
-    UserStatus statusFilter = parseStatus(status, false);
-    String normalizedKeyword = normalizeKeyword(keyword);
+    UserStatus statusFilter = AdminServiceUtils.parseStatus(status, false);
+    String normalizedKeyword = AdminServiceUtils.normalizeKeyword(keyword);
 
     List<LecturerEntity> filtered = lecturers.stream()
         .filter(lecturer -> facultyId == null || (lecturer.getFacultyEntity() != null
             && Objects.equals(lecturer.getFacultyEntity().getId(), facultyId)))
         .filter(lecturer -> {
-          UserStatus userStatus = normalizeStatus(lecturer.getUserEntity().getStatus());
+          UserStatus userStatus = AdminServiceUtils.normalizeStatus(
+              lecturer.getUserEntity().getStatus());
           return statusFilter == null ? userStatus != UserStatus.DELETED : userStatus == statusFilter;
         })
         .filter(lecturer -> matchesKeyword(lecturer, normalizedKeyword))
@@ -123,11 +124,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
         .map(lecturer -> toRow(lecturer, classCountMap))
         .toList();
 
-    int assignedClasses = (int) classRepository.findAll().stream()
-        .filter(classEntity -> classEntity.getLecturerEntity() != null)
-        .filter(classEntity -> classEntity.getLecturerEntity().getUserEntity() != null)
-        .filter(classEntity -> classEntity.getLecturerEntity().getUserEntity().getRole() == Role.ROLE_LECTURER)
-        .count();
+    int assignedClasses = Math.toIntExact(classRepository.countByLecturerEntityIsNotNull());
 
     int unassignedLecturers = (int) lecturers.stream()
         .filter(lecturer -> classCountMap.getOrDefault(lecturer.getId(), 0) == 0)
@@ -144,9 +141,12 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
 
     return new AdminLecturerStatsResponse(
         lecturers.size(),
-        (int) lecturers.stream().filter(lecturer -> normalizeStatus(lecturer.getUserEntity().getStatus()) == UserStatus.ACTIVE).count(),
-        (int) lecturers.stream().filter(lecturer -> normalizeStatus(lecturer.getUserEntity().getStatus()) == UserStatus.LOCKED).count(),
-        (int) lecturers.stream().filter(lecturer -> normalizeStatus(lecturer.getUserEntity().getStatus()) == UserStatus.DELETED).count(),
+        (int) lecturers.stream().filter(lecturer -> AdminServiceUtils.normalizeStatus(
+            lecturer.getUserEntity().getStatus()) == UserStatus.ACTIVE).count(),
+        (int) lecturers.stream().filter(lecturer -> AdminServiceUtils.normalizeStatus(
+            lecturer.getUserEntity().getStatus()) == UserStatus.LOCKED).count(),
+        (int) lecturers.stream().filter(lecturer -> AdminServiceUtils.normalizeStatus(
+            lecturer.getUserEntity().getStatus()) == UserStatus.DELETED).count(),
         Math.toIntExact(facultyRepository.count()),
         assignedClasses,
         unassignedLecturers,
@@ -170,7 +170,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     String lecturerCode = request.lecturerCode().trim().toUpperCase(Locale.ROOT);
     String email = request.email().trim().toLowerCase(Locale.ROOT);
     String username = resolveUsername(request.username(), email, lecturerCode);
-    UserStatus status = parseStatus(request.status(), true);
+    UserStatus status = AdminServiceUtils.parseStatus(request.status(), true);
 
     validateCreateUniqueness(email, username, lecturerCode);
 
@@ -224,7 +224,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     String username = StringUtils.hasText(request.username())
         ? request.username().trim().toLowerCase(Locale.ROOT)
         : user.getUsername();
-    UserStatus status = parseStatus(request.status(), true);
+    UserStatus status = AdminServiceUtils.parseStatus(request.status(), true);
 
     validateUpdateUniqueness(lecturer, user, email, username, lecturerCode);
 
@@ -295,7 +295,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
         lecturer.getFullName(),
         user.getEmail(),
         user.getUsername(),
-        normalizeStatus(user.getStatus()).name(),
+        AdminServiceUtils.normalizeStatus(user.getStatus()).name(),
         lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getId() : null,
         lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getCode() : null,
         lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getName() : null,
@@ -304,42 +304,22 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     );
   }
 
-  private String normalizeKeyword(String keyword) {
-    return StringUtils.hasText(keyword) ? keyword.trim().toLowerCase(Locale.ROOT) : null;
-  }
-
   private boolean matchesKeyword(LecturerEntity lecturer, String keyword) {
     if (keyword == null) {
       return true;
     }
 
     UserEntity user = lecturer.getUserEntity();
-    return contains(lecturer.getFullName(), keyword)
-        || contains(lecturer.getLecturerCode(), keyword)
-        || contains(user.getEmail(), keyword)
-        || contains(user.getUsername(), keyword)
-        || contains(lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getName() : null, keyword)
-        || contains(lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getCode() : null, keyword);
-  }
-
-  private boolean contains(String value, String keyword) {
-    return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
-  }
-
-  private UserStatus parseStatus(String status, boolean allowDefaultActive) {
-    if (!StringUtils.hasText(status)) {
-      return allowDefaultActive ? UserStatus.ACTIVE : null;
-    }
-
-    try {
-      return UserStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException ex) {
-      throw new ApiException(HttpStatus.BAD_REQUEST, "Trạng thái không hợp lệ.");
-    }
-  }
-
-  private UserStatus normalizeStatus(UserStatus status) {
-    return status == null ? UserStatus.ACTIVE : status;
+    return AdminServiceUtils.contains(lecturer.getFullName(), keyword)
+        || AdminServiceUtils.contains(lecturer.getLecturerCode(), keyword)
+        || AdminServiceUtils.contains(user.getEmail(), keyword)
+        || AdminServiceUtils.contains(user.getUsername(), keyword)
+        || AdminServiceUtils.contains(
+            lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getName() : null,
+            keyword)
+        || AdminServiceUtils.contains(
+            lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getCode() : null,
+            keyword);
   }
 
   private String resolvePassword(String password) {
@@ -366,10 +346,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     if (userRepository.existsByUsernameIgnoreCase(username)) {
       throw new ApiException(HttpStatus.CONFLICT, "Username đã tồn tại: " + username);
     }
-    boolean lecturerCodeExists = lecturerRepository.findAllByUserEntity_Role(Role.ROLE_LECTURER).stream()
-        .anyMatch(lecturer -> lecturer.getLecturerCode() != null
-            && lecturer.getLecturerCode().equalsIgnoreCase(lecturerCode));
-    if (lecturerCodeExists) {
+    if (lecturerRepository.existsByLecturerCodeIgnoreCase(lecturerCode)) {
       throw new ApiException(HttpStatus.CONFLICT, "Mã giảng viên đã tồn tại: " + lecturerCode);
     }
   }
@@ -393,12 +370,9 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
           throw new ApiException(HttpStatus.CONFLICT, "Username đã tồn tại: " + username);
         });
 
-    boolean lecturerCodeExists = lecturerRepository.findAllByUserEntity_Role(Role.ROLE_LECTURER).stream()
-        .anyMatch(lecturer -> !Objects.equals(lecturer.getId(), currentLecturer.getId())
-            && lecturer.getLecturerCode() != null
-            && lecturer.getLecturerCode().equalsIgnoreCase(lecturerCode));
-
-    if (lecturerCodeExists) {
+    String currentLecturerCode = currentLecturer.getLecturerCode();
+    boolean sameCode = currentLecturerCode != null && currentLecturerCode.equalsIgnoreCase(lecturerCode);
+    if (!sameCode && lecturerRepository.existsByLecturerCodeIgnoreCase(lecturerCode)) {
       throw new ApiException(HttpStatus.CONFLICT, "Mã giảng viên đã tồn tại: " + lecturerCode);
     }
   }
@@ -417,3 +391,4 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     }
   }
 }
+

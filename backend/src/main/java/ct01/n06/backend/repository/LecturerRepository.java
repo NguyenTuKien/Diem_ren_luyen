@@ -29,4 +29,6 @@ public interface LecturerRepository extends JpaRepository<LecturerEntity, String
   List<LecturerEntity> findAllByUserEntity_Role(Role role);
 
   int countByUserEntity_Status(UserStatus status);
+
+  boolean existsByLecturerCodeIgnoreCase(String lecturerCode);
 }

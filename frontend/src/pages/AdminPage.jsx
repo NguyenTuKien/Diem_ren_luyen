@@ -72,9 +72,6 @@ export default function AdminPage() {
       keyword: nextKeyword,
     }));
 
-    if (nextKeyword.trim()) {
-      setActiveFeature("lecturers");
-    }
   };
 
   return (

@@ -24,23 +24,27 @@ export default function AdminStudentForm({ studentWorkspace }) {
             return;
         }
 
-        await createStudent({
-            fullName: form.fullName,
-            studentCode: form.studentCode,
-            email: form.email,
-            username: form.username,
-            password: form.password,
-            classId: Number(form.classId || defaultClassId),
-            role: form.role,
-            status: form.status,
-        });
+        setMessage("");
+        try {
+            await createStudent({
+                fullName: form.fullName,
+                studentCode: form.studentCode,
+                email: form.email,
+                username: form.username,
+                password: form.password,
+                classId: Number(form.classId || defaultClassId),
+                role: form.role,
+                status: form.status,
+            });
 
-        setMessage(`Đã tạo tài khoản sinh viên cho ${form.fullName.trim()}.`);
-
-        setForm((previous) => ({
-            ...DEFAULT_FORM,
-            classId: defaultClassId || previous.classId,
-        }));
+            setMessage(`Đã tạo tài khoản sinh viên cho ${form.fullName.trim()}.`);
+            setForm((previous) => ({
+                ...DEFAULT_FORM,
+                classId: defaultClassId || previous.classId,
+            }));
+        } catch {
+            // Error is already handled by workspace flash state.
+        }
     };
 
     return (

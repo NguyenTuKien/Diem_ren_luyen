@@ -42,4 +42,3 @@ public interface LecturerService {
 
   LecturerEntity getLecturerByUser(UserEntity userEntity);
 }
-

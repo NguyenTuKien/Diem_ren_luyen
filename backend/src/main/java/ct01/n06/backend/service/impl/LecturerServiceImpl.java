@@ -171,7 +171,7 @@ public class LecturerServiceImpl implements LecturerService {
     );
     DashboardScoreSnapshot scoreSnapshot = buildDashboardScoreSnapshot(students, activeSemesterOpt);
     List<LecturerDashboardSummaryResponse.UpcomingEventItem> upcomingEvents =
-        buildUpcomingDashboardEvents();
+        buildUpcomingDashboardEvents(currentUserId);
 
     return new LecturerDashboardSummaryResponse(
         totalEvents,
@@ -603,20 +603,61 @@ public class LecturerServiceImpl implements LecturerService {
     );
   }
 
-  private List<LecturerDashboardSummaryResponse.UpcomingEventItem> buildUpcomingDashboardEvents() {
-    return eventRepository.findTop5ByStartTimeAfterOrderByStartTimeAsc(LocalDateTime.now()).stream()
-        .map(this::toUpcomingDashboardEventItem)
+  private List<LecturerDashboardSummaryResponse.UpcomingEventItem> buildUpcomingDashboardEvents(
+      String currentUserId
+  ) {
+    LocalDateTime now = LocalDateTime.now();
+    List<EventEntity> lecturerEvents = eventRepository
+        .findTop5ByCreatedBy_IdAndStartTimeAfterOrderByStartTimeAsc(currentUserId, now);
+    List<EventEntity> globalEvents = eventRepository.findTop5ByStartTimeAfterOrderByStartTimeAsc(now);
+    Map<Long, EventEntity> upcomingEventById = new LinkedHashMap<>();
+
+    for (EventEntity event : lecturerEvents) {
+      if (upcomingEventById.size() >= 5) {
+        break;
+      }
+      upcomingEventById.putIfAbsent(event.getId(), event);
+    }
+
+    for (EventEntity event : globalEvents) {
+      if (upcomingEventById.size() >= 5) {
+        break;
+      }
+      upcomingEventById.putIfAbsent(event.getId(), event);
+    }
+
+    List<EventEntity> upcomingEvents = new ArrayList<>(upcomingEventById.values());
+    Map<Long, Long> attendeeCountByEventId = buildApprovedAttendeeCountMap(upcomingEvents);
+
+    return upcomingEvents.stream()
+        .map(event -> toUpcomingDashboardEventItem(
+            event,
+            attendeeCountByEventId.getOrDefault(event.getId(), 0L)
+        ))
         .toList();
   }
 
-  private LecturerDashboardSummaryResponse.UpcomingEventItem toUpcomingDashboardEventItem(
-      EventEntity event
-  ) {
-    long attendeeCount = recordRepository.countDistinctStudent_IdByEvent_IdAndStatus(
-        event.getId(),
-        RecordStatus.APPROVED
-    );
+  private Map<Long, Long> buildApprovedAttendeeCountMap(List<EventEntity> events) {
+    if (events.isEmpty()) {
+      return Map.of();
+    }
 
+    List<Long> eventIds = events.stream()
+        .map(EventEntity::getId)
+        .toList();
+
+    return recordRepository.countDistinctStudentsByEventIdsAndStatus(eventIds, RecordStatus.APPROVED)
+        .stream()
+        .collect(Collectors.toMap(
+            RecordRepository.EventAttendeeCountProjection::getEventId,
+            RecordRepository.EventAttendeeCountProjection::getAttendeeCount
+        ));
+  }
+
+  private LecturerDashboardSummaryResponse.UpcomingEventItem toUpcomingDashboardEventItem(
+      EventEntity event,
+      long attendeeCount
+  ) {
     String dateLabel = event.getStartTime() != null ? event.getStartTime().format(UI_DATE_FORMAT) : "";
     String startTime = event.getStartTime() != null ? event.getStartTime().format(UI_TIME_FORMAT) : "--:--";
     String endTime = event.getEndTime() != null ? event.getEndTime().format(UI_TIME_FORMAT) : "--:--";
