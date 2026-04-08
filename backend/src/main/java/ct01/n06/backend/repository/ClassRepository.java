@@ -22,4 +22,6 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long> {
 
   @EntityGraph(attributePaths = {"facultyEntity", "monitor"})
   Optional<ClassEntity> findByIdAndLecturerEntityId(Long id, String lecturerId);
+
+  long countByLecturerEntityIsNotNull();
 }

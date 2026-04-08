@@ -55,7 +55,7 @@ public class QrCodeConsumer {
         }
 
         Duration ttlDuration = Duration.between(LocalDateTime.now(), event.getEndTime());
-        if (!ttlDuration.isPositive()) {
+        if (ttlDuration.isZero() || ttlDuration.isNegative()) {
             log.warn("Sự kiện đã kết thúc, bỏ qua check-in: studentId={}, eventId={}", studentId, eventId);
             return;
         }

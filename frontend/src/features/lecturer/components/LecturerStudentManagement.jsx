@@ -97,6 +97,18 @@ export default function LecturerStudentManagement() {
     }
   }, [currentPage, totalPages]);
 
+  useEffect(() => {
+    if (!flash.message || flash.type === "error") {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setFlash({ type: "", message: "" });
+    }, 3000);
+
+    return () => window.clearTimeout(timeout);
+  }, [flash.message, flash.type, setFlash]);
+
   const runAction = async (runner, successMessage) => {
     setBusy(true);
     setFlash({ type: "", message: "" });

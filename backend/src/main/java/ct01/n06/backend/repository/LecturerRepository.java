@@ -1,12 +1,16 @@
 package ct01.n06.backend.repository;
 
-import ct01.n06.backend.entity.LecturerEntity;
-import ct01.n06.backend.entity.UserEntity;
-import ct01.n06.backend.entity.enums.Role;
+import java.util.List;
 import java.util.Optional;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import ct01.n06.backend.entity.LecturerEntity;
+import ct01.n06.backend.entity.UserEntity;
+import ct01.n06.backend.entity.enums.Role;
+import ct01.n06.backend.entity.enums.UserStatus;
 
 @Repository
 public interface LecturerRepository extends JpaRepository<LecturerEntity, String> {
@@ -20,4 +24,11 @@ public interface LecturerRepository extends JpaRepository<LecturerEntity, String
   @EntityGraph(attributePaths = {"facultyEntity"})
   Optional<LecturerEntity> findByUserEntityId(String userId);
   Optional<LecturerEntity> findByUserEntity_Username(String username);
+
+  @EntityGraph(attributePaths = {"userEntity", "facultyEntity"})
+  List<LecturerEntity> findAllByUserEntity_Role(Role role);
+
+  int countByUserEntity_Status(UserStatus status);
+
+  boolean existsByLecturerCodeIgnoreCase(String lecturerCode);
 }

@@ -1,6 +1,7 @@
-﻿import { useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { apiRequest } from "../shared/api/http";
 import EventDashboard from "../features/lecturer/components/EventDashboard";
 import LecturerDashboardOverview from "../features/lecturer/components/LecturerDashboardOverview";
 import LecturerMobileNav from "../features/lecturer/components/LecturerMobileNav";
@@ -8,12 +9,11 @@ import LecturerSidebar from "../features/lecturer/components/LecturerSidebar";
 import LecturerStudentManagement from "../features/lecturer/components/LecturerStudentManagement";
 import LecturerTopHeader from "../features/lecturer/components/LecturerTopHeader";
 
-const SIDEBAR_ITEMS = [
+const SIDEBAR_ITEMS_BASE = [
   { key: "dashboard", label: "Tổng quan", icon: "dashboard" },
   { key: "events", label: "Sự kiện", icon: "calendar_today" },
   { key: "students", label: "Sinh viên", icon: "group" },
-  { key: "scores", label: "Điểm rèn luyện", icon: "grade" },
-  { key: "notifications", label: "Thông báo", icon: "notifications", badge: 5 },
+  { key: "notifications", label: "Thông báo", icon: "notifications" },
 ];
 
 function LecturerPlaceholderPanel({ title, description }) {
@@ -25,32 +25,112 @@ function LecturerPlaceholderPanel({ title, description }) {
   );
 }
 
-const FEATURE_COMPONENTS = {
-  dashboard: { Component: LecturerDashboardOverview, props: {} },
-  events: { Component: EventDashboard, props: {} },
-  students: { Component: LecturerStudentManagement, props: {} },
-  scores: {
-    Component: LecturerPlaceholderPanel,
-    props: {
-      title: "Điểm rèn luyện",
-      description: "Khu vực tổng hợp và duyệt điểm rèn luyện sinh viên sẽ được mở rộng tại đây.",
-    },
-  },
-  notifications: {
-    Component: LecturerPlaceholderPanel,
-    props: {
-      title: "Thông báo",
-      description: "Bản thông báo cho giảng viên đang được cập nhật.",
-    },
-  },
-};
-
 export default function LecturerPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activeFeature, setActiveFeature] = useState("dashboard");
+  const [shouldOpenCreateEventModal, setShouldOpenCreateEventModal] = useState(false);
+  const [dashboardSummaryLoading, setDashboardSummaryLoading] = useState(true);
+  const [dashboardSummary, setDashboardSummary] = useState({
+    totalEvents: 0,
+    participatingStudents: 0,
+    pendingEvidence: 0,
+    newNotifications: 0,
+    passRate: 0,
+    scoreDistribution: [],
+    upcomingEvents: [],
+  });
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadDashboardSummary() {
+      if (!ignore) {
+        setDashboardSummaryLoading(true);
+      }
+      try {
+        const data = await apiRequest("/v1/lecturer/dashboard");
+        if (!ignore && data) {
+          setDashboardSummary({
+            totalEvents: data.totalEvents || 0,
+            participatingStudents: data.participatingStudents || 0,
+            pendingEvidence: data.pendingEvidence || 0,
+            newNotifications: data.newNotifications || 0,
+            passRate: data.passRate || 0,
+            scoreDistribution: Array.isArray(data.scoreDistribution) ? data.scoreDistribution : [],
+            upcomingEvents: Array.isArray(data.upcomingEvents) ? data.upcomingEvents : [],
+          });
+        }
+      } catch {
+        // Keep zero fallback when dashboard summary cannot be loaded.
+      } finally {
+        if (!ignore) {
+          setDashboardSummaryLoading(false);
+        }
+      }
+    }
+
+    loadDashboardSummary();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleCreateEventFromOverview = () => {
+    setShouldOpenCreateEventModal(true);
+    setActiveFeature("events");
+  };
+
+  const handleCreateEventRequestHandled = () => {
+    setShouldOpenCreateEventModal(false);
+  };
+
+  const handleFeatureSelect = (featureKey) => {
+    setShouldOpenCreateEventModal(false);
+    setActiveFeature(featureKey);
+  };
+
+  const sidebarItems = useMemo(
+    () => SIDEBAR_ITEMS_BASE.map((item) => {
+      if (item.key !== "notifications") {
+        return item;
+      }
+      return {
+        ...item,
+        badge: dashboardSummary.newNotifications > 0 ? dashboardSummary.newNotifications : undefined,
+      };
+    }),
+    [dashboardSummary.newNotifications],
+  );
+
+  const featureComponents = {
+    dashboard: {
+      Component: LecturerDashboardOverview,
+      props: {
+        summary: dashboardSummary,
+        onCreateEvent: handleCreateEventFromOverview,
+        loadingSummary: dashboardSummaryLoading,
+      },
+    },
+    events: {
+      Component: EventDashboard,
+      props: {
+        shouldOpenCreateEventModal,
+        onCreateEventRequestHandled: handleCreateEventRequestHandled,
+      },
+    },
+    students: { Component: LecturerStudentManagement, props: {} },
+    notifications: {
+      Component: LecturerPlaceholderPanel,
+      props: {
+        title: "Thông báo",
+        description: "Bản thông báo cho giảng viên đang được cập nhật.",
+      },
+    },
+  };
+
   const { Component: FeatureComponent, props } =
-    FEATURE_COMPONENTS[activeFeature] || FEATURE_COMPONENTS.dashboard;
+    featureComponents[activeFeature] || featureComponents.dashboard;
   const fullNameLabel = user?.displayName || "Lecturer";
   const userIdLabel = user?.profileCode || user?.userId || "---";
   const avatarLetter = (fullNameLabel || "L").slice(0, 1).toUpperCase();
@@ -68,9 +148,9 @@ export default function LecturerPage() {
 
       <main className="flex-1 md:ml-64">
         <LecturerSidebar
-          items={SIDEBAR_ITEMS}
+          items={sidebarItems}
           activeFeature={activeFeature}
-          onSelect={setActiveFeature}
+          onSelect={handleFeatureSelect}
           fullNameLabel={fullNameLabel}
           userIdLabel={userIdLabel}
           avatarLetter={avatarLetter}
@@ -80,7 +160,7 @@ export default function LecturerPage() {
         </div>
       </main>
 
-      <LecturerMobileNav activeFeature={activeFeature} onSelect={setActiveFeature} onLogout={handleLogout} />
+      <LecturerMobileNav activeFeature={activeFeature} onSelect={handleFeatureSelect} onLogout={handleLogout} />
     </div>
   );
 }

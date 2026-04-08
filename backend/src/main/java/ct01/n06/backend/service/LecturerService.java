@@ -1,14 +1,16 @@
 package ct01.n06.backend.service;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import ct01.n06.backend.dto.common.SimpleMessageResponse;
 import ct01.n06.backend.dto.lecturer.ImportStudentsResponse;
+import ct01.n06.backend.dto.lecturer.LecturerDashboardSummaryResponse;
 import ct01.n06.backend.dto.lecturer.LecturerStudentListResponse;
 import ct01.n06.backend.dto.lecturer.LecturerStudentOptionsResponse;
 import ct01.n06.backend.dto.lecturer.LecturerStudentRowResponse;
 import ct01.n06.backend.dto.lecturer.ManualCreateStudentRequest;
 import ct01.n06.backend.entity.LecturerEntity;
 import ct01.n06.backend.entity.UserEntity;
-import org.springframework.web.multipart.MultipartFile;
 
 public interface LecturerService {
 
@@ -17,6 +19,8 @@ public interface LecturerService {
   String ensureLecturerAccessForCurrentUser(String requestedLecturerId);
 
   LecturerStudentOptionsResponse getOptions(String lecturerId);
+
+  LecturerDashboardSummaryResponse getDashboardSummary();
 
   LecturerStudentListResponse getStudents(
       String lecturerId,
