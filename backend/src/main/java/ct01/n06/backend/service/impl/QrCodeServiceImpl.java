@@ -1,13 +1,16 @@
 package ct01.n06.backend.service.impl;
 
+import ct01.n06.backend.config.RabbitMQConfig;
 import ct01.n06.backend.repository.AttendenceRepository;
 import ct01.n06.backend.repository.EventRepository;
 import ct01.n06.backend.repository.QrCodeRepository;
 import ct01.n06.backend.repository.StudentRepository;
 import ct01.n06.backend.service.QrCodeService;
-import ct01.n06.backend.dto.qrcode.ScanQrRequest;
+import ct01.n06.backend.service.TotpService;
+import ct01.n06.backend.dto.qrcode.CheckinByCodeRequest;
 import ct01.n06.backend.dto.qrcode.GenerateQrResponse;
-import ct01.n06.backend.config.RabbitMQConfig;
+import ct01.n06.backend.dto.qrcode.ScanQrRequest;
+import ct01.n06.backend.dto.qrcode.ScanTotpRequest;
 import ct01.n06.backend.dto.qrcode.QrCheckinMessage;
 import ct01.n06.backend.entity.AttendenceEntity;
 import ct01.n06.backend.entity.EventEntity;
@@ -24,11 +27,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
+
+import static ct01.n06.backend.util.RandomUtil.generate6DigitPin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
 public class QrCodeServiceImpl implements QrCodeService {
+
+    private static final Logger log = LoggerFactory.getLogger(QrCodeServiceImpl.class);
+    private static final String PIN_CODE_KEY_PREFIX = "PIN_";
+    private static final long PIN_CODE_TTL_SECONDS = 11L;
+    private static final long TOTP_REPLAY_TTL_SECONDS = 60L;
 
     private final QrCodeRepository qrCodeRepository;
     private final EventRepository eventRepository;
@@ -36,15 +49,17 @@ public class QrCodeServiceImpl implements QrCodeService {
     private final AttendenceRepository attendenceRepository;
     private final RabbitTemplate rabbitTemplate;
     private final StringRedisTemplate stringRedisTemplate;
+    private final TotpService totpService;
 
     @Override
     public GenerateQrResponse generateQr(Long eventId) {
         String token = UUID.randomUUID().toString();
-        
+        String pinCode = generateUniquePinCode(eventId);
         QrCodeEntity qrcode = QrCodeEntity.builder()
                 .qrToken(token)
                 .eventId(eventId)
-                .timeToLive(6L) // 6 giây trên Redis (để buffer 1s cho mạng)
+                .pinCode(pinCode)
+                .timeToLive(PIN_CODE_TTL_SECONDS) // 11 giây trên Redis (để buffer 1s cho mạng)
                 .build();
                 
         // Lưu vào Redis, cấu hình @TimeToLive sẽ tự động xóa sau TTL
@@ -52,6 +67,7 @@ public class QrCodeServiceImpl implements QrCodeService {
         
         return GenerateQrResponse.builder()
                 .qrToken(token)
+                .pinCode(pinCode)
                 .timeToLive(5L) // Báo với frontend là 5s
                 .build();
     }
@@ -78,11 +94,84 @@ public class QrCodeServiceImpl implements QrCodeService {
         if (!request.getEventId().equals(qrCode.getEventId())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "eventId không khớp với mã QR");
         }
+        StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
+
+        performCheckin(qrCode.getEventId(), student, normalizedDeviceId);
+    }
+
+    @Override
+    @Transactional
+    public void checkinByCode(CheckinByCodeRequest request, String studentUserId, String deviceId) {
+        if (request.getPinCode() == null || request.getPinCode().trim().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu mã PIN");
+        }
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu deviceId");
+        }
+
+        String normalizedPin = request.getPinCode().trim();
+        String normalizedDeviceId = deviceId.trim();
+
+        String pinKey = buildPinKey(normalizedPin);
+        String eventIdValue = stringRedisTemplate.opsForValue().get(pinKey);
+        if (eventIdValue == null || eventIdValue.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mã PIN không tồn tại hoặc đã hết hạn");
+        }
+
+        Long eventId;
+        try {
+            eventId = Long.valueOf(eventIdValue.trim());
+        } catch (NumberFormatException ex) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mã PIN không tồn tại hoặc đã hết hạn");
+        }
 
         StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
 
-        EventEntity event = eventRepository.findById(qrCode.getEventId())
+        performCheckin(eventId, student, normalizedDeviceId);
+    }
+
+    @Override
+    @Transactional
+    public void scanTotp(ScanTotpRequest request, String studentUserId, String deviceId) {
+        if (request.getEventId() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu eventId");
+        }
+        if (request.getTotp() == null || request.getTotp().trim().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu mã TOTP");
+        }
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu deviceId");
+        }
+
+        String normalizedDeviceId = deviceId.trim();
+
+        StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
+
+        String secretKey = student.getUserEntity().getTotpSecret();
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Tài khoản chưa được cấp secret TOTP");
+        }
+        OptionalLong validStep = totpService.validateTotpWithDrift(secretKey, request.getTotp().trim());
+        if (validStep.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mã TOTP không hợp lệ hoặc đã hết hạn");
+        }
+
+        String replayKey = buildTotpReplayKey(studentUserId, request.getEventId(), validStep.getAsLong());
+        Boolean accepted = stringRedisTemplate.opsForValue()
+                .setIfAbsent(replayKey, request.getTotp().trim(), Duration.ofSeconds(TOTP_REPLAY_TTL_SECONDS));
+        if (!Boolean.TRUE.equals(accepted)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mã TOTP đã được sử dụng");
+        }
+
+        performCheckin(request.getEventId(), student, normalizedDeviceId);
+    }
+
+    private void performCheckin(Long eventId, StudentEntity student, String deviceId) {
+
+        EventEntity event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy sự kiện"));
 
         LocalDateTime now = LocalDateTime.now();
@@ -91,22 +180,26 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Sự kiện đã kết thúc, không thể điểm danh");
         }
 
-        Optional<AttendenceEntity> existing = attendenceRepository.findByEventIdAndStudentId(qrCode.getEventId(), student.getId());
+        Optional<AttendenceEntity> existing = attendenceRepository.findByEventIdAndStudentId(eventId, student.getId());
         if (existing.isPresent()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn đã điểm danh sự kiện này rồi!");
         }
 
-        String finalDeviceLockKey = "event_checkin:" + event.getId() + ":device:" + normalizedDeviceId;
+        // Yêu cầu 3: Ràng buộc Device - Event (Chống mượn máy điểm danh)
+        String finalDeviceLockKey = "event_device_checkin:" + event.getId() + ":" + deviceId;
+        Duration lockTtl = ttlDuration.plusHours(12); // Set ttl hợp lý: Bằng thời gian sự kiện + 12 tiếng
+        
         Boolean finalLockAcquired = stringRedisTemplate.opsForValue()
-                .setIfAbsent(finalDeviceLockKey, student.getId(), ttlDuration);
+                .setIfAbsent(finalDeviceLockKey, student.getId(), lockTtl);
         if (!Boolean.TRUE.equals(finalLockAcquired)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "Thiết bị này đã được sử dụng để điểm danh");
+            log.info("Check-in blocked by device lock: eventId={}, studentId={}, deviceId={}", eventId, student.getId(), deviceId);
+            throw new ApiException(HttpStatus.FORBIDDEN, "Thiết bị này đã được sử dụng để điểm danh cho sự kiện này!");
         }
 
         QrCheckinMessage message = QrCheckinMessage.builder()
                 .eventId(event.getId())
                 .studentId(student.getId())
-                .deviceId(normalizedDeviceId)
+                .deviceId(deviceId)
                 .build();
 
         try {
@@ -116,9 +209,29 @@ public class QrCodeServiceImpl implements QrCodeService {
             if (student.getId().equals(currentValue)) {
                 stringRedisTemplate.delete(finalDeviceLockKey);
             }
-            throw ex;
+            log.error("Check-in enqueue failed: eventId={}, studentId={}, deviceId={}", eventId, student.getId(), deviceId, ex);
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Hệ thống đang bận, vui lòng thử lại");
         }
     }
+
+    private String generateUniquePinCode(Long eventId) {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            String pinCode = generate6DigitPin();
+            String pinKey = buildPinKey(pinCode);
+            Boolean registered = stringRedisTemplate.opsForValue()
+                    .setIfAbsent(pinKey, String.valueOf(eventId), Duration.ofSeconds(PIN_CODE_TTL_SECONDS));
+            if (Boolean.TRUE.equals(registered)) {
+                return pinCode;
+            }
+        }
+        throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Lỗi tạo mã PIN, vui lòng thử lại");
+    }
+
+    private String buildPinKey(String pinCode) {
+        return PIN_CODE_KEY_PREFIX + pinCode;
+    }
+
+    private String buildTotpReplayKey(String studentUserId, Long eventId, long timeStep) {
+        return "totp:used:" + studentUserId + ":" + eventId + ":" + timeStep;
+    }
 }
-
-

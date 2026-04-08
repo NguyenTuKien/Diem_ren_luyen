@@ -1,5 +1,6 @@
 package ct01.n06.backend.entity;
 
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import ct01.n06.backend.constant.LecturerConstant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,6 +14,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,8 +25,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@EqualsAndHashCode(callSuper = false)
 @Builder
-public class LecturerEntity {
+public class LecturerEntity extends BaseJpaAuditingEntity {
 
   @Id
   @Column(name = LecturerConstant.COL_ID)

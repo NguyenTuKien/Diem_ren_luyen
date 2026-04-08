@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { login as apiLogin, startMicrosoftOAuthLogin } from '../../../shared/api/authApi';
 import { useAuth } from '../../../context/AuthContext';
-import { apiRequest } from '../../../shared/api/http';
 
 export const SocialProviders = ({ onMicrosoftLogin }) => (
   <div className="flex flex-col gap-4">
@@ -77,6 +76,7 @@ export default function AuthFormBlock() {
         ...userPayload,
         accessToken: tokenData.accessToken,
         refreshToken: tokenData.refreshToken,
+        deviceToken: tokenData.deviceToken,
       });
 
       // 3. Redirect — HomeRedirect sẽ điều hướng theo role

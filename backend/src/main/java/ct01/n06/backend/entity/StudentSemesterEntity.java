@@ -2,8 +2,14 @@ package ct01.n06.backend.entity;
 
 import ct01.n06.backend.constant.EvalConstant;
 import ct01.n06.backend.entity.enums.SemesterEvaluationStatus;
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.util.Map;
@@ -15,7 +21,8 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StudentSemesterEntity {
+@EqualsAndHashCode(callSuper = false)
+public class StudentSemesterEntity extends BaseJpaAuditingEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = EvalConstant.COL_ID)

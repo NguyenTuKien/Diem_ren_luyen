@@ -1,8 +1,14 @@
 package ct01.n06.backend.entity;
 
 import ct01.n06.backend.constant.CriteriaConstant;
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
@@ -11,8 +17,9 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @Builder
-public class CriteriaEntity {
+public class CriteriaEntity extends BaseJpaAuditingEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = CriteriaConstant.COL_ID)

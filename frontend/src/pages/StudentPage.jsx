@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import MonitorClass from "../features/monitor/components/MonitorClass";
@@ -6,10 +6,10 @@ import StudentDashboard from "../features/student/components/StudentDashboard";
 import QRScanner from "../features/student/components/QRScanner";
 import StudentMobileNav from "../features/student/components/StudentMobileNav";
 import StudentPlaceholderPanel from "../features/student/components/StudentPlaceholderPanel";
-import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
-import StudentHistoryPanel from "../features/student/components/StudentHistoryPanel";
 import StudentSidebar from "../features/student/components/StudentSidebar";
 import StudentTopHeader from "../features/student/components/StudentTopHeader";
+import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
+import StudentAttendancePanel from "../features/student/components/StudentAttendancePanel";
 
 function normalizeRole(role) {
   if (!role) return "";
@@ -38,9 +38,8 @@ function buildSidebarItems(isMonitor) {
 const FEATURE_COMPONENTS = {
   dashboard: StudentDashboard,
   "scan-qr": QRScanner,
-  "manage-class": MonitorClass,
   events: StudentEventsPanel,
-  history: StudentHistoryPanel,
+  history: StudentAttendancePanel,
   evidence: () => (
     <StudentPlaceholderPanel
       title="Khai báo minh chứng"
@@ -61,11 +60,11 @@ export default function StudentPage() {
 
   const FeatureComponent = FEATURE_COMPONENTS[activeFeature] || StudentDashboard;
   const fullNameLabel = user?.displayName || "Student";
-  const userIdLabel = user?.userId || "---";
+  const userIdLabel = user?.profileCode || user?.userId || "---";
   const avatarLetter = (fullNameLabel || "S").slice(0, 1).toUpperCase();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth", { replace: true });
   };
 

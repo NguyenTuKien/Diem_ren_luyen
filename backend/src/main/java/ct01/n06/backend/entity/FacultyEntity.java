@@ -7,8 +7,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -20,7 +22,8 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FacultyEntity {
+@EqualsAndHashCode(callSuper = false)
+public class FacultyEntity extends BaseJpaAuditingEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -32,7 +32,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public Page<EventResponse> getAllEvents(Pageable pageable) {
-        return eventRepository.findAll(pageable)
+        return eventRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .map(eventMapper::toResponse);
     }
 
@@ -40,9 +40,9 @@ public class EventServiceImpl implements EventService {
     public EventResponse createEvent(EventRequest eventRequest) {
         EventEntity eventEntity = eventMapper.toEntity(eventRequest);
         eventEntity.setSemester(semesterRepository.findById(eventRequest.getSemesterId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Học kỳ không hợp lệ.")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Học kỳ không hợp lệ.")));
         eventEntity.setCriteria(criteriaRepository.findById(eventRequest.getCriteriaId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí không hợp lệ.")));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí không hợp lệ.")));
         if (eventEntity.getTitle() != null) {
             eventEntity.setTitle(eventEntity.getTitle().trim());
         }
@@ -75,6 +75,7 @@ public class EventServiceImpl implements EventService {
     public void deleteEvent(Long eventId) {
         eventRepository.deleteById(eventId);
     }
+
     @Override
     public EventEntity getEventById(Long eventId) {
         return eventRepository.findById(eventId).orElseThrow();

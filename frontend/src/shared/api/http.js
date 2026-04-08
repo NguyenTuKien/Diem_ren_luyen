@@ -94,6 +94,7 @@ export async function apiRequest(path, options = {}) {
     response = await fetch(url, {
       method: options.method || "GET",
       ...options,
+      credentials: "include",
       headers,
     });
   } catch {

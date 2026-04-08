@@ -3,6 +3,7 @@ package ct01.n06.backend.entity;
 import ct01.n06.backend.constant.EventConstant;
 import jakarta.persistence.*;
 
+import ct01.n06.backend.entity.base.BaseJpaAuditingEntity;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EventEntity {
+public class EventEntity extends BaseJpaAuditingEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

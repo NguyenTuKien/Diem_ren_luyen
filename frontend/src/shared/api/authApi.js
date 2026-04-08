@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './http';
+import { getHardwareFingerprint } from '../utils/deviceId';
 
 const AUTH_API_BASE = `${API_BASE_URL}/v1/auth`;
 const USER_INFO_KEY = 'currentUserInfo';
@@ -58,9 +59,27 @@ export const getStoredUserInfo = () => {
   }
 };
 
-export const getAccessToken = () => localStorage.getItem('accessToken');
+export const getAccessToken = () => {
+  try {
+    const raw = window.localStorage.getItem('drl_auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.accessToken) return parsed.accessToken;
+    }
+  } catch {}
+  return localStorage.getItem('accessToken');
+};
 
-export const getRefreshToken = () => localStorage.getItem('refreshToken');
+export const getRefreshToken = () => {
+  try {
+    const raw = window.localStorage.getItem('drl_auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.refreshToken) return parsed.refreshToken;
+    }
+  } catch {}
+  return localStorage.getItem('refreshToken');
+};
 
 export const setTokens = ({ accessToken, refreshToken }) => {
   if (accessToken) {
@@ -79,32 +98,121 @@ export const clearTokens = () => {
 };
 
 export const login = async ({ username, password }) => {
+  const deviceId = await getHardwareFingerprint();
   const response = await fetch(`${AUTH_API_BASE}/login`, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
     },
     body: JSON.stringify({ username, password }),
   });
 
   if (!response.ok) {
-    throw new Error('Tên đăng nhập hoặc mật khẩu không đúng.');
+    let errorMsg = 'Tên đăng nhập hoặc mật khẩu không đúng.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+};
+
+export const register = async ({ email, password, fullName, studentCode, classId }) => {
+  const deviceId = await getHardwareFingerprint();
+  const response = await fetch(`${AUTH_API_BASE}/register`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
+    },
+    body: JSON.stringify({ email, password, fullName, studentCode, classId }),
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Không thể đăng ký tài khoản.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
+  }
+
+  return response.json();
+};
+
+export const loginWithSso = async ({ email, provider }) => {
+  const deviceId = await getHardwareFingerprint();
+  const response = await fetch(`${AUTH_API_BASE}/sso`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Device-Id': deviceId,
+    },
+    body: JSON.stringify({ email, provider }),
+  });
+
+  if (!response.ok) {
+    let errorMsg = 'Không thể đăng nhập SSO.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();
 };
 
 export const refreshTokens = async (refreshToken) => {
+  // Fallback: đọc deviceToken từ localStorage để gửi qua header
+  // vì cookie Secure không hoạt động trên Chrome Android qua HTTP
+  let deviceToken = null;
+  try {
+    const raw = window.localStorage.getItem('drl_auth');
+    if (raw) {
+      deviceToken = JSON.parse(raw)?.deviceToken ?? null;
+    }
+  } catch {
+    // ignore
+  }
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (deviceToken) {
+    headers['X-Device-Token'] = deviceToken;
+  }
+
   const response = await fetch(`${AUTH_API_BASE}/refresh`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    credentials: 'include',
+    headers,
     body: JSON.stringify({ refreshToken }),
   });
 
   if (!response.ok) {
-    throw new Error('Không thể làm mới phiên đăng nhập.');
+    let errorMsg = 'Không thể làm mới phiên đăng nhập.';
+    try {
+        const errorData = await response.json();
+        if (errorData?.message) errorMsg = errorData.message;
+        else if (errorData?.detail) errorMsg = errorData.detail;
+    } catch {
+        // ignore
+    }
+    throw new Error(errorMsg);
   }
 
   return response.json();
@@ -117,6 +225,7 @@ export const fetchCurrentUser = async () => {
   }
 
   const response = await fetch(`${AUTH_API_BASE}/me`, {
+    credentials: 'include',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -138,11 +247,32 @@ export const logout = async () => {
   try {
     await fetch(`${AUTH_API_BASE}/logout`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
       body: JSON.stringify({ refreshToken }),
+    });
+  } finally {
+    clearTokens();
+  }
+};
+
+/**
+ * Logout with explicitly provided tokens (bypasses localStorage).
+ * Use this when tokens are stored in a session context, not in localStorage.
+ */
+export const logoutWithTokens = async (accessToken, refreshToken) => {
+  try {
+    await fetch(`${AUTH_API_BASE}/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify({ refreshToken: refreshToken ?? null }),
     });
   } finally {
     clearTokens();
@@ -156,6 +286,7 @@ export const fetchAuthSession = async (accessToken) => {
 
   const response = await fetch(`${API_BASE_URL}/auth/session`, {
     method: 'GET',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       Authorization: `Bearer ${accessToken}`,

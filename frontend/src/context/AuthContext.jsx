@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { fetchCurrentUser, logoutWithTokens } from "../shared/api/authApi";
 
 export const AUTH_STORAGE_KEY = "drl_auth";
 const AuthContext = createContext(null);
@@ -103,26 +104,17 @@ function toUser(payload, accessToken) {
         "/student",
     classCode: payload.classCode,
     status: payload.status,
+    profileCode: payload.profileCode ?? null, // MSSV / mã GV / username
   };
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(() => {
-    const stored = readStoredSession();
-    if (!stored?.user) {
-      return stored;
-    }
-
-    const normalizedUser = toUser(stored.user, stored.accessToken);
-    if (JSON.stringify(normalizedUser) === JSON.stringify(stored.user)) {
-      return stored;
-    }
-
-    return { ...stored, user: normalizedUser };
-  });
+  const [session, setSession] = useState(readStoredSession);
+  const [loading, setLoading] = useState(() => Boolean(readStoredSession()?.accessToken));
 
   const persistSession = (nextSession) => {
     setSession(nextSession);
+    setLoading(false);
 
     if (typeof window === "undefined") {
       return;
@@ -139,24 +131,74 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(
     () => ({
+      loading,
       session,
       user: session?.user ?? null,
       accessToken: session?.accessToken ?? null,
       refreshToken: session?.refreshToken ?? null,
+      deviceToken: session?.deviceToken ?? null,
       login: (payload) => {
         const nextSession = {
           user: toUser(payload, payload.accessToken),
           accessToken: payload.accessToken ?? null,
           refreshToken: payload.refreshToken ?? null,
+          deviceToken: payload.deviceToken ?? null,
         };
         persistSession(nextSession);
       },
-      logout: () => {
-        persistSession(null);
+      logout: async () => {
+        const currentAccessToken = session?.accessToken ?? null;
+        const currentRefreshToken = session?.refreshToken ?? null;
+        try {
+          await logoutWithTokens(currentAccessToken, currentRefreshToken);
+        } catch (error) {
+          console.error("Logout API failed:", error);
+        } finally {
+          persistSession(null);
+        }
       },
     }),
-    [session],
+    [loading, session],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      const accessToken = session?.accessToken ?? null;
+      const refreshToken = session?.refreshToken ?? null;
+
+      if (!accessToken || !refreshToken) {
+        if (!cancelled) {
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const currentUser = await fetchCurrentUser();
+        if (cancelled || !currentUser) {
+          return;
+        }
+
+        const updatedSession = {
+          ...(session ?? {}),
+          user: toUser(currentUser),
+        };
+        persistSession(updatedSession);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.accessToken, session?.refreshToken]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

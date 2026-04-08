@@ -27,11 +27,11 @@ export default function AdminPage() {
   const studentWorkspace = useAdminStudentWorkspace();
   const [activeFeature, setActiveFeature] = useState("dashboard");
   const fullNameLabel = user?.displayName || "Administrator";
-  const userIdLabel = user?.userId || "admin";
+  const userIdLabel = user?.profileCode || user?.userId || "admin";
   const avatarLetter = (fullNameLabel || "A").slice(0, 1).toUpperCase();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth", { replace: true });
   };
 

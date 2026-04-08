@@ -15,20 +15,39 @@ export const qrcodeApi = {
     return response.json()
   },
 
-  scanQRCode: async ({ qrData, eventId, deviceId }) => {
+  scanQRCode: async ({ qrData, eventId }) => {
     const response = await authFetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': deviceId,
       },
-      body: JSON.stringify({ qrData, eventId, deviceId }),
+      body: JSON.stringify({ qrData, eventId }),
     })
 
     const responseData = await response.json().catch(() => ({}))
 
     if (!response.ok) {
       const error = new Error(responseData.message || 'Lỗi lúc quét mã QR')
+      error.status = response.status
+      throw error
+    }
+
+    return responseData
+  },
+
+  checkinByCode: async ({ pinCode }) => {
+    const response = await authFetch(`${API_BASE_URL}/checkin/code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ pinCode }),
+    })
+
+    const responseData = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      const error = new Error(responseData.message || 'Lỗi lúc điểm danh bằng PIN')
       error.status = response.status
       throw error
     }

@@ -13,5 +13,7 @@ public interface UserService {
     boolean isUserExist(String email);
 
     Optional<UserEntity> findByUsernameOrEmail(String principalIdentifier);
+
+    UserEntity save(UserEntity user);
 }
 
