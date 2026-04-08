@@ -63,7 +63,7 @@ public class StudentServiceImpl implements StudentService {
       joinedActivities = (int) recordRepository.countByStudent_IdAndSemester_Id(student.getId(), semesterId);
     }
 
-    List<UpcomingEventItem> upcomingEvents = eventRepository.findByStartTimeAfterOrderByStartTimeAsc(
+    List<UpcomingEventItem> upcomingEvents = eventRepository.findTop5ByStartTimeAfterOrderByStartTimeAsc(
             LocalDateTime.now())
         .stream()
         .map(this::toUpcomingItem)

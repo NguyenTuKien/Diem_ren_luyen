@@ -27,6 +27,4 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
     );
 
     List<EventEntity> findTop5ByStartTimeAfterOrderByStartTimeAsc(LocalDateTime currentTime);
-
-    List<EventEntity> findByStartTimeAfterOrderByStartTimeAsc(LocalDateTime currentTime);
 }

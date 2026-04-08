@@ -70,13 +70,11 @@ export default function LecturerPage() {
       }
     }
 
-    if (activeFeature === "dashboard") {
-      loadDashboardSummary();
-    }
+    loadDashboardSummary();
     return () => {
       ignore = true;
     };
-  }, [activeFeature]);
+  }, []);
 
   const handleCreateEventFromOverview = () => {
     setShouldOpenCreateEventModal(true);
