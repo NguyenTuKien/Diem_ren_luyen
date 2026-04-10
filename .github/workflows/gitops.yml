@@ -73,12 +73,11 @@ jobs:
           echo "- Test results available in artifacts" >> $GITHUB_STEP_SUMMARY
 
   tag_job:
-    name: Calculate Docker Tag
     runs-on: ubuntu-latest 
     if: >
-      github.ref == 'refs/heads/dev' ||
       github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/tags/')
+      github.event_name == 'pull_request'
     outputs:
       docker_tag: ${{ steps.calc_tag.outputs.tag }} 
     steps:
@@ -87,9 +86,9 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
             echo "tag=latest" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.ref }}" == 'refs/heads/dev' ]]; then
-            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            echo "tag=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            echo "tag=pr-$PR_NUMBER" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_NAME=${GITHUB_REF#refs/tags/}
             echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
