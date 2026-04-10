@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 public class ScanQrRequest {
     private String qrData;
     private Long eventId;
+    private String blueToothId;
     private String deviceId;
 }
