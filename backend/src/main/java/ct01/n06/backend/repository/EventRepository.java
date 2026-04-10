@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import ct01.n06.backend.entity.EventEntity;
 
@@ -27,4 +29,9 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
     );
 
     List<EventEntity> findTop5ByStartTimeAfterOrderByStartTimeAsc(LocalDateTime currentTime);
+
+    // Used by EventServiceImpl to page events ordered by creation time desc
+    Page<EventEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }
+
+
