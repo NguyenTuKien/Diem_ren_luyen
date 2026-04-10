@@ -28,6 +28,8 @@ public class QrCodeEntity {
     @Indexed
     private String pinCode;
 
+    private String bluetoothId;
+
     @TimeToLive(unit = TimeUnit.SECONDS)
     private Long timeToLive;
 }

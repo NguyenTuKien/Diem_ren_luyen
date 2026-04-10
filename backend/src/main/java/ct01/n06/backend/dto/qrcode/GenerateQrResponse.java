@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 public class GenerateQrResponse {
     private String qrToken;
     private String pinCode;
+    private String bluetoothId;
     private Long timeToLive;
 }
