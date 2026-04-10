@@ -55,10 +55,13 @@ public class QrCodeServiceImpl implements QrCodeService {
     public GenerateQrResponse generateQr(Long eventId) {
         String token = UUID.randomUUID().toString();
         String pinCode = generateUniquePinCode(eventId);
+        String bluetoothId = UUID.randomUUID().toString();
+
         QrCodeEntity qrcode = QrCodeEntity.builder()
                 .qrToken(token)
                 .eventId(eventId)
                 .pinCode(pinCode)
+                .bluetoothId(bluetoothId)
                 .timeToLive(PIN_CODE_TTL_SECONDS) // 11 giây trên Redis (để buffer 1s cho mạng)
                 .build();
                 
@@ -68,7 +71,8 @@ public class QrCodeServiceImpl implements QrCodeService {
         return GenerateQrResponse.builder()
                 .qrToken(token)
                 .pinCode(pinCode)
-                .timeToLive(5L) // Báo với frontend là 5s
+                .bluetoothId(bluetoothId)
+                .timeToLive(10L) // Báo với frontend là 5s
                 .build();
     }
 
@@ -85,6 +89,9 @@ public class QrCodeServiceImpl implements QrCodeService {
         if (deviceId == null || deviceId.trim().isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu deviceId");
         }
+        if (request.getBlueToothId() == null || request.getBlueToothId().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn phải bật Bluetooth và ở gần giảng viên để điểm danh");
+        }
 
         String normalizedDeviceId = deviceId.trim();
 
@@ -96,7 +103,11 @@ public class QrCodeServiceImpl implements QrCodeService {
         }
         StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
-
+        if (!qrCode.getBluetoothId().equals(request.getBlueToothId())) {
+            log.warn("Bluetooth mismatch: expected={}, detected={}, student={}",
+                    qrCode.getBluetoothId(), request.getBlueToothId(), studentUserId);
+            throw new ApiException(HttpStatus.FORBIDDEN, "Xác thực vị trí thất bại. Vui lòng lại gần giảng viên hơn.");
+        }
         performCheckin(qrCode.getEventId(), student, normalizedDeviceId);
     }
 
