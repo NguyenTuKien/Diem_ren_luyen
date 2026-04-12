@@ -1,4 +1,4 @@
-﻿export default function StudentMobileNav({ activeFeature, onSelect, onLogout }) {
+export default function StudentMobileNav({ activeFeature, onSelect, onLogout }) {
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-primary/10 flex justify-around py-2 z-50">
       <button
@@ -32,6 +32,14 @@
       >
         <span className="material-symbols-outlined">history</span>
         <span className="text-[10px] font-medium">Lịch sử</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onSelect("evaluation")}
+        className={`flex flex-col items-center gap-1 ${activeFeature === "evaluation" ? "text-primary" : "text-slate-400"}`}
+      >
+        <span className="material-symbols-outlined">assignment</span>
+        <span className="text-[10px] font-medium">Đánh giá</span>
       </button>
       <button type="button" onClick={onLogout} className="flex flex-col items-center gap-1 text-slate-400">
         <span className="material-symbols-outlined">person</span>
