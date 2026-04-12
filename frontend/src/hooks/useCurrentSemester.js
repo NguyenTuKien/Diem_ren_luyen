@@ -1,31 +1,30 @@
 import { useState, useEffect } from 'react';
-import { authFetch } from '../api/authFetch';
+import { apiRequest } from '../shared/api/http';
 
 export function useCurrentSemester() {
-  const [semesterId, setSemesterId] = useState(null);
+  const [semesters, setSemesters] = useState([]);
+  const [activeSemesterId, setActiveSemesterId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchActiveSemester = async () => {
+    const fetchSemesters = async () => {
       try {
         setLoading(true);
-        // Tương tự convention của api hiện tại
-        const response = await authFetch('/api/v1/semesters');
-        if (!response.ok) {
-          throw new Error('Failed to fetch semesters');
-        }
-        const responseData = await response.json();
+        // This is the correct API route matching the backend SemesterController (@RequestMapping("/v1/semesters"))
+        const responseData = await apiRequest('/v1/semesters');
         
         // Structure thường thấy của ResponseGeneral là trả data ở field data
-        const semesters = responseData.data || responseData;
+        const semestersData = responseData?.data || responseData;
         
-        if (Array.isArray(semesters)) {
-          const activeSemester = semesters.find(sem => sem.isActive === true);
+        if (Array.isArray(semestersData)) {
+          setSemesters(semestersData);
+          const activeSemester = semestersData.find(sem => sem.isActive === true);
           if (activeSemester) {
-            setSemesterId(activeSemester.id);
-          } else {
-            throw new Error('Không tìm thấy Học kỳ nào đang được kích hoạt.');
+            setActiveSemesterId(activeSemester.id);
+          } else if (semestersData.length > 0) {
+            // Fallback to the latest one if no active flag found
+            setActiveSemesterId(semestersData[semestersData.length - 1].id);
           }
         }
       } catch (err) {
@@ -35,8 +34,8 @@ export function useCurrentSemester() {
       }
     };
 
-    fetchActiveSemester();
+    fetchSemesters();
   }, []);
 
-  return { semesterId, loading, error };
+  return { semesters, activeSemesterId, loading, error };
 }
