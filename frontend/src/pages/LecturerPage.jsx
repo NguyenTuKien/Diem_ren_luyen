@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../shared/api/http";
 import EventDashboard from "../features/lecturer/components/EventDashboard";
-import LecturerClassEvaluation from "../features/lecturer/components/LecturerClassEvaluation";
 import LecturerDashboardOverview from "../features/lecturer/components/LecturerDashboardOverview";
 import LecturerMobileNav from "../features/lecturer/components/LecturerMobileNav";
 import LecturerSidebar from "../features/lecturer/components/LecturerSidebar";
@@ -14,7 +13,6 @@ const SIDEBAR_ITEMS_BASE = [
   { key: "dashboard", label: "Tổng quan", icon: "dashboard" },
   { key: "events", label: "Sự kiện", icon: "calendar_today" },
   { key: "students", label: "Sinh viên", icon: "group" },
-  { key: "evaluation", label: "Quản lý điểm rèn luyện", icon: "assignment_turned_in" },
   { key: "notifications", label: "Thông báo", icon: "notifications" },
 ];
 
@@ -122,7 +120,6 @@ export default function LecturerPage() {
       },
     },
     students: { Component: LecturerStudentManagement, props: {} },
-    evaluation: { Component: LecturerClassEvaluation, props: {} },
     notifications: {
       Component: LecturerPlaceholderPanel,
       props: {

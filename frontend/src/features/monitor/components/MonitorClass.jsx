@@ -1,284 +1,361 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useCurrentSemester } from "../../../hooks/useCurrentSemester";
-import { useMonitorEvaluationList } from "../hooks/useMonitorEvaluationList";
-import MonitorReviewModal from "./MonitorReviewModal";
+import { useMonitorData } from "../hooks/useMonitorData";
 import "../../../styles/MonitorClass.css";
 
-const STATUS_DISPLAY = {
-  SUBMITTED: { label: "SUBMITTED", badge: "badge-submitted" },
-  MONITOR_APPROVED: { label: "MONITOR_APPROVED", badge: "badge-monitor_approved" },
-  FINALIZED: { label: "FINALIZED", badge: "badge-finalized" },
-  DRAFT: { label: "DRAFT", badge: "badge-draft" },
-  OPEN: { label: "NOT_SUBMITTED", badge: "badge-not_submitted" },
+const STATUS_LABEL = {
+  ACTIVE: "Hoạt động",
+  LOCKED: "Bị khóa",
+  DELETED: "Đã xóa",
 };
 
-function getInitials(name) {
-  if (!name) return "NA";
-  const parts = name.split(' ');
-  if (parts.length >= 2) {
-    return `${parts[parts.length - 2][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+const STATUS_FILTERS = [
+  { value: "ALL", label: "Tất cả trạng thái" },
+  { value: "ACTIVE", label: "Hoạt động" },
+  { value: "LOCKED", label: "Bị khóa" },
+  { value: "DELETED", label: "Đã xóa" },
+];
+
+const MANDATORY_FILTERS = [
+  { value: "ALL", label: "Tất cả mức hoàn thành" },
+  { value: "PASSED", label: "Đạt bắt buộc" },
+  { value: "MISSING", label: "Thiếu bắt buộc" },
+];
+
+const SORT_OPTIONS = [
+  { value: "NAME_ASC", label: "Tên A-Z" },
+  { value: "SCORE_DESC", label: "Điểm cao đến thấp" },
+  { value: "SCORE_ASC", label: "Điểm thấp đến cao" },
+];
+
+function parseMandatoryStatus(text) {
+  if (!text) {
+    return { passed: true, ratio: "--" };
   }
-  return name.substring(0, 2).toUpperCase();
+
+  const normalized = String(text).toLowerCase();
+  if (normalized.includes("thiếu")) {
+    return { passed: false, ratio: text.split(" ")[0] || text };
+  }
+  if (normalized.includes("đạt")) {
+    return { passed: true, ratio: text.split(" ")[0] || text };
+  }
+  return { passed: true, ratio: text };
 }
 
 export default function MonitorClass() {
   const { user } = useAuth();
+  const { data, loading, error } = useMonitorData(user?.backendUserId ?? user?.userId);
+  const [keyword, setKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [mandatoryFilter, setMandatoryFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("NAME_ASC");
+  const [notice, setNotice] = useState("");
 
-  const { semesters, activeSemesterId, loading: semesterLoading, error: semesterError } = useCurrentSemester();
-  const [selectedSemester, setSelectedSemester] = useState(null);
-  const [activeModalStudent, setActiveModalStudent] = useState(null);
+  const membersSource = data?.members;
+  const members = useMemo(() => (Array.isArray(membersSource) ? membersSource : []), [membersSource]);
 
-  useEffect(() => {
-    if (activeSemesterId && !selectedSemester) {
-      setSelectedSemester(activeSemesterId);
+  const filteredMembers = useMemo(() => {
+    if (!members.length) {
+      return [];
     }
-  }, [activeSemesterId, selectedSemester]);
 
-  const {
-    students,
-    stats,
-    isLoading: listLoading,
-    error: listError,
-    fetchClassList,
-  } = useMonitorEvaluationList(selectedSemester);
+    const normalized = keyword.trim().toLowerCase();
+    const result = members
+      .filter((member) => {
+        const haystack = `${member.studentCode} ${member.fullName} ${member.email}`.toLowerCase();
+        return !normalized || haystack.includes(normalized);
+      })
+      .filter((member) => {
+        if (statusFilter === "ALL") {
+          return true;
+        }
+        return (member.accountStatus || "").toUpperCase() === statusFilter;
+      })
+      .filter((member) => {
+        if (mandatoryFilter === "ALL") {
+          return true;
+        }
+        const mandatory = parseMandatoryStatus(member.mandatoryParticipation);
+        return mandatoryFilter === "PASSED" ? mandatory.passed : !mandatory.passed;
+      })
+      .sort((first, second) => {
+        if (sortBy === "SCORE_DESC") {
+          return (second.totalPoint ?? 0) - (first.totalPoint ?? 0);
+        }
+        if (sortBy === "SCORE_ASC") {
+          return (first.totalPoint ?? 0) - (second.totalPoint ?? 0);
+        }
+        return String(first.fullName || "").localeCompare(String(second.fullName || ""), "vi");
+      });
 
-  useEffect(() => {
-    if (selectedSemester) {
-      fetchClassList();
-    }
-  }, [selectedSemester, fetchClassList]);
+    return result;
+  }, [members, keyword, mandatoryFilter, sortBy, statusFilter]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const stats = useMemo(() => {
+    const total = members.length;
+    const active = members.filter((member) => member.accountStatus === "ACTIVE").length;
+    const monitorCount = members.filter((member) => member.monitor).length;
+    const missingMandatory = members.filter(
+      (member) => !parseMandatoryStatus(member.mandatoryParticipation).passed,
+    ).length;
 
-  const paginatedStudents = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return students.slice(start, start + itemsPerPage);
-  }, [students, currentPage]);
+    return {
+      total,
+      active,
+      monitorCount,
+      missingMandatory,
+    };
+  }, [members]);
 
-  const totalPages = Math.ceil(students.length / itemsPerPage);
+  const topSupportList = useMemo(
+    () =>
+      filteredMembers
+        .filter((member) => !parseMandatoryStatus(member.mandatoryParticipation).passed)
+        .slice(0, 5),
+    [filteredMembers],
+  );
 
   const handleExportExcel = () => {
-    // Basic export functionality
-    const tableHeader = `<tr><th>MSSV</th><th>Họ và Tên</th><th>Điểm tổng kết</th><th>Trạng thái</th></tr>`;
-    const tableRows = students.map(s => `<tr><td>${s.studentCode}</td><td>${s.fullName}</td><td>${s.finalScore || '--'}</td><td>${s.status || 'NOT_SUBMITTED'}</td></tr>`).join('');
-    const excelHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"/></head><body><table border="1">${tableHeader}${tableRows}</table></body></html>`;
+    const tableHeader = `
+      <tr>
+        <th>MSSV</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Điểm hiện tại</th>
+        <th>Sự kiện bắt buộc</th>
+        <th>Vai trò</th>
+        <th>Trạng thái</th>
+      </tr>
+    `;
+
+    const tableRows = filteredMembers
+      .map(
+        (member) => `
+          <tr>
+            <td>${member.studentCode ?? ""}</td>
+            <td>${member.fullName ?? ""}</td>
+            <td>${member.email ?? ""}</td>
+            <td>${member.totalPoint ?? 0}</td>
+            <td>${member.mandatoryParticipation ?? ""}</td>
+            <td>${member.monitor ? "MONITOR" : "STUDENT"}</td>
+            <td>${member.accountStatus ?? ""}</td>
+          </tr>
+        `,
+      )
+      .join("");
+
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8" />
+        </head>
+        <body>
+          <table border="1">
+            ${tableHeader}
+            ${tableRows}
+          </table>
+        </body>
+      </html>
+    `;
 
     const blob = new Blob([excelHtml], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Danh_Sach_Ren_Luyen.xls`;
+    link.download = `lop-${data.classCode || "monitor"}.xls`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    setNotice("Đã xuất danh sách Excel theo bộ lọc hiện tại.");
   };
 
-  const loading = semesterLoading || listLoading;
-  const error = semesterError || listError;
-
-  if (loading && students.length === 0) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}>Đang tải dữ liệu lớp...</div>;
+  if (loading) {
+    return <div className="page-state">Đang tải danh sách lớp...</div>;
   }
 
   if (error) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>Hệ thống báo lỗi: {error}</div>;
+    return <div className="page-state error">Không thể tải dữ liệu: {error}</div>;
   }
-
-  if (semesters.length === 0) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>Hệ thống chưa cấu hình học kỳ.</div>;
-  }
-
-  const selectedSemesterObj = semesters.find(s => s.id === Number(selectedSemester));
-  const semesterName = selectedSemesterObj?.name || 'Học kỳ...';
 
   return (
-    <div className="monitor-eval-container">
-      <div className="monitor-eval-header">
-        <div className="monitor-eval-title">
-          <h1>Quản lý điểm rèn luyện {user?.classCode ? `- Lớp ${user.classCode}` : ''}</h1>
-          <p>Theo dõi và phê duyệt kết quả rèn luyện học kỳ hiện tại của sinh viên.</p>
-        </div>
-        <div className="monitor-eval-controls">
-          <div className="monitor-semester-select">
-            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#64748b' }}>calendar_today</span>
-            <select
-              value={selectedSemester || ''}
-              onChange={(e) => {
-                setSelectedSemester(e.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              {semesters.map(sem => (
-                <option key={sem.id} value={sem.id}>{sem.name}</option>
-              ))}
-            </select>
+    <section className="space-y-3">
+      <section className="student-hero-card">
+        <div className="student-hero-left">
+          <div className="student-hero-avatar">
+            <span className="material-symbols-outlined">groups</span>
           </div>
-          <button className="monitor-filter-btn">
-            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#64748b' }}>filter_list</span>
+          <div>
+            <h1>Quản lý lớp {data.classCode}</h1>
+            <p>
+              Theo dõi thành viên, rà soát hoạt động bắt buộc và nhắc nhở sinh viên chưa hoàn thành.
+            </p>
+          </div>
+        </div>
+
+        <div className="student-hero-actions">
+          <button type="button" className="student-hero-btn primary" onClick={handleExportExcel}>
+            <span className="material-symbols-outlined">download</span>
+            Xuất Excel
           </button>
         </div>
-      </div>
+      </section>
 
-      <div className="monitor-stats-cards">
-        <div className="monitor-stat-card">
-          <div className="stat-icon blue">
-            <span className="material-symbols-outlined">person</span>
+      {notice && <div className="monitor-notice-v2">{notice}</div>}
+
+      <section className="student-kpi-row">
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Tổng thành viên</h3>
+            <span className="material-symbols-outlined">groups</span>
           </div>
-          <div className="stat-info">
-            <span className="stat-label">TỔNG SỐ SINH VIÊN</span>
-            <span className="stat-value">{String(stats.total).padStart(2, '0')}</span>
+          <p className="student-kpi-number">{stats.total}</p>
+          <small>Thành viên trong lớp</small>
+        </article>
+
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Tài khoản hoạt động</h3>
+            <span className="material-symbols-outlined">verified_user</span>
           </div>
-        </div>
+          <p className="student-kpi-number">{stats.active}</p>
+          <small>Đang sử dụng</small>
+        </article>
 
-        <div className="monitor-stat-card">
-          <div className="stat-icon green">
-            <span className="material-symbols-outlined">check_circle</span>
+        <article className="student-kpi-box">
+          <div className="student-kpi-title">
+            <h3>Thiếu bắt buộc</h3>
+            <span className="material-symbols-outlined">warning</span>
           </div>
-          <div className="stat-info" style={{ width: '100%' }}>
-            <span className="stat-label">SỐ PHIẾU ĐÃ NỘP</span>
-            <span className="stat-value">{String(stats.submittedCount).padStart(2, '0')}</span>
-            <div className="stat-progress"></div>
-          </div>
-        </div>
+          <p className="student-kpi-number">{stats.missingMandatory}</p>
+          <small>Cần nhắc nhở</small>
+        </article>
+      </section>
 
-        <div className="monitor-stat-card">
-          <div className="stat-icon orange">
-            <span className="material-symbols-outlined">more_horiz</span>
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">SỐ PHIẾU CHƯA NỘP</span>
-            <span className="stat-value">{String(stats.notSubmittedCount).padStart(2, '0')}</span>
-            <span className="stat-subtext orange">Yêu cầu nhắc nhở</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="monitor-table-card">
-        <div className="table-card-header">
-          <h2>Danh sách đánh giá điểm rèn luyện</h2>
-          <div className="table-actions" style={{ flexWrap: 'wrap' }}>
-            <button className="action-export" onClick={handleExportExcel} style={{ whiteSpace: 'nowrap' }}>
-              <span className="material-symbols-outlined">download</span>
-            </button>
-          </div>
-        </div>
-
-        <table className="monitor-table">
-          <thead>
-            <tr>
-              <th>STT</th>
-              <th>Mã sinh viên</th>
-              <th>Họ và tên</th>
-              <th style={{ textAlign: 'center' }}>Điểm tổng kết</th>
-              <th style={{ textAlign: 'center' }}>Trạng thái</th>
-              <th style={{ textAlign: 'center' }}>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedStudents.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>Không có dữ liệu đánh giá cho học kỳ này.</td>
-              </tr>
-            ) : (
-              paginatedStudents.map((student, index) => {
-                const sType = (!student.status || student.status === 'OPEN') ? 'OPEN' : student.status;
-                const statusMeta = STATUS_DISPLAY[sType] || STATUS_DISPLAY['OPEN'];
-
-                return (
-                  <tr key={student.studentId}>
-                    <td className="cell-stt">
-                      {String((currentPage - 1) * itemsPerPage + index + 1).padStart(2, '0')}
-                    </td>
-                    <td className="cell-code">{student.studentCode}</td>
-                    <td>
-                      <div className="cell-student">
-                        <div className="student-avatar">
-                          {getInitials(student.fullName)}
-                        </div>
-                        <div className="student-name">
-                          {student.fullName}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="cell-score final" style={{ textAlign: 'center' }}>{student.finalScore || '--'}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className={`status-badge ${statusMeta.badge}`}>
-                        {statusMeta.label}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button
-                        className={student.status === 'SUBMITTED' ? 'btn-detail' : 'btn-detail-view'}
-                        onClick={() => {
-                          if (!student.evaluationId) {
-                            alert('Sinh viên này chưa tạo phiếu đánh giá.');
-                            return;
-                          }
-                          setActiveModalStudent(student);
-                        }}
-                      >
-                        {student.status === 'SUBMITTED' ? 'Xem chi tiết / Duyệt' : 'Xem chi tiết'}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-
-        {students.length > 0 && (
-          <div className="table-footer">
-            <div className="table-info">
-              Hiển thị {paginatedStudents.length} trong số {students.length} sinh viên
-            </div>
-            <div className="table-pagination">
-              <button
-                className="page-btn"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_left</span>
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  className={`page-btn ${currentPage === page ? 'active' : ''}`}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                className="page-btn"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>chevron_right</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {activeModalStudent && (
-        <MonitorReviewModal
-          evaluationId={activeModalStudent.evaluationId}
-          studentName={activeModalStudent.fullName}
-          studentCode={activeModalStudent.studentCode}
-          isReadOnly={activeModalStudent.status !== 'SUBMITTED'}
-          onClose={() => setActiveModalStudent(null)}
-          onSuccess={() => {
-            setActiveModalStudent(null);
-            fetchClassList();
-          }}
+      <section className="monitor-tools-v2">
+        <input
+          type="search"
+          placeholder="Tìm theo tên, MSSV, email..."
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
         />
-      )}
-    </div>
+
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          {STATUS_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={mandatoryFilter}
+          onChange={(event) => setMandatoryFilter(event.target.value)}
+        >
+          {MANDATORY_FILTERS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+
+        <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+          {SORT_OPTIONS.map((item) => (
+            <option key={item.value} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      <section className="monitor-content-v2">
+        <article className="monitor-table-box-v2">
+          <div className="monitor-section-title-v2">
+            <h2>Danh sách thành viên lớp</h2>
+            <small>{filteredMembers.length} kết quả theo bộ lọc</small>
+          </div>
+
+          <div className="monitor-table-wrap-v2">
+            <table>
+              <thead>
+                <tr>
+                  <th>MSSV</th>
+                  <th>Họ tên</th>
+                  <th>Email</th>
+                  <th>Điểm</th>
+                  <th>Bắt buộc</th>
+                  <th>Vai trò</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>Không có sinh viên phù hợp.</td>
+                  </tr>
+                ) : (
+                  filteredMembers.map((member) => {
+                    const mandatory = parseMandatoryStatus(member.mandatoryParticipation);
+                    return (
+                      <tr key={member.studentId}>
+                        <td>{member.studentCode}</td>
+                        <td>{member.fullName}</td>
+                        <td>{member.email}</td>
+                        <td>{member.totalPoint ?? 0}</td>
+                        <td>
+                          <span
+                            className={`monitor-pill-v2 mandatory ${mandatory.passed ? "passed" : "missing"}`}
+                          >
+                            {mandatory.ratio}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`monitor-pill-v2 role ${member.monitor ? "monitor" : "student"}`}
+                          >
+                            {member.monitor ? "Monitor" : "Student"}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`monitor-pill-v2 status ${String(member.accountStatus || "ACTIVE").toLowerCase()}`}
+                          >
+                            {STATUS_LABEL[member.accountStatus] || member.accountStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article className="monitor-attention-box-v2">
+          <div className="monitor-section-title-v2">
+            <h2>Cần nhắc nhở</h2>
+            <small>Top 5 thành viên thiếu bắt buộc</small>
+          </div>
+
+          {topSupportList.length === 0 ? (
+            <p className="monitor-empty-v2">Không có thành viên cần nhắc nhở.</p>
+          ) : (
+            <ul>
+              {topSupportList.map((member) => (
+                <li key={member.studentId}>
+                  <div>
+                    <strong>{member.fullName}</strong>
+                    <small>{member.studentCode}</small>
+                  </div>
+                  <span>{parseMandatoryStatus(member.mandatoryParticipation).ratio}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+      </section>
+    </section>
   );
 }

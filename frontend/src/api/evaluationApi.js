@@ -31,11 +31,6 @@ export async function getStudentEvaluationForm(semesterId) {
   return unwrapResponse(response);
 }
 
-export async function getAllCriteria() {
-  const response = await apiRequest(`/v1/criterias`);
-  return unwrapResponse(response);
-}
-
 export async function submitStudentEvaluation({ semesterId, details, isDraft }) {
   const normalizedDetails = Object.entries(details || {}).reduce((accumulator, [key, value]) => {
     const numericValue = Number(value);

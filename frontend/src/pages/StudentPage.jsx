@@ -1,6 +1,7 @@
-import {useMemo, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {useAuth} from "../context/AuthContext";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import MonitorClass from "../features/monitor/components/MonitorClass";
 import StudentDashboard from "../features/student/components/StudentDashboard";
 import QRScanner from "../features/student/components/QRScanner";
 import StudentMobileNav from "../features/student/components/StudentMobileNav";
@@ -9,7 +10,6 @@ import StudentSidebar from "../features/student/components/StudentSidebar";
 import StudentTopHeader from "../features/student/components/StudentTopHeader";
 import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
 import StudentAttendancePanel from "../features/student/components/StudentAttendancePanel";
-import StudentEvaluationBoard from "../features/student/StudentEvaluationBoard";
 
 function normalizeRole(role) {
   if (!role) return "";
@@ -23,7 +23,6 @@ function buildSidebarItems(isMonitor) {
     { key: "history", label: "Lịch sử hoạt động", icon: "history" },
     { key: "evidence", label: "Khai báo minh chứng", icon: "verified_user" },
     { key: "scan-qr", label: "Quét sự kiện", icon: "qr_code_scanner" },
-    { key: "evaluation", label: "Phiếu rèn luyện", icon: "assignment" },
   ];
 
   if (!isMonitor) {
@@ -36,15 +35,11 @@ function buildSidebarItems(isMonitor) {
   ];
 }
 
-import MonitorClass from "../features/monitor/components/MonitorClass";
-
 const FEATURE_COMPONENTS = {
   dashboard: StudentDashboard,
   "scan-qr": QRScanner,
   events: StudentEventsPanel,
   history: StudentAttendancePanel,
-  evaluation: StudentEvaluationBoard,
-  "manage-class": MonitorClass,
   evidence: () => (
     <StudentPlaceholderPanel
       title="Khai báo minh chứng"
