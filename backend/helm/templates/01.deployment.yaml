@@ -40,7 +40,7 @@ spec:
               mountPath: /app/logs
           livenessProbe:
             httpGet:
-              path: /health
+              path: /api/actuator/health
               port: {{ .Values.backend.service.port }}
             initialDelaySeconds: 40
             periodSeconds: 10
@@ -48,7 +48,7 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/actuator/health
               port: {{ .Values.backend.service.port }}
             initialDelaySeconds: 20
             periodSeconds: 10

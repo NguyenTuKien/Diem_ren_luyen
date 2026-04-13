@@ -7,8 +7,8 @@ frontend:
       maxSurge: 1
       maxUnavailable: 1
   image:
-    repository: ngtukien218/unipoint-frontend
-    tag: "v1.8"
+    repository: ngtukien218/ttcs-frontend
+    tag: latest
     pullPolicy: Always
   service:
     type: NodePort
