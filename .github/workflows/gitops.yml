@@ -83,17 +83,9 @@ jobs:
         with:
           version: 'v3.12.0'
       - name: Lint Backend Helm Chart
-        run: helm lint ./app/spring
+        run: helm lint ./backend/helm
       - name: Lint Frontend Helm Chart
-        run: helm lint ./app/react
-      - name: Lint Cloudflare Helm Chart
-        run: helm lint ./infra/cloudflare
-      - name: Lint Postgres Helm Chart
-        run: helm lint ./infra/postgres
-      - name: Lint Redis Helm Chart
-        run: helm lint ./infra/redis
-      - name: Lint RabbitMQ Helm Chart
-        run: helm lint ./infra/rabbitmq
+        run: helm lint ./frontend/helm
 
   tag_job:
     name: Get Image Tag
