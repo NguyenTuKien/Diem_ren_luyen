@@ -7,20 +7,41 @@ backend:
       maxSurge: 2
       maxUnavailable: 1
   image:
-    repository: ngtukien218/unipoint-backend
+    repository: ngtukien218/ttcs-backend
     tag: latest
     pullPolicy: Always
   service:
     type: ClusterIP
     port: 8080
   environment:
-    COR_ALLOWED_ORIGINS: "*"
-
-database:
-  name: unipoint-database
-  service:
-    port: 5432
-  environment:
+    CORS_ALLOWED_ORIGINS: "*"
+    # Postgres
+    POSTGRES_HOST: "unipoint-database"
+    POSTGRES_PORT: "5432"
     POSTGRES_DB: unipointdb
-    POSTGRES_USER: n06
-    POSTGRES_PASSWORD: Ttcs_2026
+    POSTGRES_USER: group06
+    # Redis
+    REDIS_HOST: "unipoint-redis"
+    REDIS_PORT: "6379"
+    # RabbitMQ
+    RABBITMQ_HOST: "unipoint-rabbitmq"
+    RABBITMQ_PORT: "5672"
+    RABBITMQ_USERNAME: guest
+    RABBITMQ_VIRTUAL_HOST: "/"
+    RABBITMQ_SSL_ENABLED: "false"
+    # OAuth2 & Device
+    OAUTH2_REDIRECT_URL: "http://localhost:3000/oauth-success"
+    OAUTH2_REDIRECT_URI: "http://localhost:8080/api/login/oauth2/code/microsoft"
+    DEVICE_COOKIE_NAME: "device_token"
+    DEVICE_COOKIE_SECURE: "false"
+    DEVICE_BINDING_TTL_MS: "604800000"
+    JWT_EXPIRATION_MS: "86400000"
+    JWT_REFRESH_EXPIRATION_MS: "604800000"
+  secrets:
+    POSTGRES_PASSWORD: ttcs_2026
+    REDIS_PASSWORD: TTCS_2026
+    RABBITMQ_PASSWORD: guest
+    JWT_SECRET: GenerateYourOwnSecureSecretKeyHereMinimum32Chars
+    DEVICE_HMAC_SECRET: ChangeThisHMACSecretKeyForProduction
+    MICROSOFT_CLIENT_ID: ""
+    MICROSOFT_CLIENT_SECRET: ""
