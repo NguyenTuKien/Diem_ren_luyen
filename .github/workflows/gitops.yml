@@ -86,6 +86,7 @@ jobs:
         run: helm lint ./backend/helm
 
   tag_job:
+    name: Get Image Tag
     runs-on: ubuntu-latest 
     if: >
       github.ref == 'refs/heads/main' ||
@@ -97,11 +98,11 @@ jobs:
       - name: Tính toán Tag tự động
         id: calc_tag
         run: |
+          SHORT_SHA=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | cut -c1-7)
           if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.event_name }}" == 'pull_request' ]]; then
-            PR_NUMBER=${{ github.event.pull_request.number }}
-            echo "tag=pr-$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "tag=$SHORT_SHA" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_NAME=${GITHUB_REF#refs/tags/}
             echo "tag=$TAG_NAME" >> "$GITHUB_OUTPUT"
