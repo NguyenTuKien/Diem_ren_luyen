@@ -83,7 +83,17 @@ jobs:
         with:
           version: 'v3.12.0'
       - name: Lint Backend Helm Chart
-        run: helm lint ./backend/helm
+        run: helm lint ./app/spring
+      - name: Lint Frontend Helm Chart
+        run: helm lint ./app/react
+      - name: Lint Cloudflare Helm Chart
+        run: helm lint ./infra/cloudflare
+      - name: Lint Postgres Helm Chart
+        run: helm lint ./infra/postgres
+      - name: Lint Redis Helm Chart
+        run: helm lint ./infra/redis
+      - name: Lint RabbitMQ Helm Chart
+        run: helm lint ./infra/rabbitmq
 
   tag_job:
     name: Get Image Tag
@@ -296,10 +306,10 @@ jobs:
       - name: Update Config Tag for Staging
         run: |
           cd Config
-          BACKEND_TARGET_FILE="spring/values-prod.yaml"
+          BACKEND_TARGET_FILE="app/spring/values-prod.yaml"
           yq -i '.backend.image.tag = strenv(TAG)' "$BACKEND_TARGET_FILE"
 
-          FRONTEND_TARGET_FILE="react/values-prod.yaml"
+          FRONTEND_TARGET_FILE="app/react/values-prod.yaml"
           yq -i '.frontend.image.tag = strenv(TAG)' "$FRONTEND_TARGET_FILE"
           
           git config user.name "github-actions[bot]"
