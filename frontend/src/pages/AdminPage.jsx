@@ -10,6 +10,7 @@ import AdminStudentManagement from "../features/admin/components/AdminStudentMan
 import AdminSidebar from "../features/admin/components/AdminSidebar";
 import AdminTopHeader from "../features/admin/components/AdminTopHeader";
 import AdminStatistics from "../features/admin/components/AdminStatistics";
+import AdminSemesterManagement from "../features/admin/components/AdminSemesterManagement";
 import { useAdminLecturerWorkspace } from "../features/admin/hooks/useAdminLecturerWorkspace";
 import { useAdminStudentWorkspace } from "../features/admin/hooks/useAdminStudentWorkspace";
 
@@ -17,6 +18,7 @@ const SIDEBAR_ITEMS = [
   { key: "dashboard", label: "Tổng quan", icon: "dashboard" },
   { key: "lecturers", label: "Giảng viên", icon: "badge" },
   { key: "students", label: "Sinh viên", icon: "groups" },
+  { key: "semesters", label: "Học kỳ", icon: "date_range" },
   { key: "statistics", label: "Thống kê", icon: "query_stats" },
 ];
 
@@ -53,6 +55,9 @@ export default function AdminPage() {
   } else if (activeFeature === "statistics") {
     FeatureComponent = AdminStatistics;
     featureProps = { lecturerWorkspace, studentWorkspace };
+  } else if (activeFeature === "semesters") {
+    FeatureComponent = AdminSemesterManagement;
+    featureProps = {};
   } else if (activeFeature === "createLecturer") {
     FeatureComponent = AdminLecturerForm;
     featureProps = { workspace: lecturerWorkspace };

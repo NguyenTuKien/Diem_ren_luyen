@@ -42,4 +42,10 @@ public class SemesterEntity extends BaseJpaAuditingEntity {
 
   @Column(name = SemesterConstant.COL_IS_ACTIVE)
   private Boolean isActive;
+
+  @Column(name = SemesterConstant.COL_EVAL_START_DATE)
+  private LocalDate evaluationStartDate;
+
+  @Column(name = SemesterConstant.COL_EVAL_END_DATE)
+  private LocalDate evaluationEndDate;
 }

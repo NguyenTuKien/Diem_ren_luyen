@@ -114,14 +114,24 @@ export default function StudentEvaluationBoard() {
 
   const selectedSemesterObj = semesters.find(s => s.id === Number(selectedSemester));
   let isOutsideEvaluationPeriod = false;
-  if (selectedSemesterObj && selectedSemesterObj.endDate) {
-    const today = new Date();
-    const endDate = new Date(selectedSemesterObj.endDate);
-    const oneMonthBefore = new Date(selectedSemesterObj.endDate);
-    oneMonthBefore.setMonth(oneMonthBefore.getMonth() - 1);
+  let evalWindowMessage = '';
 
-    if (today < oneMonthBefore || today > endDate) {
+  if (selectedSemesterObj) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const evalStart = selectedSemesterObj.evaluationStartDate
+      ? new Date(selectedSemesterObj.evaluationStartDate)
+      : null;
+    const evalEnd = selectedSemesterObj.evaluationEndDate
+      ? new Date(selectedSemesterObj.evaluationEndDate)
+      : null;
+
+    if (evalStart && today < evalStart) {
       isOutsideEvaluationPeriod = true;
+      evalWindowMessage = `Thời gian đánh giá chưa bắt đầu. Sẽ mở từ ${evalStart.toLocaleDateString('vi-VN')}.`;
+    } else if (evalEnd && today > evalEnd) {
+      isOutsideEvaluationPeriod = true;
+      evalWindowMessage = `Thời gian đánh giá đã kết thúc vào ngày ${evalEnd.toLocaleDateString('vi-VN')}.`;
     }
   }
 
@@ -135,16 +145,18 @@ export default function StudentEvaluationBoard() {
     'FINALIZED': 'Đã có kết quả'
   };
 
-  const formattedDeadline = selectedSemesterObj?.endDate 
-    ? new Date(selectedSemesterObj.endDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : 'Chưa xác định';
+  const formattedDeadline = selectedSemesterObj?.evaluationEndDate
+    ? new Date(selectedSemesterObj.evaluationEndDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : (selectedSemesterObj?.endDate
+        ? new Date(selectedSemesterObj.endDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : 'Chưa xác định');
 
   return (
     <div className="eval-board-container">
       {isOutsideEvaluationPeriod && (
         <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '12px 20px', borderRadius: '8px', marginBottom: '24px', border: '1px solid #ffeeba', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
           <span className="material-symbols-outlined">warning</span>
-          Hiện đang ngoài thời gian đánh giá điểm rèn luyện của học kỳ này. Bạn chỉ có thể xem phiếu đánh giá rèn luyện.
+          {evalWindowMessage || 'Hiện đang ngoài thời gian đánh giá điểm rèn luyện của học kỳ này. Bạn chỉ có thể xem phiếu đánh giá rèn luyện.'}
         </div>
       )}
 

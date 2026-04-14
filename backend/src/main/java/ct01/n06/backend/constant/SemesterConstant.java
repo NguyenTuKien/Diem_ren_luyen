@@ -11,4 +11,6 @@ public class SemesterConstant {
   public static final String COL_START_DATE = "start_date";
   public static final String COL_END_DATE = "end_date";
   public static final String COL_IS_ACTIVE = "is_active";
+  public static final String COL_EVAL_START_DATE = "evaluation_start_date";
+  public static final String COL_EVAL_END_DATE = "evaluation_end_date";
 }

@@ -7,10 +7,12 @@ import ct01.n06.backend.entity.StudentEntity;
 import ct01.n06.backend.entity.StudentSemesterEntity;
 import ct01.n06.backend.entity.enums.SemesterEvaluationStatus;
 import ct01.n06.backend.exception.business.InvalidEvaluationStatusException;
+import ct01.n06.backend.exception.business.EvaluationWindowClosedException;
 import ct01.n06.backend.service.RecordService;
 import ct01.n06.backend.service.SemesterService;
 import ct01.n06.backend.service.StudentSemesterService;
 import ct01.n06.backend.service.StudentService;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +38,7 @@ public class StudentEvaluationFacade {
         .findByStudentAndSemester(student.getId(), semester.getId())
         .orElseGet(() -> this.createEmptyEvaluation(student, semester));
 
+    this.validateEvaluationWindow(semester);
     this.validateStudentCanEdit(evaluation);
 
     evaluation.setDetailsJsonb(request.getDetails());
@@ -91,6 +94,21 @@ public class StudentEvaluationFacade {
     if (evaluation.getStatus() != null
         && evaluation.getStatus() != SemesterEvaluationStatus.DRAFT) {
       throw new InvalidEvaluationStatusException();
+    }
+  }
+
+  private void validateEvaluationWindow(final SemesterEntity semester) {
+    final LocalDate today = LocalDate.now();
+    final LocalDate evalStart = semester.getEvaluationStartDate();
+    final LocalDate evalEnd   = semester.getEvaluationEndDate();
+    if (evalStart != null && today.isBefore(evalStart)) {
+      throw new EvaluationWindowClosedException(
+          "Thời gian đánh giá chưa bắt đầu. Vui lòng quay lại sau ngày "
+              + evalStart);
+    }
+    if (evalEnd != null && today.isAfter(evalEnd)) {
+      throw new EvaluationWindowClosedException(
+          "Thời gian đánh giá đã kết thúc vào ngày " + evalEnd);
     }
   }
 
