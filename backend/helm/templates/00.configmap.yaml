@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 data:
+  SPRING_PROFILES_ACTIVE: "{{ .Values.backend.environment.SPRING_PROFILES_ACTIVE }}"
   # Postgres
   POSTGRES_HOST: "{{ .Values.backend.environment.POSTGRES_HOST }}"
   POSTGRES_PORT: "{{ .Values.backend.environment.POSTGRES_PORT }}"
