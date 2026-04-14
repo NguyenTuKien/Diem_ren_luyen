@@ -46,8 +46,7 @@ public class DataSeeder {
       List<FacultyEntity> faculties = List.of(
           FacultyEntity.builder().code("CNTT").name("Công nghệ thông tin").build(),
           FacultyEntity.builder().code("CB").name("Cơ bản").build(),
-          FacultyEntity.builder().code("QTKD").name("Quản trị kinh doanh").build()
-      );
+          FacultyEntity.builder().code("QTKD").name("Quản trị kinh doanh").build());
 
       for (FacultyEntity faculty : faculties) {
         if (facultyRepository.findByCode(faculty.getCode()).isEmpty()) {
@@ -64,8 +63,7 @@ public class DataSeeder {
       UserRepository userRepository,
       LecturerRepository lecturerRepository,
       FacultyRepository facultyRepository,
-      PasswordEncoder passwordEncoder
-  ) {
+      PasswordEncoder passwordEncoder) {
     return args -> {
       FacultyEntity faculty = facultyRepository.findByCode("CNTT").orElseThrow();
 
@@ -82,7 +80,7 @@ public class DataSeeder {
         lecturerRepository.save(LecturerEntity.builder()
             .userEntity(adminUser)
             .lecturerCode("ADMIN")
-          .fullName("Quản trị viên")
+            .fullName("Quản trị viên")
             .facultyEntity(faculty)
             .build());
       }
@@ -98,8 +96,7 @@ public class DataSeeder {
       FacultyRepository facultyRepository,
       LecturerRepository lecturerRepository,
       ClassRepository classRepository,
-      PasswordEncoder passwordEncoder
-  ) {
+      PasswordEncoder passwordEncoder) {
     return args -> {
       FacultyEntity faculty = facultyRepository.findByCode("CNTT").orElseThrow();
 
@@ -136,8 +133,7 @@ public class DataSeeder {
       List<StudentSeed> students = List.of(
           new StudentSeed("B23CN465", "kiennt.b23cn465", "kiennt.b23cn465@stu.ptit.edu.vn", "Kien NT"),
           new StudentSeed("B23CN832", "toannm.b23cn832", "toannm.b23cn832@stu.ptit.edu.vn", "Toan NM"),
-          new StudentSeed("B23CN873", "tunb.b23cn873", "tunb.b23cn873@stu.ptit.edu.vn", "Tu NB")
-      );
+          new StudentSeed("B23CN873", "tunb.b23cn873", "tunb.b23cn873@stu.ptit.edu.vn", "Tu NB"));
 
       for (StudentSeed seed : students) {
         String normalizedEmail = seed.email().toLowerCase(Locale.ROOT);
@@ -183,8 +179,7 @@ public class DataSeeder {
       LecturerRepository lecturerRepository,
       UserRepository userRepository,
       FacultyRepository facultyRepository,
-      PasswordEncoder passwordEncoder
-  ) {
+      PasswordEncoder passwordEncoder) {
     return args -> {
       if (lecturerRepository.findByUserEntity_EmailIgnoreCase("agv.gv001@ptit.edu.vn").isPresent()) {
         return;
@@ -231,8 +226,7 @@ public class DataSeeder {
               .startDate(LocalDate.of(2027, 1, 5))
               .endDate(LocalDate.of(2027, 5, 30))
               .isActive(false)
-              .build()
-      );
+              .build());
 
       for (SemesterEntity semester : semesters) {
         if (semesterRepository.findByName(semester.getName()).isEmpty()) {
@@ -275,8 +269,7 @@ public class DataSeeder {
               .pointPerItem(BigDecimal.valueOf(2.0))
               .maxPoint(BigDecimal.valueOf(10.0))
               .requireEvidence(false)
-              .build()
-      );
+              .build());
 
       for (CriteriaEntity criteria : criteriaList) {
         if (criteriaRepository.findByCode(criteria.getCode()).isEmpty()) {
@@ -293,8 +286,7 @@ public class DataSeeder {
       EventRepository eventRepository,
       SemesterRepository semesterRepository,
       CriteriaRepository criteriaRepository,
-      UserRepository userRepository
-  ) {
+      UserRepository userRepository) {
     return args -> {
       if (eventRepository.count() > 0) {
         return;
@@ -316,10 +308,10 @@ public class DataSeeder {
           EventEntity.builder()
               .semester(semester)
               .criteria(criteria)
-            .title("Hội thảo AI trong giáo dục")
+              .title("Hội thảo AI trong giáo dục")
               .organizer("Khoa CNTT")
-            .description("Chia sẻ ứng dụng AI trong giảng dạy và học tập")
-            .location("Hội trường A1")
+              .description("Chia sẻ ứng dụng AI trong giảng dạy và học tập")
+              .location("Hội trường A1")
               .startTime(LocalDateTime.of(2026, 4, 10, 8, 0))
               .endTime(LocalDateTime.of(2026, 4, 10, 11, 30))
               .createdBy(createdBy)
@@ -327,10 +319,10 @@ public class DataSeeder {
           EventEntity.builder()
               .semester(semester)
               .criteria(criteria)
-            .title("Ngày hội hiến máu sinh viên")
-            .organizer("Đoàn Thanh niên")
-            .description("Hoạt động tình nguyện hiến máu nhân đạo dành cho sinh viên")
-            .location("Nhà thi đấu")
+              .title("Ngày hội hiến máu sinh viên")
+              .organizer("Đoàn Thanh niên")
+              .description("Hoạt động tình nguyện hiến máu nhân đạo dành cho sinh viên")
+              .location("Nhà thi đấu")
               .startTime(LocalDateTime.of(2026, 4, 18, 7, 30))
               .endTime(LocalDateTime.of(2026, 4, 18, 11, 0))
               .createdBy(createdBy)
@@ -338,15 +330,14 @@ public class DataSeeder {
           EventEntity.builder()
               .semester(semester)
               .criteria(criteria)
-            .title("Cuộc thi ý tưởng khởi nghiệp")
-            .organizer("CLB Khởi nghiệp")
-            .description("Sinh viên trình bày ý tưởng startup và nhận góp ý từ giảng viên")
+              .title("Cuộc thi ý tưởng khởi nghiệp")
+              .organizer("CLB Khởi nghiệp")
+              .description("Sinh viên trình bày ý tưởng startup và nhận góp ý từ giảng viên")
               .location("Phòng B302")
               .startTime(LocalDateTime.of(2026, 5, 5, 13, 30))
               .endTime(LocalDateTime.of(2026, 5, 5, 17, 0))
               .createdBy(createdBy)
-              .build()
-      );
+              .build());
 
       List<EventEntity> eventsToInsert = events.stream()
           .filter(event -> eventRepository.findByTitleAndStartTime(event.getTitle(), event.getStartTime())

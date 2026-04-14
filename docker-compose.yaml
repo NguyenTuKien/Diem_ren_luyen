@@ -105,8 +105,8 @@ services:
     image: cloudflare/cloudflared:2024.6.0
     restart: always
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    depends_on:
-      - frontend
+    # depends_on:
+    #   - frontend
     networks:
       - ttcs
 
