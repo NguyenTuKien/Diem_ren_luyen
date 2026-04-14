@@ -38,20 +38,29 @@ spec:
           volumeMounts:
             - name: log-volume
               mountPath: /app/logs
+          startupProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: {{ .Values.backend.service.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 18
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /api/actuator/health
               port: {{ .Values.backend.service.port }}
-            initialDelaySeconds: 40
-            periodSeconds: 10
+            initialDelaySeconds: 0
+            periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /api/actuator/health
               port: {{ .Values.backend.service.port }}
-            initialDelaySeconds: 20
+            initialDelaySeconds: 0
             periodSeconds: 10
+            timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 3
       volumes:
