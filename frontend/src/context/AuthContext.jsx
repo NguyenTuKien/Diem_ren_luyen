@@ -103,6 +103,7 @@ function toUser(payload, accessToken) {
         ROLE_DASHBOARD[payload.role] ??
         "/student",
     classCode: payload.classCode,
+    className: payload.className ?? payload.classname ?? null,
     status: payload.status,
     profileCode: payload.profileCode ?? null, // MSSV / mã GV / username
   };
