@@ -168,23 +168,30 @@ function EventAttendeesModal({ event, onClose }) {
                 Trước
               </button>
 
-              {Array.from({ length: pagination.totalPages }, (_, i) => i)
-                .filter(i => Math.abs(i - currentPage) <= 2)
-                .map(i => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handlePageChange(i)}
-                    className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${
-                      i === currentPage
-                        ? 'bg-primary text-white shadow-sm'
-                        : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+              {(() => {
+                const startPage = Math.max(0, currentPage - 2)
+                const endPage = Math.min(pagination.totalPages - 1, currentPage + 2)
+                const pageButtons = []
 
+                for (let i = startPage; i <= endPage; i += 1) {
+                  pageButtons.push(
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handlePageChange(i)}
+                      className={`w-9 h-9 rounded-lg text-sm font-semibold transition-colors ${
+                        i === currentPage
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  )
+                }
+
+                return pageButtons
+              })()}
               <button
                 type="button"
                 disabled={!pagination.hasNext}
