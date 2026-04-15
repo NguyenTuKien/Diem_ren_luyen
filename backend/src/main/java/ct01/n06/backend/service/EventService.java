@@ -1,5 +1,6 @@
 package ct01.n06.backend.service;
 
+import ct01.n06.backend.dto.event.AttendeeResponse;
 import ct01.n06.backend.dto.event.EventRequest;
 import ct01.n06.backend.dto.event.EventResponse;
 import ct01.n06.backend.entity.EventEntity;
@@ -18,5 +19,8 @@ public interface EventService {
     UserEntity resolveCreator();
 
     void deleteEvent(Long eventId);
+
+    Page<AttendeeResponse> getEventAttendees(Long eventId, Pageable pageable);
 }
+
 

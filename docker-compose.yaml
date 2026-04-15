@@ -68,6 +68,7 @@ services:
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
+      APP_SEEDER_ENABLED: true
 
     depends_on:
       database:

@@ -54,10 +54,13 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
       try {
         setError('')
 
-        const [criteriaData, semesterData] = await Promise.all([
+        const [criteriaPayload, semesterPayload] = await Promise.all([
           criteriaApi.fetchCriterias(),
           semesterApi.fetchSemesters()
         ])
+        const criteriaData = Array.isArray(criteriaPayload) ? criteriaPayload : []
+        const semesterData = Array.isArray(semesterPayload) ? semesterPayload : []
+
         setCriterias(criteriaData);
         setSemesters(semesterData);
 

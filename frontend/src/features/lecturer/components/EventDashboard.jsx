@@ -3,6 +3,7 @@ import EventStats from '../../../shared/components/EventStats'
 import FilterBar from '../../../shared/components/FilterBar'
 import EventTable from '../../../shared/components/EventTable'
 import CreateEventModal from '../../../shared/components/CreateEventModal'
+import EventAttendeesModal from '../../../shared/components/EventAttendeesModal'
 import { eventApi } from '../../../shared/api/eventApi'
 import { qrcodeApi } from '../../../shared/api/qrcodeApi'
 import { QRCodeSVG } from 'qrcode.react'
@@ -54,6 +55,8 @@ function EventDashboard({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
+  const [isAttendeesModalOpen, setIsAttendeesModalOpen] = useState(false)
+  const [selectedEventForAttendees, setSelectedEventForAttendees] = useState(null)
   const [qrEvent, setQrEvent] = useState(null)
   const [currentQrValue, setCurrentQrValue] = useState('')
   const [currentPinCode, setCurrentPinCode] = useState('')
@@ -99,7 +102,9 @@ function EventDashboard({
       const data = await eventApi.fetchEvents(page, PAGE_SIZE)
       const now = new Date()
 
-      const formattedEvents = data.content.map(backendEvent => {
+      const eventContent = Array.isArray(data?.content) ? data.content : []
+
+      const formattedEvents = eventContent.map(backendEvent => {
         const startDate = new Date(backendEvent.startTime)
         const endDate = new Date(backendEvent.endTime)
         const dateStr = startDate.toLocaleDateString('vi-VN')
@@ -130,8 +135,8 @@ function EventDashboard({
           id: backendEvent.id,
           title: backendEvent.title,
           description: backendEvent.description,
-          semesterId: backendEvent.semester?.id,
-          criteriaId: backendEvent.criteria?.id,
+          semesterId: backendEvent.semesterId ?? backendEvent.semester?.id,
+          criteriaId: backendEvent.criteriaId ?? backendEvent.criteria?.id,
           startTime: backendEvent.startTime,
           endTime: backendEvent.endTime,
           name: backendEvent.title,
@@ -139,7 +144,7 @@ function EventDashboard({
           date: dateStr,
           time: timeStr,
           location: backendEvent.location,
-          type: backendEvent.criteria ? backendEvent.criteria.id : '1.1',
+          type: backendEvent.criteriaId ?? backendEvent.criteria?.id ?? '--',
           status: statusText,
           statusClassName: statusClass,
           disableEdit: isOngoing,
@@ -188,6 +193,11 @@ function EventDashboard({
   const handleEditEvent = (event) => {
     setEditingEvent(event)
     setIsModalOpen(true)
+  }
+
+  const handleViewAttendees = (event) => {
+    setSelectedEventForAttendees(event)
+    setIsAttendeesModalOpen(true)
   }
 
   const handleOpenQrModal = async (event) => {
@@ -413,6 +423,7 @@ function EventDashboard({
             onGenerateQr={handleOpenQrModal}
             onPageChange={handlePageChange}
             onRefresh={refreshCurrentPage}
+            onViewAttendees={handleViewAttendees}
             pagination={pagination}
           />
         )}
@@ -449,6 +460,16 @@ function EventDashboard({
           loadEvents(currentPage)
         }}
       />
+
+      {isAttendeesModalOpen && selectedEventForAttendees && (
+        <EventAttendeesModal
+          event={selectedEventForAttendees}
+          onClose={() => {
+            setIsAttendeesModalOpen(false)
+            setSelectedEventForAttendees(null)
+          }}
+        />
+      )}
 
       {qrEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
