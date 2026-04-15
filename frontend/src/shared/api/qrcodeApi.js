@@ -21,7 +21,11 @@ export const qrcodeApi = {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ qrData, eventId, blueToothId }),
+      body: JSON.stringify({
+        qrData,
+        eventId,
+        // blueToothId, // Temporarily disabled: Bluetooth integration is not ready yet.
+      }),
     })
 
     const responseData = await response.json().catch(() => ({}))
