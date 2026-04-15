@@ -227,6 +227,8 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
     return null
   }
 
+  const isClassMeetingOrganizerInvalid = isClassMeeting && (!formData.organizer || classMeetingOptions.length === 0)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -248,6 +250,11 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
 
     if (new Date(formData.endTime) <= new Date(formData.startTime)) {
       setError('Thời gian kết thúc phải sau thời gian bắt đầu.')
+      return
+    }
+
+    if (isClassMeetingOrganizerInvalid) {
+      setError('Vui lòng chọn lớp phụ trách cho sự kiện họp lớp.')
       return
     }
 
@@ -385,6 +392,9 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
               {isClassMeeting && classOptionsError && (
                 <p className="mt-1 text-xs text-red-500">{classOptionsError}</p>
               )}
+              {isClassMeeting && classMeetingOptions.length === 0 && !classOptionsError && (
+                <p className="mt-1 text-xs text-red-500">Bạn chưa có lớp phụ trách để tạo sự kiện họp lớp.</p>
+              )}
             </div>
 
             <div>
@@ -507,7 +517,7 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
             <button
               className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-[#d23232]/20 transition-all"
               type="submit"
-              disabled={loading}
+              disabled={loading || isClassMeetingOrganizerInvalid}
             >
               {loading ? 'Đang lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu sự kiện')}
             </button>
