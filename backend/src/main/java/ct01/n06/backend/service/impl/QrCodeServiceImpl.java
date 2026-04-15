@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
@@ -191,6 +192,8 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Sự kiện đã kết thúc, không thể điểm danh");
         }
 
+        validateStudentClassForClassMeeting(event, student);
+
         Optional<AttendenceEntity> existing = attendenceRepository.findByEventIdAndStudentId(eventId, student.getId());
         if (existing.isPresent()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn đã điểm danh sự kiện này rồi!");
@@ -223,6 +226,45 @@ public class QrCodeServiceImpl implements QrCodeService {
             log.error("Check-in enqueue failed: eventId={}, studentId={}, deviceId={}", eventId, student.getId(), deviceId, ex);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Hệ thống đang bận, vui lòng thử lại");
         }
+    }
+
+    private void validateStudentClassForClassMeeting(EventEntity event, StudentEntity student) {
+        if (!isClassMeetingEvent(event)) {
+            return;
+        }
+
+        String eventClassCode = normalizeText(event.getOrganizer());
+        if (eventClassCode.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Sự kiện họp lớp chưa được gán lớp tổ chức");
+        }
+
+        String studentClassCode = student.getClassEntity() == null
+                ? ""
+                : normalizeText(student.getClassEntity().getClassCode());
+
+        if (!eventClassCode.equals(studentClassCode)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Sinh viên không thuộc lớp đó");
+        }
+    }
+
+    private boolean isClassMeetingEvent(EventEntity event) {
+        if (event == null || event.getCriteria() == null) {
+            return false;
+        }
+
+        String criteriaName = normalizeText(event.getCriteria().getName());
+        String criteriaCode = normalizeText(event.getCriteria().getCode());
+
+        return criteriaName.contains("họp lớp")
+                || criteriaName.contains("hop lop")
+                || "2.4".equals(criteriaCode);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private String generateUniquePinCode(Long eventId) {

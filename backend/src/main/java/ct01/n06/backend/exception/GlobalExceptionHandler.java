@@ -44,6 +44,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(buildErrorResponse(ex.getMessage()));
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
+        log.warn("ApiException: {}", ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus()).body(buildErrorResponse(ex.getMessage()));
+    }
+
     @ExceptionHandler(ServerException.class)
     public ResponseEntity<Map<String, Object>> handleServerException(ServerException ex) {
         log.error("ServerException: {}", ex.getMessage(), ex);
