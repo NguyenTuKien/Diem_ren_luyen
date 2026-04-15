@@ -89,15 +89,6 @@ public class EventServiceImpl implements EventService {
         if (!eventRepository.existsById(eventId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sự kiện không tồn tại.");
         }
-        return attendenceRepository.findByEventIdOrderByStudentIdAsc(eventId, pageable)
-                .map(attendance -> {
-                    var student = attendance.getStudent();
-                    return AttendeeResponse.builder()
-                            .studentId(student.getId())
-                            .studentCode(student.getStudentCode())
-                            .fullName(student.getFullName())
-                            .className(student.getClassEntity() != null ? student.getClassEntity().getClassCode() : null)
-                            .build();
-                });
+        return attendenceRepository.findAttendeeResponsesByEventId(eventId, pageable);
     }
 }

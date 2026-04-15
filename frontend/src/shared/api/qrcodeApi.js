@@ -15,7 +15,7 @@ export const qrcodeApi = {
     return response.json()
   },
 
-  scanQRCode: async ({ qrData, eventId, blueToothId }) => {
+  scanQRCode: async ({ qrData, eventId }) => {
     const response = await authFetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
       headers: {
