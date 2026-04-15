@@ -31,3 +31,4 @@ data:
   DEVICE_BINDING_TTL_MS: "{{ .Values.backend.environment.DEVICE_BINDING_TTL_MS }}"
   JWT_EXPIRATION_MS: "{{ .Values.backend.environment.JWT_EXPIRATION_MS }}"
   JWT_REFRESH_EXPIRATION_MS: "{{ .Values.backend.environment.JWT_REFRESH_EXPIRATION_MS }}"
+  MAIL_USERNAME: "{{ .Values.backend.environment.MAIL_USERNAME }}"
