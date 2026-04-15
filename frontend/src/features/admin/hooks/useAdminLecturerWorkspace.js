@@ -21,9 +21,13 @@ const EMPTY_STATS = {
 
 const EMPTY_FLASH = { type: "", message: "" };
 
+function toSearchValue(value) {
+    return String(value ?? "").toLowerCase();
+}
+
 export function useAdminLecturerWorkspace() {
-    const [options, setOptions] = useState({ faculties: [] });
-    const [rows, setRows] = useState([]);
+    const [options, setOptions] = useState({ faculties: [], classes: [] });
+    const [allRows, setAllRows] = useState([]);
     const [stats, setStats] = useState(EMPTY_STATS);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [loading, setLoading] = useState(true);
@@ -51,34 +55,16 @@ export function useAdminLecturerWorkspace() {
             }
 
             try {
-                const params = new URLSearchParams();
-
-                if (filters.keyword.trim()) {
-                    params.set("keyword", filters.keyword.trim());
-                }
-                if (filters.facultyId) {
-                    params.set("facultyId", filters.facultyId);
-                }
-                if (filters.status) {
-                    params.set("status", filters.status);
-                }
-
                 const [optionsData, listData, statsData] = await Promise.all([
                     apiRequest("/v1/admin/lecturers/options"),
-                    apiRequest(`/v1/admin/lecturers${params.toString() ? `?${params.toString()}` : ""}`),
+                    apiRequest("/v1/admin/lecturers"),
                     apiRequest("/v1/admin/lecturers/stats"),
                 ]);
 
                 const nextRows = listData.lecturers || [];
-                setOptions(optionsData || { faculties: [] });
-                setRows(nextRows);
+                setOptions(optionsData || { faculties: [], classes: [] });
+                setAllRows(nextRows);
                 setStats(statsData || EMPTY_STATS);
-                setSelectedLecturerId((previous) => {
-                    if (previous && nextRows.some((row) => row.lecturerId === previous)) {
-                        return previous;
-                    }
-                    return nextRows[0]?.lecturerId ?? null;
-                });
             } catch (error) {
                 setFlash({ type: "error", message: error.message });
             } finally {
@@ -87,7 +73,7 @@ export function useAdminLecturerWorkspace() {
                 }
             }
         },
-        [filters.facultyId, filters.keyword, filters.status],
+        [],
     );
 
     useEffect(() => {
@@ -109,6 +95,45 @@ export function useAdminLecturerWorkspace() {
     const refresh = useCallback(async () => {
         await loadWorkspace({ silent: true });
     }, [loadWorkspace]);
+
+    const rows = useMemo(() => {
+        const keyword = filters.keyword.trim().toLowerCase();
+        return allRows.filter((row) => {
+            if (filters.facultyId && String(row.facultyId ?? "") !== String(filters.facultyId)) {
+                return false;
+            }
+            if (filters.status && String(row.status ?? "") !== String(filters.status)) {
+                return false;
+            }
+            if (!keyword) {
+                return true;
+            }
+
+            const classCodesText = Array.isArray(row.classCodes) ? row.classCodes.join(" ") : "";
+            const searchable = [
+                row.fullName,
+                row.lecturerCode,
+                row.email,
+                row.username,
+                row.facultyName,
+                classCodesText,
+                row.createdAt,
+            ]
+                .map(toSearchValue)
+                .join(" ");
+
+            return searchable.includes(keyword);
+        });
+    }, [allRows, filters.facultyId, filters.keyword, filters.status]);
+
+    useEffect(() => {
+        setSelectedLecturerId((previous) => {
+            if (previous && rows.some((row) => row.lecturerId === previous)) {
+                return previous;
+            }
+            return rows[0]?.lecturerId ?? null;
+        });
+    }, [rows]);
 
     const createLecturer = useCallback(
         async (payload) => {
@@ -182,6 +207,7 @@ export function useAdminLecturerWorkspace() {
     return {
         options,
         rows,
+        lecturers: rows,
         stats,
         filters,
         setFilters,
@@ -195,6 +221,7 @@ export function useAdminLecturerWorkspace() {
         deleteLecturer,
         selectedLecturerId,
         setSelectedLecturerId,
+        selectLecturer: setSelectedLecturerId,
         selectedLecturer,
     };
 }

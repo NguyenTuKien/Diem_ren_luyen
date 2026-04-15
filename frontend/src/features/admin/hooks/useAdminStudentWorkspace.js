@@ -23,9 +23,13 @@ const EMPTY_STATS = {
 
 const EMPTY_FLASH = { type: "", message: "" };
 
+function toSearchValue(value) {
+    return String(value ?? "").toLowerCase();
+}
+
 export function useAdminStudentWorkspace() {
     const [options, setOptions] = useState({ faculties: [], classes: [] });
-    const [rows, setRows] = useState([]);
+    const [allRows, setAllRows] = useState([]);
     const [stats, setStats] = useState(EMPTY_STATS);
     const [filters, setFilters] = useState(DEFAULT_FILTERS);
     const [loading, setLoading] = useState(true);
@@ -53,33 +57,23 @@ export function useAdminStudentWorkspace() {
             }
 
             try {
-                const params = new URLSearchParams();
-                if (filters.keyword.trim()) params.set("keyword", filters.keyword.trim());
-                if (filters.facultyId) params.set("facultyId", filters.facultyId);
-                if (filters.classId) params.set("classId", filters.classId);
-                if (filters.status) params.set("status", filters.status);
-
                 const [optionsData, listData, statsData] = await Promise.all([
                     apiRequest("/v1/admin/students/options"),
-                    apiRequest(`/v1/admin/students${params.toString() ? `?${params.toString()}` : ""}`),
+                    apiRequest("/v1/admin/students"),
                     apiRequest("/v1/admin/students/stats"),
                 ]);
 
                 const nextRows = listData.students || [];
                 setOptions(optionsData || { faculties: [], classes: [] });
-                setRows(nextRows);
+                setAllRows(nextRows);
                 setStats(statsData || EMPTY_STATS);
-                setSelectedStudentId((previous) => {
-                    if (previous && nextRows.some((row) => row.studentId === previous)) return previous;
-                    return nextRows[0]?.studentId ?? null;
-                });
             } catch (error) {
                 setFlash({ type: "error", message: error.message });
             } finally {
                 if (!silent) setLoading(false);
             }
         },
-        [filters.classId, filters.facultyId, filters.keyword, filters.status],
+        [],
     );
 
     useEffect(() => {
@@ -98,6 +92,48 @@ export function useAdminStudentWorkspace() {
     const refresh = useCallback(async () => {
         await loadWorkspace({ silent: true });
     }, [loadWorkspace]);
+
+    const rows = useMemo(() => {
+        const keyword = filters.keyword.trim().toLowerCase();
+        return allRows.filter((row) => {
+            if (filters.facultyId && String(row.facultyId ?? "") !== String(filters.facultyId)) {
+                return false;
+            }
+            if (filters.classId && String(row.classId ?? "") !== String(filters.classId)) {
+                return false;
+            }
+            if (filters.status && String(row.status ?? "") !== String(filters.status)) {
+                return false;
+            }
+            if (!keyword) {
+                return true;
+            }
+
+            const searchable = [
+                row.fullName,
+                row.studentCode,
+                row.email,
+                row.username,
+                row.classCode,
+                row.facultyName,
+                row.role,
+                row.createdAt,
+            ]
+                .map(toSearchValue)
+                .join(" ");
+
+            return searchable.includes(keyword);
+        });
+    }, [allRows, filters.classId, filters.facultyId, filters.keyword, filters.status]);
+
+    useEffect(() => {
+        setSelectedStudentId((previous) => {
+            if (previous && rows.some((row) => row.studentId === previous)) {
+                return previous;
+            }
+            return rows[0]?.studentId ?? null;
+        });
+    }, [rows]);
 
     const createStudent = useCallback(
         async (payload) => {

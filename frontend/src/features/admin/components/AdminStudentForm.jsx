@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const DEFAULT_FORM = {
     fullName: "",
@@ -11,12 +11,27 @@ const DEFAULT_FORM = {
     status: "ACTIVE",
 };
 
+const EMPTY_POPUP = { type: "", message: "" };
+
 export default function AdminStudentForm({ studentWorkspace }) {
-    const { options, busy, flash, createStudent } = studentWorkspace;
+    const { options, busy, createStudent } = studentWorkspace;
     const [form, setForm] = useState(DEFAULT_FORM);
-    const [message, setMessage] = useState("");
+    const [popup, setPopup] = useState(EMPTY_POPUP);
+
     const defaultClassId = useMemo(() => String(options.classes[0]?.id || ""), [options.classes]);
     const hasClasses = options.classes.length > 0;
+
+    useEffect(() => {
+        if (!popup.message) {
+            return undefined;
+        }
+
+        const timeout = window.setTimeout(() => {
+            setPopup(EMPTY_POPUP);
+        }, popup.type === "error" ? 6500 : 5000);
+
+        return () => window.clearTimeout(timeout);
+    }, [popup]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -24,7 +39,8 @@ export default function AdminStudentForm({ studentWorkspace }) {
             return;
         }
 
-        setMessage("");
+        setPopup(EMPTY_POPUP);
+
         try {
             await createStudent({
                 fullName: form.fullName,
@@ -37,36 +53,43 @@ export default function AdminStudentForm({ studentWorkspace }) {
                 status: form.status,
             });
 
-            setMessage(`Đã tạo tài khoản sinh viên cho ${form.fullName.trim()}.`);
+            setPopup({
+                type: "success",
+                message: `Tạo sinh viên thành công: ${form.fullName.trim()}.`,
+            });
+
             setForm((previous) => ({
                 ...DEFAULT_FORM,
                 classId: defaultClassId || previous.classId,
             }));
-        } catch {
-            // Error is already handled by workspace flash state.
+        } catch (submitError) {
+            const errorMessage = submitError.message || "Không thể tạo sinh viên.";
+            setPopup({ type: "error", message: errorMessage });
         }
     };
 
     return (
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            {popup.message ? (
+                <div className="fixed inset-x-0 top-0 z-[120] flex justify-center px-4 pt-5">
+                    <div
+                        className={`w-full max-w-md rounded-2xl border px-5 py-4 text-sm shadow-2xl ${popup.type === "error"
+                                ? "border-rose-200 bg-rose-50 text-rose-700"
+                                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            }`}
+                    >
+                        <p className="font-semibold">{popup.type === "error" ? "Thao tác thất bại" : "Thêm sinh viên thành công"}</p>
+                        <p className="mt-1">{popup.message}</p>
+                    </div>
+                </div>
+            ) : null}
+
             <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">Thêm sinh viên</p>
 
                 {!hasClasses ? (
                     <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                         Chưa có lớp trong hệ thống. Vui lòng tạo lớp trước khi thêm sinh viên.
-                    </div>
-                ) : null}
-
-                {message ? (
-                    <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {message}
-                    </div>
-                ) : null}
-
-                {flash.message ? (
-                    <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm ${flash.type === "error" ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/30 dark:bg-rose-900/10 dark:text-rose-200" : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-200"}`}>
-                        {flash.message}
                     </div>
                 ) : null}
 
@@ -103,7 +126,9 @@ export default function AdminStudentForm({ studentWorkspace }) {
                         >
                             <option value="">Chọn lớp</option>
                             {options.classes.map((classItem) => (
-                                <option key={classItem.id} value={classItem.id}>{classItem.classCode}</option>
+                                <option key={classItem.id} value={classItem.id}>
+                                    {classItem.classCode}
+                                </option>
                             ))}
                         </select>
                     </label>

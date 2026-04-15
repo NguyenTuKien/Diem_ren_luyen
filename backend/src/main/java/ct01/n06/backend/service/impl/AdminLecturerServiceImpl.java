@@ -1,6 +1,7 @@
 package ct01.n06.backend.service.impl;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,14 +59,26 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
             faculty.getName()))
         .toList();
 
-    return new AdminLecturerOptionsResponse(faculties);
+    List<AdminLecturerOptionsResponse.ClassOptionItem> classes = classRepository.findAllByOrderByClassCodeAsc()
+      .stream()
+      .map(classEntity -> new AdminLecturerOptionsResponse.ClassOptionItem(
+        classEntity.getId(),
+        classEntity.getClassCode(),
+        classEntity.getFacultyEntity() != null ? classEntity.getFacultyEntity().getId() : null,
+        classEntity.getFacultyEntity() != null ? classEntity.getFacultyEntity().getCode() : null,
+        classEntity.getFacultyEntity() != null ? classEntity.getFacultyEntity().getName() : null,
+        classEntity.getLecturerEntity() != null ? classEntity.getLecturerEntity().getFullName() : null))
+      .toList();
+
+    return new AdminLecturerOptionsResponse(faculties, classes);
   }
 
   @Override
   @Transactional(readOnly = true)
   public AdminLecturerListResponse getLecturers(Long facultyId, String status, String keyword) {
     List<LecturerEntity> lecturers = loadLecturers();
-    Map<String, Integer> classCountMap = buildClassCountMap();
+    Map<String, List<ClassEntity>> classAssignmentsMap = buildClassAssignmentsMap();
+    Map<String, Integer> classCountMap = buildClassCountMap(classAssignmentsMap);
     UserStatus statusFilter = AdminServiceUtils.parseStatus(status, false);
     String normalizedKeyword = AdminServiceUtils.normalizeKeyword(keyword);
 
@@ -82,7 +95,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
         .toList();
 
     List<AdminLecturerRowResponse> rows = filtered.stream()
-        .map(lecturer -> toRow(lecturer, classCountMap))
+      .map(lecturer -> toRow(lecturer, classCountMap, classAssignmentsMap))
         .toList();
 
     return new AdminLecturerListResponse(
@@ -98,7 +111,8 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
   @Transactional(readOnly = true)
   public AdminLecturerStatsResponse getStats() {
     List<LecturerEntity> lecturers = loadLecturers();
-    Map<String, Integer> classCountMap = buildClassCountMap();
+    Map<String, List<ClassEntity>> classAssignmentsMap = buildClassAssignmentsMap();
+    Map<String, Integer> classCountMap = buildClassCountMap(classAssignmentsMap);
     Map<Long, FacultyAccumulator> facultyBreakdown = new LinkedHashMap<>();
 
     for (LecturerEntity lecturer : lecturers) {
@@ -121,7 +135,7 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
             Comparator.nullsLast(Comparator.naturalOrder()))
             .reversed())
         .limit(5)
-        .map(lecturer -> toRow(lecturer, classCountMap))
+          .map(lecturer -> toRow(lecturer, classCountMap, classAssignmentsMap))
         .toList();
 
     int assignedClasses = Math.toIntExact(classRepository.countByLecturerEntityIsNotNull());
@@ -191,7 +205,10 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
           .facultyEntity(faculty)
           .build());
 
-      return toRow(savedLecturer, Map.of());
+        syncLecturerClasses(savedLecturer, request.classIds());
+
+        Map<String, List<ClassEntity>> classAssignmentsMap = buildClassAssignmentsMap();
+        return toRow(savedLecturer, buildClassCountMap(classAssignmentsMap), classAssignmentsMap);
     } catch (DataIntegrityViolationException ex) {
       throw new ApiException(HttpStatus.CONFLICT, "Dữ liệu giảng viên bị trùng hoặc không hợp lệ.");
     }
@@ -242,7 +259,10 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     try {
       userRepository.save(user);
       LecturerEntity savedLecturer = lecturerRepository.save(lecturer);
-      return toRow(savedLecturer, buildClassCountMap());
+      syncLecturerClasses(savedLecturer, request.classIds());
+
+      Map<String, List<ClassEntity>> classAssignmentsMap = buildClassAssignmentsMap();
+      return toRow(savedLecturer, buildClassCountMap(classAssignmentsMap), classAssignmentsMap);
     } catch (DataIntegrityViolationException ex) {
       throw new ApiException(HttpStatus.CONFLICT, "Dữ liệu giảng viên bị trùng hoặc không hợp lệ.");
     }
@@ -270,24 +290,40 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
     return lecturerRepository.findAllByUserEntity_Role(Role.ROLE_LECTURER);
   }
 
-  private Map<String, Integer> buildClassCountMap() {
-    Map<String, Integer> classCountMap = new LinkedHashMap<>();
+  private Map<String, List<ClassEntity>> buildClassAssignmentsMap() {
+    Map<String, List<ClassEntity>> assignmentsMap = new LinkedHashMap<>();
 
     for (ClassEntity classEntity : classRepository.findAll()) {
       LecturerEntity lecturer = classEntity.getLecturerEntity();
       if (lecturer == null || lecturer.getUserEntity() == null || lecturer.getUserEntity().getRole() != Role.ROLE_LECTURER) {
         continue;
       }
-      String lecturerId = lecturer.getId();
-      classCountMap.put(lecturerId, classCountMap.getOrDefault(lecturerId, 0) + 1);
+
+      assignmentsMap.computeIfAbsent(lecturer.getId(), ignored -> new ArrayList<>()).add(classEntity);
+    }
+
+    assignmentsMap.values().forEach(classes -> classes.sort(Comparator.comparing(ClassEntity::getClassCode, String.CASE_INSENSITIVE_ORDER)));
+    return assignmentsMap;
+  }
+
+  private Map<String, Integer> buildClassCountMap(Map<String, List<ClassEntity>> classAssignmentsMap) {
+    Map<String, Integer> classCountMap = new LinkedHashMap<>();
+
+    for (Map.Entry<String, List<ClassEntity>> entry : classAssignmentsMap.entrySet()) {
+      classCountMap.put(entry.getKey(), entry.getValue().size());
     }
 
     return classCountMap;
   }
 
-  private AdminLecturerRowResponse toRow(LecturerEntity lecturer, Map<String, Integer> classCountMap) {
+  private AdminLecturerRowResponse toRow(
+      LecturerEntity lecturer,
+      Map<String, Integer> classCountMap,
+      Map<String, List<ClassEntity>> classAssignmentsMap
+  ) {
     UserEntity user = lecturer.getUserEntity();
     String createdAt = user.getCreatedAt() != null ? user.getCreatedAt().format(UI_DATE_TIME) : "";
+    List<ClassEntity> classAssignments = classAssignmentsMap.getOrDefault(lecturer.getId(), List.of());
 
     return new AdminLecturerRowResponse(
         lecturer.getId(),
@@ -300,8 +336,43 @@ public class AdminLecturerServiceImpl implements AdminLecturerService {
         lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getCode() : null,
         lecturer.getFacultyEntity() != null ? lecturer.getFacultyEntity().getName() : null,
         classCountMap.getOrDefault(lecturer.getId(), 0),
+        classAssignments.stream().map(ClassEntity::getId).toList(),
+        classAssignments.stream().map(ClassEntity::getClassCode).toList(),
         createdAt
     );
+  }
+
+  private void syncLecturerClasses(LecturerEntity lecturer, List<Long> classIds) {
+    if (classIds == null) {
+      return;
+    }
+
+    List<ClassEntity> currentAssignments = classRepository.findByLecturerEntityId(lecturer.getId());
+    Map<Long, ClassEntity> selectedAssignments = classRepository.findAllById(classIds).stream()
+        .collect(LinkedHashMap::new, (map, classEntity) -> map.put(classEntity.getId(), classEntity), Map::putAll);
+
+    if (selectedAssignments.size() != List.copyOf(classIds).stream().distinct().count()) {
+      throw new ApiException(HttpStatus.NOT_FOUND, "Có lớp được chọn không tồn tại.");
+    }
+
+    List<ClassEntity> toSave = new ArrayList<>();
+    for (ClassEntity classEntity : currentAssignments) {
+      if (!selectedAssignments.containsKey(classEntity.getId())) {
+        classEntity.setLecturerEntity(null);
+        toSave.add(classEntity);
+      }
+    }
+
+    for (ClassEntity classEntity : selectedAssignments.values()) {
+      if (!Objects.equals(classEntity.getLecturerEntity(), lecturer)) {
+        classEntity.setLecturerEntity(lecturer);
+        toSave.add(classEntity);
+      }
+    }
+
+    if (!toSave.isEmpty()) {
+      classRepository.saveAll(toSave);
+    }
   }
 
   private boolean matchesKeyword(LecturerEntity lecturer, String keyword) {

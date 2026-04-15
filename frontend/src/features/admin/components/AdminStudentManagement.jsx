@@ -314,13 +314,6 @@ export default function AdminStudentManagement({ studentWorkspace, onNavigate })
                                 <div className="mt-4 flex flex-wrap gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => onNavigate?.("createStudent")}
-                                        className="rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
-                                    >
-                                        Thêm sinh viên
-                                    </button>
-                                    <button
-                                        type="button"
                                         onClick={() => setIsEditing(true)}
                                         className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700"
                                     >
@@ -341,13 +334,6 @@ export default function AdminStudentManagement({ studentWorkspace, onNavigate })
                                         className="rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         Xóa sinh viên
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedStudentId(rows[0]?.studentId || null)}
-                                        className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700"
-                                    >
-                                        Chọn dòng đầu
                                     </button>
                                 </div>
                             </div>

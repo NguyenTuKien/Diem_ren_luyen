@@ -1,5 +1,7 @@
 package ct01.n06.backend.dto.admin;
 
+import java.util.List;
+
 public record AdminLecturerRowResponse(
     String lecturerId,
     String lecturerCode,
@@ -11,6 +13,8 @@ public record AdminLecturerRowResponse(
     String facultyCode,
     String facultyName,
     Integer classCount,
+    List<Long> classIds,
+    List<String> classCodes,
     String createdAt
 ) {
 }

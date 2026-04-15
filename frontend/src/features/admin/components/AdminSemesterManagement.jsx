@@ -16,6 +16,9 @@ const EMPTY_FORM = {
   isActive: false,
 };
 
+let semesterListCache = null;
+let semesterListInFlight = null;
+
 function fmt(dateStr) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -24,8 +27,8 @@ function fmt(dateStr) {
 }
 
 export default function AdminSemesterManagement() {
-  const [semesters, setSemesters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [semesters, setSemesters] = useState(() => (Array.isArray(semesterListCache) ? semesterListCache : []));
+  const [loading, setLoading] = useState(() => !Array.isArray(semesterListCache));
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -33,15 +36,32 @@ export default function AdminSemesterManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
 
-  const fetchSemesters = useCallback(async () => {
+  const fetchSemesters = useCallback(async ({ force = false } = {}) => {
+    if (!force && Array.isArray(semesterListCache)) {
+      setSemesters(semesterListCache);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     setLoading(true); setError(null);
+
+    const request = semesterListInFlight || getAllSemestersAdmin();
+    if (!semesterListInFlight) {
+      semesterListInFlight = request;
+    }
+
     try {
-      const res = await getAllSemestersAdmin();
+      const res = await request;
       const data = Array.isArray(res) ? res : (res?.data || []);
+      semesterListCache = data;
       setSemesters(data);
     } catch (err) {
       setError(err.message || 'Không tải được danh sách học kỳ');
     } finally {
+      if (semesterListInFlight === request) {
+        semesterListInFlight = null;
+      }
       setLoading(false);
     }
   }, []);
@@ -84,7 +104,7 @@ export default function AdminSemesterManagement() {
         await createSemester(form);
       }
       setShowModal(false);
-      fetchSemesters();
+      fetchSemesters({ force: true });
     } catch (err) {
       setFormError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.');
     } finally {
@@ -96,7 +116,7 @@ export default function AdminSemesterManagement() {
     if (!window.confirm(`Xác nhận xóa học kỳ "${name}"? Hành động này không thể hoàn tác.`)) return;
     try {
       await deleteSemester(id);
-      fetchSemesters();
+      fetchSemesters({ force: true });
     } catch (err) {
       alert(err.message || 'Xóa học kỳ thất bại');
     }
@@ -105,7 +125,7 @@ export default function AdminSemesterManagement() {
   const handleToggleActive = async (id) => {
     try {
       await toggleActiveSemester(id);
-      fetchSemesters();
+      fetchSemesters({ force: true });
     } catch (err) {
       alert(err.message || 'Thao tác thất bại');
     }
