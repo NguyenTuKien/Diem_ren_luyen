@@ -93,6 +93,28 @@ export const eventApi = {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Không thể xóa sự kiện.');
-  }
+  },
+
+  fetchEventAttendees: async (eventId, page = 0, size = 10) => {
+    const response = await authFetch(`${API_BASE_URL}/${eventId}/attendees?page=${page}&size=${size}`);
+    if (!response.ok) throw new Error('Không thể tải danh sách sinh viên check-in.');
+    const data = await response.json();
+
+    // Handle Spring Page format
+    if (Array.isArray(data.content) && typeof data.totalPages === 'number') {
+      return data;
+    }
+
+    const springPage = data.page || {};
+    return {
+      content: data.content || [],
+      page: typeof springPage.number === 'number' ? springPage.number : page,
+      size: typeof springPage.size === 'number' ? springPage.size : size,
+      totalElements: typeof springPage.totalElements === 'number' ? springPage.totalElements : data.content?.length || 0,
+      totalPages: typeof springPage.totalPages === 'number' ? springPage.totalPages : 0,
+      hasNext: !!(springPage.totalPages && springPage.number + 1 < springPage.totalPages),
+      hasPrevious: !!(typeof springPage.number === 'number' && springPage.number > 0),
+    };
+  },
 };
 

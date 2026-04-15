@@ -1,10 +1,12 @@
 package ct01.n06.backend.controller;
 
+import ct01.n06.backend.dto.event.AttendeeResponse;
 import ct01.n06.backend.dto.event.EventResponse;
 import ct01.n06.backend.service.EventService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,4 +27,14 @@ public class EventController {
         return eventPage;
     }
 
+    @GetMapping("/{eventId}/attendees")
+    public Page<AttendeeResponse> getEventAttendees(
+            @PathVariable Long eventId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = Pageable.ofSize(size).withPage(page);
+        return eventService.getEventAttendees(eventId, pageable);
+    }
+
 }
+

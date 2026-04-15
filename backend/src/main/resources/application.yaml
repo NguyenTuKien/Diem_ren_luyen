@@ -1,8 +1,7 @@
 spring:
   config:
     import:
-#      - optional:file:.env[.properties]
-      - optional:file:./backend/.env[.properties]
+      - optional:file:./UniPoint/backend/.env[.properties]
   main:
     banner-mode: "off"
     time-zone: Asia/Ho_Chi_Minh
