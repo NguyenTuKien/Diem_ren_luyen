@@ -49,4 +49,10 @@ public class GlobalExceptionHandler {
         log.error("ServerException: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(buildErrorResponse(ex.getMessage()));
     }
+
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
+        log.warn("ApiException: status={}, message={}", ex.getHttpStatus(), ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus()).body(buildErrorResponse(ex.getMessage()));
+    }
 }

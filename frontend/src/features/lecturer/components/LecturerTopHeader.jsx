@@ -4,13 +4,6 @@
       <div className="flex items-center gap-3 md:gap-4">
         <button
           type="button"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-        >
-          <span className="material-symbols-outlined">mail</span>
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-        </button>
-        <button
-          type="button"
           className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
         >
           <span className="material-symbols-outlined">settings</span>

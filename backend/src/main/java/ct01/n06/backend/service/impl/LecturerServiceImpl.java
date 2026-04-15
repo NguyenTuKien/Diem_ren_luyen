@@ -46,7 +46,6 @@ import ct01.n06.backend.entity.SemesterEntity;
 import ct01.n06.backend.entity.StudentEntity;
 import ct01.n06.backend.entity.StudentSemesterEntity;
 import ct01.n06.backend.entity.UserEntity;
-import ct01.n06.backend.entity.enums.NotificationType;
 import ct01.n06.backend.entity.enums.RecordStatus;
 import ct01.n06.backend.entity.enums.Role;
 import ct01.n06.backend.entity.enums.UserStatus;
@@ -55,7 +54,6 @@ import ct01.n06.backend.exception.business.ResourceNotFoundException;
 import ct01.n06.backend.repository.ClassRepository;
 import ct01.n06.backend.repository.EventRepository;
 import ct01.n06.backend.repository.LecturerRepository;
-import ct01.n06.backend.repository.NotificationRepository;
 import ct01.n06.backend.repository.RecordRepository;
 import ct01.n06.backend.repository.SemesterRepository;
 import ct01.n06.backend.repository.StudentRepository;
@@ -82,7 +80,6 @@ public class LecturerServiceImpl implements LecturerService {
   private final StudentSemesterRepository studentSemesterRepository;
   private final EventRepository eventRepository;
   private final RecordRepository recordRepository;
-  private final NotificationRepository notificationRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserService userService;
 
@@ -165,10 +162,8 @@ public class LecturerServiceImpl implements LecturerService {
       );
     }
 
-    long newNotifications = notificationRepository.countByTargetTypeInAndCreatedAtAfter(
-        List.of(NotificationType.ALL, NotificationType.CLASS),
-        LocalDateTime.now().minusDays(7)
-    );
+    // Lecturer does not have an inbox notification flow, so this metric is always zero.
+    long newNotifications = 0;
     DashboardScoreSnapshot scoreSnapshot = buildDashboardScoreSnapshot(students, activeSemesterOpt);
     List<LecturerDashboardSummaryResponse.UpcomingEventItem> upcomingEvents =
         buildUpcomingDashboardEvents(currentUserId);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { apiRequest } from "../shared/api/http";
@@ -6,16 +6,17 @@ import EventDashboard from "../features/lecturer/components/EventDashboard";
 import LecturerClassEvaluation from "../features/lecturer/components/LecturerClassEvaluation";
 import LecturerDashboardOverview from "../features/lecturer/components/LecturerDashboardOverview";
 import LecturerMobileNav from "../features/lecturer/components/LecturerMobileNav";
+import LecturerNotificationCenter from "../features/lecturer/components/LecturerNotificationCenter";
 import LecturerSidebar from "../features/lecturer/components/LecturerSidebar";
 import LecturerStudentManagement from "../features/lecturer/components/LecturerStudentManagement";
 import LecturerTopHeader from "../features/lecturer/components/LecturerTopHeader";
 
 const SIDEBAR_ITEMS_BASE = [
   { key: "dashboard", label: "Tổng quan", icon: "dashboard" },
+  { key: "notifications", label: "Thông báo", icon: "notifications" },
   { key: "events", label: "Sự kiện", icon: "calendar_today" },
   { key: "students", label: "Sinh viên", icon: "group" },
   { key: "evaluation", label: "Quản lý điểm rèn luyện", icon: "assignment_turned_in" },
-  { key: "notifications", label: "Thông báo", icon: "notifications" },
 ];
 
 function LecturerPlaceholderPanel({ title, description }) {
@@ -57,7 +58,7 @@ export default function LecturerPage() {
             totalEvents: data.totalEvents || 0,
             participatingStudents: data.participatingStudents || 0,
             pendingEvidence: data.pendingEvidence || 0,
-            newNotifications: data.newNotifications || 0,
+            newNotifications: Number(data.newNotifications || 0),
             passRate: data.passRate || 0,
             scoreDistribution: Array.isArray(data.scoreDistribution) ? data.scoreDistribution : [],
             upcomingEvents: Array.isArray(data.upcomingEvents) ? data.upcomingEvents : [],
@@ -76,7 +77,7 @@ export default function LecturerPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [activeFeature]);
 
   const handleCreateEventFromOverview = () => {
     setShouldOpenCreateEventModal(true);
@@ -91,19 +92,6 @@ export default function LecturerPage() {
     setShouldOpenCreateEventModal(false);
     setActiveFeature(featureKey);
   };
-
-  const sidebarItems = useMemo(
-    () => SIDEBAR_ITEMS_BASE.map((item) => {
-      if (item.key !== "notifications") {
-        return item;
-      }
-      return {
-        ...item,
-        badge: dashboardSummary.newNotifications > 0 ? dashboardSummary.newNotifications : undefined,
-      };
-    }),
-    [dashboardSummary.newNotifications],
-  );
 
   const featureComponents = {
     dashboard: {
@@ -124,11 +112,8 @@ export default function LecturerPage() {
     students: { Component: LecturerStudentManagement, props: {} },
     evaluation: { Component: LecturerClassEvaluation, props: {} },
     notifications: {
-      Component: LecturerPlaceholderPanel,
-      props: {
-        title: "Thông báo",
-        description: "Bản thông báo cho giảng viên đang được cập nhật.",
-      },
+      Component: LecturerNotificationCenter,
+      props: {},
     },
   };
 
@@ -151,7 +136,7 @@ export default function LecturerPage() {
 
       <main className="flex-1 md:ml-64">
         <LecturerSidebar
-          items={sidebarItems}
+          items={SIDEBAR_ITEMS_BASE}
           activeFeature={activeFeature}
           onSelect={handleFeatureSelect}
           fullNameLabel={fullNameLabel}

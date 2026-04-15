@@ -16,9 +16,6 @@ export default defineConfig(({ mode }) => {
                     changeOrigin: true,
                 }
             }
-        },
-        define: {
-            'process.env': env
         }
     }
 })

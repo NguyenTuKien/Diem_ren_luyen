@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { apiRequest } from "../../../shared/api/http";
+import { getStudentActivityHistory } from "../../../api/notificationStatisticsApi";
 
-export function useStudentAttendance(userId) {
+export function useStudentAttendance(userId, semesterId, page = 0, size = 10) {
   const [attendance, setAttendance] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size,
+    totalItems: 0,
+    totalPages: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -13,9 +19,19 @@ export function useStudentAttendance(userId) {
       setLoading(true);
       setError("");
       try {
-        const payload = await apiRequest("/student/attendance");
+        const payload = await getStudentActivityHistory({
+          semesterId,
+          page,
+          size,
+        });
         if (!ignore) {
-          setAttendance(payload || []);
+          setAttendance(Array.isArray(payload?.items) ? payload.items : []);
+          setPagination({
+            page: payload?.page ?? page,
+            size: payload?.size ?? size,
+            totalItems: payload?.totalItems ?? 0,
+            totalPages: payload?.totalPages ?? 0,
+          });
         }
       } catch (err) {
         if (!ignore) {
@@ -35,7 +51,7 @@ export function useStudentAttendance(userId) {
     return () => {
       ignore = true;
     };
-  }, [userId]);
+  }, [userId, semesterId, page, size]);
 
-  return { attendance, loading, error };
+  return { attendance, pagination, loading, error };
 }

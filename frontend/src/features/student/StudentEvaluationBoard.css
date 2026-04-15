@@ -40,7 +40,7 @@
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: flex;
-  flex-col;
+  flex-direction: column;
   justify-content: space-between;
 }
 
@@ -330,11 +330,34 @@
 }
 
 /* Color Utilities for Icons */
-.color-blue-bg { background-color: #eff6ff; }
-.color-blue-text { color: #3b82f6; }
-.color-orange-bg { background-color: #fff7ed; }
-.color-orange-text { color: #f97316; }
-.color-green-bg { background-color: #f0fdf4; }
-.color-green-text { color: #22c55e; }
-.color-purple-bg { background-color: #faf5ff; }
-.color-purple-text { color: #a855f7; }
+.color-blue-bg {
+  background-color: #eff6ff;
+}
+
+.color-blue-text {
+  color: #3b82f6;
+}
+
+.color-orange-bg {
+  background-color: #fff7ed;
+}
+
+.color-orange-text {
+  color: #f97316;
+}
+
+.color-green-bg {
+  background-color: #f0fdf4;
+}
+
+.color-green-text {
+  color: #22c55e;
+}
+
+.color-purple-bg {
+  background-color: #faf5ff;
+}
+
+.color-purple-text {
+  color: #a855f7;
+}

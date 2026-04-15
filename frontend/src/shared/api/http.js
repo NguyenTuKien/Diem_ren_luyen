@@ -129,3 +129,48 @@ export async function apiRequest(path, options = {}) {
 
   return payload;
 }
+
+export async function apiBinaryRequest(path, options = {}) {
+  const endpoint = path.startsWith("/") ? path : `/${path}`;
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = getTokenFromStorage();
+
+  const headers = {
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  let response;
+  try {
+    response = await fetch(url, {
+      method: options.method || "GET",
+      ...options,
+      credentials: "include",
+      headers,
+    });
+  } catch {
+    throw new Error(
+      "Không kết nối được backend. Kiểm tra backend đang chạy tại http://localhost:8080.",
+    );
+  }
+
+  if (!response.ok) {
+    const payload = await readPayload(response);
+    const errorMessage = buildMessage(payload, response.status);
+
+    if (response.status === 401) {
+      alert(errorMessage);
+
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(AUTH_STORAGE_KEY);
+        window.localStorage.removeItem("accessToken");
+        window.localStorage.removeItem("refreshToken");
+        window.location.href = "/auth";
+      }
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return response;
+}

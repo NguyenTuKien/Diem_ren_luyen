@@ -3,16 +3,20 @@ import { useAuth } from '../../../context/AuthContext';
 import { useCurrentSemester } from '../../../hooks/useCurrentSemester';
 import { useLecturerEvaluationList } from '../hooks/useLecturerEvaluationList';
 import { finalizeLecturerEvaluations } from '../../../api/evaluationApi';
+import {
+  exportLecturerClassStatistics,
+  getLecturerClassStatistics,
+} from '../../../api/notificationStatisticsApi';
 import { apiRequest } from '../../../shared/api/http';
 import LecturerReviewModal from './LecturerReviewModal';
 import '../../../styles/MonitorClass.css';
 
 const STATUS_DISPLAY = {
-  SUBMITTED:        { label: 'SUBMITTED',        badge: 'badge-submitted' },
+  SUBMITTED: { label: 'SUBMITTED', badge: 'badge-submitted' },
   MONITOR_APPROVED: { label: 'MONITOR_APPROVED', badge: 'badge-monitor_approved' },
-  FINALIZED:        { label: 'FINALIZED',         badge: 'badge-finalized' },
-  DRAFT:            { label: 'DRAFT',             badge: 'badge-draft' },
-  OPEN:             { label: 'NOT_SUBMITTED',     badge: 'badge-not_submitted' },
+  FINALIZED: { label: 'FINALIZED', badge: 'badge-finalized' },
+  DRAFT: { label: 'DRAFT', badge: 'badge-draft' },
+  OPEN: { label: 'NOT_SUBMITTED', badge: 'badge-not_submitted' },
 };
 
 function getInitials(name) {
@@ -71,7 +75,7 @@ export default function LecturerClassEvaluation() {
       }
     }
     fetchClasses();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.backendUserId, user?.userId, user?.profileCode]);
 
   // --- Student evaluation list ---
@@ -92,6 +96,9 @@ export default function LecturerClassEvaluation() {
   const [activeModalStudent, setActiveModalStudent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [finalizing, setFinalizing] = useState(false);
+  const [statistics, setStatistics] = useState(null);
+  const [statisticsLoading, setStatisticsLoading] = useState(false);
+  const [statisticsError, setStatisticsError] = useState(null);
   const itemsPerPage = 10;
 
   const paginatedStudents = useMemo(() => {
@@ -102,6 +109,41 @@ export default function LecturerClassEvaluation() {
   const totalPages = Math.ceil(students.length / itemsPerPage);
 
   const selectedClassObj = classes.find(c => c.id === selectedClassId);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchStatistics() {
+      if (!selectedClassId || !selectedSemester) {
+        return;
+      }
+
+      setStatisticsLoading(true);
+      setStatisticsError(null);
+      try {
+        const response = await getLecturerClassStatistics({
+          classId: selectedClassId,
+          semesterId: selectedSemester,
+        });
+        if (!ignore) {
+          setStatistics(response);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setStatisticsError(err.message || 'Không tải được thống kê lớp.');
+        }
+      } finally {
+        if (!ignore) {
+          setStatisticsLoading(false);
+        }
+      }
+    }
+
+    fetchStatistics();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedClassId, selectedSemester]);
 
   const handleFinalizeAll = async () => {
     if (!window.confirm('Xác nhận hoàn tất (Finalize) toàn bộ phiếu đã được lớp trưởng duyệt trong kỳ này?')) return;
@@ -116,21 +158,54 @@ export default function LecturerClassEvaluation() {
     }
   };
 
-  const handleExportExcel = () => {
-    const header = `<tr><th>MSSV</th><th>Họ và Tên</th><th>Điểm tổng kết</th><th>Trạng thái</th></tr>`;
-    const rows = students.map(s =>
-      `<tr><td>${s.studentCode}</td><td>${s.fullName}</td><td>${s.finalScore || '--'}</td><td>${s.status || 'NOT_SUBMITTED'}</td></tr>`
-    ).join('');
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"/></head><body><table border="1">${header}${rows}</table></body></html>`;
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Danh_Sach_Ren_Luyen_${selectedClassObj?.classCode || 'Lop'}.xls`;
-    document.body.appendChild(link); link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleExportExcel = async () => {
+    try {
+      const { blob, fileName } = await exportLecturerClassStatistics({
+        classId: selectedClassId,
+        semesterId: selectedSemester,
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName || `Danh_Sach_Ren_Luyen_${selectedClassObj?.classCode || 'Lop'}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || 'Không thể xuất báo cáo Excel từ backend.');
+    }
   };
+
+  const totalStudents = statistics?.totalStudents ?? stats.total;
+  const participatedStudents = statistics?.participatedStudents ?? stats.approvedByMonitor;
+  const participationRate = statistics?.participationRate ?? (totalStudents > 0 ? (participatedStudents / totalStudents) * 100 : 0);
+  const notParticipated = Math.max(totalStudents - participatedStudents, 0);
+
+  const scoreDistribution = useMemo(() => {
+    const raw = Array.isArray(statistics?.scoreDistribution) ? statistics.scoreDistribution : [];
+    const normalized = [
+      { key: 'excellent', label: 'Xuất sắc', color: '#16a34a' },
+      { key: 'good', label: 'Tốt', color: '#2563eb' },
+      { key: 'fair', label: 'Khá', color: '#f59e0b' },
+      { key: 'average', label: 'Trung bình', color: '#ef4444' },
+    ].map((preset) => {
+      const matched = raw.find((item) => String(item?.key || '').toLowerCase() === preset.key);
+      return {
+        ...preset,
+        count: matched?.count ?? 0,
+        percentage: matched?.percentage ?? 0,
+      };
+    });
+
+    return normalized;
+  }, [statistics?.scoreDistribution]);
+
+  const maxDistributionCount = useMemo(() => {
+    const max = Math.max(...scoreDistribution.map((item) => item.count), 0);
+    return max > 0 ? max : 1;
+  }, [scoreDistribution]);
 
   // Loading/Error states
   if (semesterLoading || classesLoading) {
@@ -196,7 +271,7 @@ export default function LecturerClassEvaluation() {
           </div>
           <div className="stat-info">
             <span className="stat-label">TỔNG SỐ SINH VIÊN</span>
-            <span className="stat-value">{String(stats.total).padStart(2, '0')}</span>
+            <span className="stat-value">{String(totalStudents).padStart(2, '0')}</span>
             <span className="stat-subtext blue">{selectedClassObj ? `Lớp ${selectedClassObj.classCode}` : 'Trong lớp'}</span>
           </div>
         </div>
@@ -206,9 +281,9 @@ export default function LecturerClassEvaluation() {
             <span className="material-symbols-outlined">verified</span>
           </div>
           <div className="stat-info">
-            <span className="stat-label">LỚP TRƯỞNG ĐÃ DUYỆT</span>
-            <span className="stat-value">{String(stats.approvedByMonitor).padStart(2, '0')}</span>
-            <span className="stat-subtext green">Chờ giảng viên tổng kết</span>
+            <span className="stat-label">SV THAM GIA HOẠT ĐỘNG</span>
+            <span className="stat-value">{String(participatedStudents).padStart(2, '0')}</span>
+            <span className="stat-subtext green">Tỷ lệ: {Math.round(participationRate * 10) / 10}%</span>
           </div>
         </div>
 
@@ -217,11 +292,140 @@ export default function LecturerClassEvaluation() {
             <span className="material-symbols-outlined">pending</span>
           </div>
           <div className="stat-info">
-            <span className="stat-label">CHƯA SẴN SÀNG</span>
-            <span className="stat-value">{String(stats.pendingCount).padStart(2, '0')}</span>
-            <span className="stat-subtext orange">Chưa qua lớp trưởng</span>
+            <span className="stat-label">CHƯA THAM GIA</span>
+            <span className="stat-value">{String(notParticipated).padStart(2, '0')}</span>
+            <span className="stat-subtext orange">Theo API thống kê lớp</span>
           </div>
         </div>
+      </div>
+
+      {statisticsError && (
+        <div style={{ marginBottom: '16px', color: '#dc2626', fontSize: '13px' }}>{statisticsError}</div>
+      )}
+      {statisticsLoading && (
+        <div style={{ marginBottom: '16px', color: '#64748b', fontSize: '13px' }}>Đang tải thống kê lớp...</div>
+      )}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '16px',
+          marginBottom: '20px',
+        }}
+      >
+        <section
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '16px',
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 700 }}>
+            Phân phổ điểm rèn luyện
+          </h3>
+          <p style={{ margin: '6px 0 14px', fontSize: '12px', color: '#64748b' }}>
+            Thống kê theo 4 nhóm: Xuất sắc, Tốt, Khá, Trung bình.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {scoreDistribution.map((item) => (
+              <div key={item.key}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '6px',
+                    fontSize: '12px',
+                  }}
+                >
+                  <span style={{ color: '#334155', fontWeight: 600 }}>{item.label}</span>
+                  <span style={{ color: '#64748b' }}>
+                    {item.count} SV ({Math.round(item.percentage * 10) / 10}%)
+                  </span>
+                </div>
+                <div
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    borderRadius: '999px',
+                    background: '#e2e8f0',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <span
+                    style={{
+                      display: 'block',
+                      height: '100%',
+                      width: `${(item.count / maxDistributionCount) * 100}%`,
+                      background: item.color,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', fontWeight: 700 }}>
+              Tỷ lệ tham gia sự kiện
+            </h3>
+            <p style={{ margin: '6px 0 14px', fontSize: '12px', color: '#64748b' }}>
+              Dựa trên số sinh viên có tham gia hoạt động trong học kỳ.
+            </p>
+          </div>
+
+          <div>
+            <div
+              style={{
+                width: '100%',
+                height: '12px',
+                borderRadius: '999px',
+                background: '#e2e8f0',
+                overflow: 'hidden',
+                marginBottom: '10px',
+              }}
+            >
+              <span
+                style={{
+                  display: 'block',
+                  width: `${Math.max(0, Math.min(participationRate, 100))}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ padding: '10px', borderRadius: '10px', background: '#f0fdf4' }}>
+                <div style={{ fontSize: '11px', color: '#166534', marginBottom: '4px' }}>Đã tham gia</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#166534' }}>{participatedStudents}</div>
+              </div>
+              <div style={{ padding: '10px', borderRadius: '10px', background: '#fff7ed' }}>
+                <div style={{ fontSize: '11px', color: '#9a3412', marginBottom: '4px' }}>Chưa tham gia</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: '#9a3412' }}>{notParticipated}</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '10px', fontSize: '12px', color: '#334155' }}>
+              <strong>{Math.round(participationRate * 10) / 10}%</strong> ({participatedStudents}/{totalStudents} sinh viên)
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Table */}

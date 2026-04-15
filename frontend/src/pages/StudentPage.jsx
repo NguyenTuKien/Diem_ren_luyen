@@ -1,6 +1,7 @@
-import {useMemo, useState} from "react";
-import {useNavigate} from "react-router-dom";
-import {useAuth} from "../context/AuthContext";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getStudentNotificationUnreadCount } from "../api/notificationStatisticsApi";
 import StudentDashboard from "../features/student/components/StudentDashboard";
 import QRScanner from "../features/student/components/QRScanner";
 import StudentMobileNav from "../features/student/components/StudentMobileNav";
@@ -9,6 +10,8 @@ import StudentSidebar from "../features/student/components/StudentSidebar";
 import StudentTopHeader from "../features/student/components/StudentTopHeader";
 import StudentEventsPanel from "../features/student/components/StudentEventsPanel";
 import StudentAttendancePanel from "../features/student/components/StudentAttendancePanel";
+import StudentStatisticsPanel from "../features/student/components/StudentStatisticsPanel";
+import StudentNotificationsPanel from "../features/student/components/StudentNotificationsPanel";
 import StudentEvaluationBoard from "../features/student/StudentEvaluationBoard";
 
 function normalizeRole(role) {
@@ -20,7 +23,9 @@ function buildSidebarItems(isMonitor) {
   const baseItems = [
     { key: "dashboard", label: "Dashboard", icon: "dashboard" },
     { key: "events", label: "Sự kiện", icon: "calendar_month" },
+    { key: "notifications", label: "Thông báo", icon: "notifications" },
     { key: "history", label: "Lịch sử hoạt động", icon: "history" },
+    { key: "statistics", label: "Thống kê", icon: "bar_chart" },
     { key: "evidence", label: "Khai báo minh chứng", icon: "verified_user" },
     { key: "scan-qr", label: "Quét sự kiện", icon: "qr_code_scanner" },
     { key: "evaluation", label: "Phiếu rèn luyện", icon: "assignment" },
@@ -43,6 +48,8 @@ const FEATURE_COMPONENTS = {
   "scan-qr": QRScanner,
   events: StudentEventsPanel,
   history: StudentAttendancePanel,
+  statistics: StudentStatisticsPanel,
+  notifications: StudentNotificationsPanel,
   evaluation: StudentEvaluationBoard,
   "manage-class": MonitorClass,
   evidence: () => (
@@ -60,10 +67,45 @@ export default function StudentPage() {
   const isMonitor = userRole === "MONITOR";
 
   const [activeFeature, setActiveFeature] = useState("dashboard");
+  const [studentUnreadCount, setStudentUnreadCount] = useState(0);
 
-  const sidebarItems = useMemo(() => buildSidebarItems(isMonitor), [isMonitor]);
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchUnreadCount() {
+      try {
+        const payload = await getStudentNotificationUnreadCount();
+        if (!ignore) {
+          setStudentUnreadCount(Number(payload?.unreadCount || 0));
+        }
+      } catch {
+        if (!ignore) {
+          setStudentUnreadCount(0);
+        }
+      }
+    }
+
+    fetchUnreadCount();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const sidebarItems = useMemo(
+    () =>
+      buildSidebarItems(isMonitor).map((item) =>
+        item.key === "notifications" && studentUnreadCount > 0
+          ? { ...item, badge: studentUnreadCount }
+          : item,
+      ),
+    [isMonitor, studentUnreadCount],
+  );
 
   const FeatureComponent = FEATURE_COMPONENTS[activeFeature] || StudentDashboard;
+  const featureProps =
+    activeFeature === "notifications"
+      ? { onUnreadCountChange: setStudentUnreadCount }
+      : { onNavigate: setActiveFeature };
   const fullNameLabel = user?.displayName || "Student";
   const userIdLabel = user?.profileCode || user?.userId || "---";
   const avatarLetter = (fullNameLabel || "S").slice(0, 1).toUpperCase();
@@ -86,11 +128,16 @@ export default function StudentPage() {
         <StudentSidebar items={sidebarItems} activeFeature={activeFeature} onSelect={setActiveFeature} />
 
         <div className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full pb-20 md:pb-8">
-          <FeatureComponent onNavigate={setActiveFeature} />
+          <FeatureComponent {...featureProps} />
         </div>
       </main>
 
-      <StudentMobileNav activeFeature={activeFeature} onSelect={setActiveFeature} onLogout={handleLogout} />
+      <StudentMobileNav
+        activeFeature={activeFeature}
+        onSelect={setActiveFeature}
+        onLogout={handleLogout}
+        unreadCount={studentUnreadCount}
+      />
     </div>
   );
 }

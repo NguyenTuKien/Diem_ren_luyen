@@ -15,5 +15,7 @@ public interface NotificationRepository extends JpaRepository<NotificationEntity
   Optional<NotificationEntity> findByTitle(String title);
 
   long countByTargetTypeInAndCreatedAtAfter(Collection<NotificationType> targetTypes, LocalDateTime createdAt);
+
+  long countBySender_IdAndCreatedAtAfter(String senderId, LocalDateTime createdAt);
 }
 

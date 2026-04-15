@@ -43,8 +43,21 @@ public class NotificationEntity extends BaseJpaAuditingEntity {
   @Column(name = NotificationConstant.COL_TITLE, length = 200, nullable = false)
   private String title;
 
+  @Column(name = NotificationConstant.COL_CONTENT, columnDefinition = "TEXT", nullable = false)
+  private String content;
+
   @Enumerated(EnumType.STRING)
   @Column(name = NotificationConstant.COL_TARGET_TYPE, length = 20, nullable = false)
   private NotificationType targetType;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = NotificationConstant.COL_CLASS_ID)
+  private ClassEntity classEntity;
+
+  @Column(name = NotificationConstant.COL_ATTACHMENT_NAME, length = 255)
+  private String attachmentName;
+
+  @Column(name = NotificationConstant.COL_ATTACHMENT_PATH, length = 500)
+  private String attachmentPath;
 
 }

@@ -16,6 +16,11 @@ export default function StudentSidebar({ items, activeFeature, onSelect }) {
           >
             <span className="material-symbols-outlined">{item.icon}</span>
             <p className="text-sm font-medium">{item.label}</p>
+            {item.badge ? (
+              <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {item.badge}
+              </span>
+            ) : null}
           </button>
         );
       })}

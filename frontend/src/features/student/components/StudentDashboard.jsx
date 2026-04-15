@@ -1,5 +1,6 @@
 import { useAuth } from "../../../context/AuthContext";
 import { useStudentDashboard } from "../hooks/useStudentDashboard";
+import { useStudentScoreTrend } from "../hooks/useStudentScoreTrend";
 import "../../../styles/StudentDashboard.css";
 
 function getGreetingName(name) {
@@ -78,6 +79,7 @@ function getHistoryHint(status) {
 export default function StudentDashboard({ onNavigate }) {
   const { user } = useAuth();
   const { dashboard, loading, error } = useStudentDashboard(user?.userId);
+  const { trend, loading: trendLoading, error: trendError } = useStudentScoreTrend(user?.userId);
 
   if (loading) {
     return <div className="page-state">Đang tải dashboard sinh viên...</div>;
@@ -186,6 +188,94 @@ export default function StudentDashboard({ onNavigate }) {
                 );
               })}
             </ul>
+          )}
+        </article>
+      </section>
+
+      <section className="student-content-row" style={{ marginTop: "16px" }}>
+        <article className="student-history-box">
+          <div className="student-section-title student-section-title-history">
+            <h2>Xu hướng điểm theo học kỳ</h2>
+          </div>
+
+          {trendLoading ? (
+            <p className="student-empty">Đang tải xu hướng điểm...</p>
+          ) : trendError ? (
+            <p className="student-empty" style={{ color: "#ef4444" }}>
+              {trendError}
+            </p>
+          ) : trend.length === 0 ? (
+            <p className="student-empty">Chưa có dữ liệu điểm theo học kỳ.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {trend.map((item) => {
+                const safeScore = Math.max(0, Math.min(100, Number(item.finalScore) || 0));
+                const delta = Number(item.deltaFromPrevious);
+                const hasDelta = Number.isFinite(delta);
+                const deltaLabel = hasDelta ? `${delta > 0 ? "+" : ""}${delta}` : "--";
+                const deltaColor = !hasDelta
+                  ? "#64748b"
+                  : delta > 0
+                    ? "#16a34a"
+                    : delta < 0
+                      ? "#dc2626"
+                      : "#64748b";
+
+                return (
+                  <div
+                    key={`${item.semesterId}-${item.semesterName}`}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      padding: "12px",
+                      background: "#fff",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      <strong style={{ fontSize: "14px", color: "#0f172a" }}>
+                        {item.semesterName || "Học kỳ"}
+                      </strong>
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        <span style={{ fontSize: "12px", color: "#475569" }}>
+                          {item.rankLabel || "--"}
+                        </span>
+                        <span style={{ fontSize: "12px", color: deltaColor }}>
+                          Δ {deltaLabel}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#1e293b", marginBottom: "8px" }}>
+                      Điểm: <strong>{safeScore}</strong>/100
+                    </div>
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "8px",
+                        borderRadius: "999px",
+                        background: "#e2e8f0",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "block",
+                          width: `${safeScore}%`,
+                          height: "100%",
+                          background: "linear-gradient(90deg, #2563eb, #22c55e)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </article>
       </section>

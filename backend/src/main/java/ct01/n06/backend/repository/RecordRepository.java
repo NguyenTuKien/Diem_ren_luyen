@@ -4,6 +4,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,6 +25,16 @@ public interface RecordRepository extends JpaRepository<RecordEntity, Long> {
 
   List<RecordEntity> findTop10ByStudent_IdOrderByCreatedAtDesc(String studentId);
 
+  @EntityGraph(attributePaths = {"event", "criteria", "semester"})
+  Page<RecordEntity> findByStudent_IdOrderByCreatedAtDesc(String studentId, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"event", "criteria", "semester"})
+  Page<RecordEntity> findByStudent_IdAndSemester_IdOrderByCreatedAtDesc(
+      String studentId,
+      Long semesterId,
+      Pageable pageable
+  );
+
   List<RecordEntity> findBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
       Long semesterId,
       Collection<String> studentIds,
@@ -29,6 +42,12 @@ public interface RecordRepository extends JpaRepository<RecordEntity, Long> {
   );
 
   long countBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
+      Long semesterId,
+      Collection<String> studentIds,
+      RecordStatus status
+  );
+
+  long countDistinctStudent_IdBySemester_IdAndStudent_IdInAndEventIsNotNullAndStatus(
       Long semesterId,
       Collection<String> studentIds,
       RecordStatus status
@@ -56,9 +75,30 @@ public interface RecordRepository extends JpaRepository<RecordEntity, Long> {
       @Param("status") RecordStatus status
   );
 
+  @Query("""
+      select r.student.id as studentId, count(r.id) as joinedCount
+      from RecordEntity r
+      where r.semester.id = :semesterId
+        and r.student.id in :studentIds
+        and r.event is not null
+        and r.status = :status
+      group by r.student.id
+      """)
+  List<StudentJoinedCountProjection> countEventJoinsBySemesterAndStudentIdsAndStatus(
+      @Param("semesterId") Long semesterId,
+      @Param("studentIds") Collection<String> studentIds,
+      @Param("status") RecordStatus status
+  );
+
   interface EventAttendeeCountProjection {
     Long getEventId();
 
     long getAttendeeCount();
+  }
+
+  interface StudentJoinedCountProjection {
+    String getStudentId();
+
+    long getJoinedCount();
   }
 }

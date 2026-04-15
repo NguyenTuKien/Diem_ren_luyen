@@ -23,14 +23,6 @@ const SUMMARY_CARD_CONFIG = [
     color: "text-amber-600",
     bg: "bg-amber-100 dark:bg-amber-900/30",
   },
-  {
-    id: "notice",
-    label: "Thông báo mới",
-    valueKey: "newNotifications",
-    icon: "chat_bubble",
-    color: "text-violet-600",
-    bg: "bg-violet-100 dark:bg-violet-900/30",
-  },
 ];
 
 const SCORE_DISTRIBUTION_META = [
@@ -102,7 +94,6 @@ export default function LecturerDashboardOverview({ summary, onCreateEvent, load
     totalEvents: summary?.totalEvents ?? 0,
     participatingStudents: summary?.participatingStudents ?? 0,
     pendingEvidence: summary?.pendingEvidence ?? 0,
-    newNotifications: summary?.newNotifications ?? 0,
   };
   const passRate = Number.isFinite(Number(summary?.passRate)) ? Number(summary.passRate) : 0;
   const normalizedPassRate = Math.max(0, Math.min(100, passRate));
