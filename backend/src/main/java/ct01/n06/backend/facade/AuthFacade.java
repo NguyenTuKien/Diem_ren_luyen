@@ -78,18 +78,20 @@ public class AuthFacade {
             String accessToken = jwtService.generateAccessToken(userEntity);
             String refreshToken = jwtService.generateRefreshToken(subject);
 
-            String redisKey = "user:" + subject + ":session";
+            if (isDeviceLockEnforced(userEntity)) {
+                String redisKey = "user:" + subject + ":session";
 
-            // Yêu cầu 2: Ràng buộc User - Session (Khóa tài khoản) - Xử lý đá session cũ hoặc từ chối login
-            Boolean locked = redisTemplate.opsForValue().setIfAbsent(
-                    redisKey,
-                    accessToken,
-                    refreshExpirationMs,
-                    TimeUnit.MILLISECONDS
-            );
+                // Chỉ khóa 1 thiết bị tại 1 thời điểm cho sinh viên.
+                Boolean locked = redisTemplate.opsForValue().setIfAbsent(
+                        redisKey,
+                        accessToken,
+                        refreshExpirationMs,
+                        TimeUnit.MILLISECONDS
+                );
 
-            if (!Boolean.TRUE.equals(locked)) {
-                throw new ForbiddenException("Tài khoản đang được đăng nhập trên thiết bị khác");
+                if (!Boolean.TRUE.equals(locked)) {
+                    throw new ForbiddenException("Tài khoản đang được đăng nhập trên thiết bị khác");
+                }
             }
 
             return LoginResponse.builder()
@@ -133,14 +135,16 @@ public class AuthFacade {
         String newAccessToken = jwtService.generateAccessToken(userEntity);
         String newRefreshToken = jwtService.generateRefreshToken(username);
 
-        // 2. PHẢI CẬP NHẬT LẠI ACCESS TOKEN MỚI VÀO REDIS
-        String redisKey = "user:" + username + ":session";
-        redisTemplate.opsForValue().set(
-                redisKey,
-                newAccessToken,
-                refreshExpirationMs,
-                TimeUnit.MILLISECONDS
-        );
+        if (isDeviceLockEnforced(userEntity)) {
+            // Chỉ duy trì khóa session trên Redis cho sinh viên.
+            String redisKey = "user:" + username + ":session";
+            redisTemplate.opsForValue().set(
+                    redisKey,
+                    newAccessToken,
+                    refreshExpirationMs,
+                    TimeUnit.MILLISECONDS
+            );
+        }
 
         return LoginResponse.builder()
                 .accessToken(newAccessToken)
@@ -156,6 +160,11 @@ public class AuthFacade {
         if ("ChangeThisDeviceSecretKey".equals(deviceHmacSecret.trim())) {
             log.warn("Cảnh báo: Đang dùng HMAC secret mặc định!");
         }
+    }
+
+    private boolean isDeviceLockEnforced(UserEntity user) {
+        return user != null
+                && (user.getRole() == Role.ROLE_STUDENT || user.getRole() == Role.ROLE_MONITOR);
     }
 
     public UserInfoResponse getCurrentUserInfo(Authentication authentication) {
