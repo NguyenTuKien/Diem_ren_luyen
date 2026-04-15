@@ -1,6 +1,7 @@
 package ct01.n06.backend.util;
 
 import ct01.n06.backend.entity.UserEntity;
+import ct01.n06.backend.entity.enums.Role;
 import ct01.n06.backend.security.JwtService;
 import ct01.n06.backend.service.DeviceSecurityService;
 import ct01.n06.backend.service.UserService;
@@ -65,18 +66,20 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
         String fallbackDeviceId = "oauth:" + userEntity.getId() + ":" + UUID.randomUUID();
         String deviceToken = deviceSecurityService.generateDeviceToken(fallbackDeviceId);
 
-        // Lưu access token vào Redis để đảm bảo 1 thiết bị/1 thời điểm
-        String redisKey = "user:" + userEntity.getUsername() + ":session";
-        Boolean locked = redisTemplate.opsForValue().setIfAbsent(redisKey, accessToken, refreshExpirationMs,
-                TimeUnit.MILLISECONDS);
-        if (!Boolean.TRUE.equals(locked)) {
-            String encodedMessage = URLEncoder.encode("SessionConflict", StandardCharsets.UTF_8);
-            String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
-                    .queryParam("error", encodedMessage)
-                    .build(true)
-                    .toUriString();
-            redirectStrategy.sendRedirect(request, response, targetUrl);
-            return;
+        if (isDeviceLockEnforced(userEntity)) {
+            // Chỉ sinh viên bị giới hạn 1 phiên đăng nhập.
+            String redisKey = "user:" + userEntity.getUsername() + ":session";
+            Boolean locked = redisTemplate.opsForValue().setIfAbsent(redisKey, accessToken, refreshExpirationMs,
+                    TimeUnit.MILLISECONDS);
+            if (!Boolean.TRUE.equals(locked)) {
+                String encodedMessage = URLEncoder.encode("SessionConflict", StandardCharsets.UTF_8);
+                String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl)
+                        .queryParam("error", encodedMessage)
+                        .build(true)
+                        .toUriString();
+                redirectStrategy.sendRedirect(request, response, targetUrl);
+                return;
+            }
         }
 
         ResponseCookie deviceCookie = ResponseCookie.from(deviceCookieName, deviceToken)
@@ -121,5 +124,10 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
             return oAuth2User.getName();
         }
         return authentication.getName();
+    }
+
+    private boolean isDeviceLockEnforced(UserEntity userEntity) {
+        return userEntity != null
+                && (userEntity.getRole() == Role.ROLE_STUDENT || userEntity.getRole() == Role.ROLE_MONITOR);
     }
 }
