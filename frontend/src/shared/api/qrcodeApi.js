@@ -15,13 +15,17 @@ export const qrcodeApi = {
     return response.json()
   },
 
-  scanQRCode: async ({ qrData, eventId, blueToothId }) => {
+  scanQRCode: async ({ qrData, eventId }) => {
     const response = await authFetch(`${API_BASE_URL}/scan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ qrData, eventId, blueToothId }),
+      body: JSON.stringify({
+        qrData,
+        eventId,
+        // blueToothId, // Temporarily disabled: Bluetooth integration is not ready yet.
+      }),
     })
 
     const responseData = await response.json().catch(() => ({}))

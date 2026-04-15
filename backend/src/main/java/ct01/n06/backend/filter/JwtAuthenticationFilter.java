@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -62,33 +63,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // THÊM ĐIỀU KIỆN KIỂM TRA SecurityContextHolder ĐỂ TỐI ƯU
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // ==========================================
-                // 1. CHỐT CHẶN REDIS (KIỂM TRA 1 THIẾT BỊ)
-                // ==========================================
-                String redisKey = "user:" + username + ":session";
-                String tokenInRedis = (String) redisTemplate.opsForValue().get(redisKey);
-
-                // Nếu Redis không có token HOẶC token gửi lên khác với token trong Redis -> Bị đá!
-                if (tokenInRedis == null || !tokenInRedis.equals(jwt)) {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json");
-                    response.setCharacterEncoding("UTF-8");
-                    String errorJson = "{"
-                            + "\"success\": false, "
-                            + "\"message\": \"Tài khoản đã bị ngắt kết nối hoặc đăng nhập ở thiết bị khác.\", "
-                            + "\"type\": \"about:blank\", "
-                            + "\"title\": \"Unauthorized\", "
-                            + "\"detail\": \"Tài khoản đã bị ngắt kết nối hoặc đăng nhập ở thiết bị khác.\""
-                            + "}";
-                    response.getWriter().write(errorJson);
-                    return; // DỪNG LUỒNG CHẠY NGAY LẬP TỨC
-                }
-                // ==========================================
-
-
-                // 2. NẾU QUA ĐƯỢC REDIS -> TIẾP TỤC XÁC THỰC NHƯ BÌNH THƯỜNG
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    if (isDeviceLockEnforced(userDetails)) {
+                        String redisKey = "user:" + username + ":session";
+                        String tokenInRedis = (String) redisTemplate.opsForValue().get(redisKey);
+
+                        // Sinh viên: Redis không có token hoặc lệch token => bị từ chối.
+                        if (tokenInRedis == null || !tokenInRedis.equals(jwt)) {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            String errorJson = "{"
+                                    + "\"success\": false, "
+                                    + "\"message\": \"Tài khoản đã bị ngắt kết nối hoặc đăng nhập ở thiết bị khác.\", "
+                                    + "\"type\": \"about:blank\", "
+                                    + "\"title\": \"Unauthorized\", "
+                                    + "\"detail\": \"Tài khoản đã bị ngắt kết nối hoặc đăng nhập ở thiết bị khác.\""
+                                    + "}";
+                            response.getWriter().write(errorJson);
+                            return;
+                        }
+                    }
+
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
@@ -103,5 +100,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isDeviceLockEnforced(UserDetails userDetails) {
+        return userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(role -> "ROLE_STUDENT".equals(role) || "ROLE_MONITOR".equals(role));
     }
 }

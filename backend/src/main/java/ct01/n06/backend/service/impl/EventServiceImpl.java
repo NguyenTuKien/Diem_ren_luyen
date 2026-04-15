@@ -1,5 +1,7 @@
 package ct01.n06.backend.service.impl;
 
+import ct01.n06.backend.dto.event.AttendeeResponse;
+import ct01.n06.backend.repository.AttendenceRepository;
 import ct01.n06.backend.repository.CriteriaRepository;
 import ct01.n06.backend.repository.EventRepository;
 import ct01.n06.backend.repository.SemesterRepository;
@@ -29,6 +31,7 @@ public class EventServiceImpl implements EventService {
     private final CriteriaRepository criteriaRepository;
     private final UserRepository userRepository;
     private final EventMapper eventMapper;
+    private final AttendenceRepository attendenceRepository;
 
     @Override
     public Page<EventResponse> getAllEvents(Pageable pageable) {
@@ -79,5 +82,13 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventEntity getEventById(Long eventId) {
         return eventRepository.findById(eventId).orElseThrow();
+    }
+
+    @Override
+    public Page<AttendeeResponse> getEventAttendees(Long eventId, Pageable pageable) {
+        if (!eventRepository.existsById(eventId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sự kiện không tồn tại.");
+        }
+        return attendenceRepository.findAttendeeResponsesByEventId(eventId, pageable);
     }
 }

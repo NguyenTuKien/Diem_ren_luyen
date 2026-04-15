@@ -1,8 +1,7 @@
 spring:
   config:
     import:
-#      - optional:file:.env[.properties]
-      - optional:file:./backend/.env[.properties]
+      - optional:file:./UniPoint/backend/.env[.properties]
   main:
     banner-mode: "off"
     time-zone: Asia/Ho_Chi_Minh
@@ -83,6 +82,8 @@ spring:
             user-name-attribute: sub
 
   app:
+    seeder:
+      enabled: ${APP_SEEDER_ENABLED:false}
     oauth2:
       redirect:
         url: ${OAUTH2_REDIRECT_URL:http://localhost:3000/oauth-success}

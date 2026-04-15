@@ -16,6 +16,7 @@ backend:
   environment:
     SPRING_PROFILES_ACTIVE: "default"
     CORS_ALLOWED_ORIGINS: "*"
+    APP_SEEDER_ENABLED: "false"
     # Postgres
     POSTGRES_HOST: "unipoint-database"
     POSTGRES_PORT: "5432"

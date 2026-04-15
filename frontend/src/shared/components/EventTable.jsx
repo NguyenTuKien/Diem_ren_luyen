@@ -1,7 +1,7 @@
 import Pagination from '../../components/Pagination'
 import { eventApi } from '../api/eventApi'
 
-function EventTable({ events, onRefresh, onEdit, onGenerateQr, pagination, currentPage, onPageChange }) {
+function EventTable({ events, onRefresh, onEdit, onGenerateQr, onViewAttendees, pagination, currentPage, onPageChange }) {
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa sự kiện này?')) {
       try {
@@ -79,6 +79,16 @@ function EventTable({ events, onRefresh, onEdit, onGenerateQr, pagination, curre
                   <span className={event.statusClassName}>{event.status}</span>
                 </td>
                 <td className="px-6 py-5 text-right space-x-1">
+                  {/* Eye icon — xem danh sách sinh viên check-in */}
+                  <button
+                    className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                    title="Xem sinh viên đã check-in"
+                    onClick={() => onViewAttendees && onViewAttendees(event)}
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-xl">visibility</span>
+                  </button>
+
                   {event.disableEdit ? (
                     <button
                       className="p-2 text-slate-300 dark:text-slate-700 cursor-not-allowed"

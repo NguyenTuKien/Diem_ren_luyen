@@ -3,24 +3,10 @@ import EventStats from '../../../shared/components/EventStats'
 import FilterBar from '../../../shared/components/FilterBar'
 import EventTable from '../../../shared/components/EventTable'
 import CreateEventModal from '../../../shared/components/CreateEventModal'
+import EventAttendeesModal from '../../../shared/components/EventAttendeesModal'
 import { eventApi } from '../../../shared/api/eventApi'
 import { qrcodeApi } from '../../../shared/api/qrcodeApi'
 import { QRCodeSVG } from 'qrcode.react'
-
-// Detect Tauri runtime — invoke BLE chỉ khi đang chạy trong Tauri desktop app
-const isTauriEnv = typeof window !== 'undefined' && typeof window.__TAURI__ !== 'undefined'
-
-/**
- * Gọi Tauri command an toàn — trả về null nếu không phải môi trường Tauri.
- * Dùng window.__TAURI__.core.invoke để tránh top-level await import.
- */
-async function tauriInvoke(cmd, args) {
-  if (!isTauriEnv) return null
-  // Tauri v2 expose invoke qua window.__TAURI__.core
-  const invokeFn = window.__TAURI__?.core?.invoke ?? window.__TAURI__?.tauri?.invoke
-  if (!invokeFn) return null
-  return invokeFn(cmd, args)
-}
 
 const toComparableText = (value = '') =>
   value
@@ -40,11 +26,11 @@ const toLocalDateInputValue = (dateTime) => {
 
 const PAGE_SIZE = 10
 
-const buildQrPayload = (eventId, qrToken, blueToothId) => {
+const buildQrPayload = (eventId, qrToken) => {
   return JSON.stringify({
     eventId,
     qrData: qrToken,
-    blueToothId: blueToothId || null,
+    // blueToothId: null, // Temporarily disabled: Bluetooth integration is not ready yet.
   })
 }
 
@@ -54,12 +40,12 @@ function EventDashboard({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
+  const [isAttendeesModalOpen, setIsAttendeesModalOpen] = useState(false)
+  const [selectedEventForAttendees, setSelectedEventForAttendees] = useState(null)
   const [qrEvent, setQrEvent] = useState(null)
   const [currentQrValue, setCurrentQrValue] = useState('')
   const [currentPinCode, setCurrentPinCode] = useState('')
   const [isGeneratingQr, setIsGeneratingQr] = useState(false)
-  const [isBleAdvertising, setIsBleAdvertising] = useState(false)
-  const [currentBlueToothId, setCurrentBlueToothId] = useState('')
   const qrIntervalRef = useRef(null)
   const [notice, setNotice] = useState({ type: '', message: '' })
   const [events, setEvents] = useState([])
@@ -99,7 +85,9 @@ function EventDashboard({
       const data = await eventApi.fetchEvents(page, PAGE_SIZE)
       const now = new Date()
 
-      const formattedEvents = data.content.map(backendEvent => {
+      const eventContent = Array.isArray(data?.content) ? data.content : []
+
+      const formattedEvents = eventContent.map(backendEvent => {
         const startDate = new Date(backendEvent.startTime)
         const endDate = new Date(backendEvent.endTime)
         const dateStr = startDate.toLocaleDateString('vi-VN')
@@ -130,8 +118,8 @@ function EventDashboard({
           id: backendEvent.id,
           title: backendEvent.title,
           description: backendEvent.description,
-          semesterId: backendEvent.semester?.id,
-          criteriaId: backendEvent.criteria?.id,
+          semesterId: backendEvent.semesterId ?? backendEvent.semester?.id,
+          criteriaId: backendEvent.criteriaId ?? backendEvent.criteria?.id,
           startTime: backendEvent.startTime,
           endTime: backendEvent.endTime,
           name: backendEvent.title,
@@ -139,7 +127,7 @@ function EventDashboard({
           date: dateStr,
           time: timeStr,
           location: backendEvent.location,
-          type: backendEvent.criteria ? backendEvent.criteria.id : '1.1',
+          type: backendEvent.criteriaId ?? backendEvent.criteria?.id ?? '--',
           status: statusText,
           statusClassName: statusClass,
           disableEdit: isOngoing,
@@ -190,37 +178,26 @@ function EventDashboard({
     setIsModalOpen(true)
   }
 
+  const handleViewAttendees = (event) => {
+    setSelectedEventForAttendees(event)
+    setIsAttendeesModalOpen(true)
+  }
+
   const handleOpenQrModal = async (event) => {
     setQrEvent(event)
     setIsGeneratingQr(true)
     setCurrentQrValue('')
     setCurrentPinCode('')
-    setCurrentBlueToothId('')
-    setIsBleAdvertising(false)
     try {
       const response = await qrcodeApi.generateQr(event.id)
-      // Backend trả về `bluetoothId` (lowercase t) — ta lưu lại để dùng
-      const bleId = response.bluetoothId || ''
-      setCurrentBlueToothId(bleId)
-      setCurrentQrValue(buildQrPayload(event.id, response.qrToken, bleId))
+      // const bleId = response.bluetoothId || '' // Temporarily disabled.
+      setCurrentQrValue(buildQrPayload(event.id, response.qrToken))
       setCurrentPinCode(response.pinCode || '')
-
-      // Kích hoạt BLE advertising trên laptop giảng viên (chỉ trong Tauri)
-      if (isTauriEnv && bleId) {
-        try {
-          await tauriInvoke('start_ble_advertising', { uuid: bleId })
-          setIsBleAdvertising(true)
-        } catch (bleErr) {
-          console.warn('Không thể bật BLE advertising:', bleErr)
-          setNotice({ type: 'error', message: 'Không thể bật Bluetooth. Sinh viên sẽ không xác nhận được vị trí.' })
-        }
-      }
 
       qrIntervalRef.current = setInterval(async () => {
         try {
           const res = await qrcodeApi.generateQr(event.id)
-          // QR mới có token mới nhưng giữ nguyên blueToothId của phiên
-          setCurrentQrValue(buildQrPayload(event.id, res.qrToken, bleId))
+          setCurrentQrValue(buildQrPayload(event.id, res.qrToken))
           setCurrentPinCode(res.pinCode || '')
         } catch (err) {
           console.error('Failed to update QR code:', err)
@@ -238,19 +215,9 @@ function EventDashboard({
 
   const handleCloseQrModal = async () => {
     if (qrIntervalRef.current) clearInterval(qrIntervalRef.current)
-    // Dừng BLE advertising khi giảng viên đóng modal
-    if (isTauriEnv && isBleAdvertising) {
-      try {
-        await tauriInvoke('stop_ble_advertising')
-      } catch (err) {
-        console.warn('Không thể dừng BLE:', err)
-      }
-    }
     setQrEvent(null)
     setCurrentQrValue('')
     setCurrentPinCode('')
-    setCurrentBlueToothId('')
-    setIsBleAdvertising(false)
   }
 
   const qrValue = currentQrValue
@@ -413,6 +380,7 @@ function EventDashboard({
             onGenerateQr={handleOpenQrModal}
             onPageChange={handlePageChange}
             onRefresh={refreshCurrentPage}
+            onViewAttendees={handleViewAttendees}
             pagination={pagination}
           />
         )}
@@ -450,6 +418,16 @@ function EventDashboard({
         }}
       />
 
+      {isAttendeesModalOpen && selectedEventForAttendees && (
+        <EventAttendeesModal
+          event={selectedEventForAttendees}
+          onClose={() => {
+            setIsAttendeesModalOpen(false)
+            setSelectedEventForAttendees(null)
+          }}
+        />
+      )}
+
       {qrEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
@@ -479,19 +457,6 @@ function EventDashboard({
                     <div className="mt-4 rounded-xl border border-slate-200 px-4 py-3 text-center dark:border-slate-700">
                       <p className="text-xs uppercase tracking-widest text-slate-400">PIN điểm danh</p>
                       <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{currentPinCode}</p>
-                    </div>
-                  )}
-                  {/* BLE Advertising Status Indicator */}
-                  {isTauriEnv && (
-                    <div className={`mt-3 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                      isBleAdvertising
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                    }`}>
-                      <span className={`size-2 rounded-full ${
-                        isBleAdvertising ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'
-                      }`} />
-                      {isBleAdvertising ? 'Bluetooth đang phát sóng' : 'Bluetooth chưa kích hoạt'}
                     </div>
                   )}
                 </>

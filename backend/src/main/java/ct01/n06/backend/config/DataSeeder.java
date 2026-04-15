@@ -269,6 +269,13 @@ public class DataSeeder {
               .pointPerItem(BigDecimal.valueOf(2.0))
               .maxPoint(BigDecimal.valueOf(10.0))
               .requireEvidence(false)
+              .build(),
+          CriteriaEntity.builder()
+              .code("HL01")
+              .name("2.4. Họp lớp")
+              .pointPerItem(BigDecimal.valueOf(2.0))
+              .maxPoint(BigDecimal.valueOf(5.0))
+              .requireEvidence(false)
               .build());
 
       for (CriteriaEntity criteria : criteriaList) {

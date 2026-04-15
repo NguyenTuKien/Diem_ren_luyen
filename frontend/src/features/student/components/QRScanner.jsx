@@ -13,7 +13,7 @@ function resolveScanPayload(decodedText, fallbackEventId) {
 
   let qrData = raw
   let eventId = null
-  let blueToothId = null
+  // let blueToothId = null // Temporarily disabled: Bluetooth integration is not ready yet.
 
   try {
     const parsed = JSON.parse(raw)
@@ -22,7 +22,7 @@ function resolveScanPayload(decodedText, fallbackEventId) {
       if (parsed.eventId != null) {
         eventId = Number(parsed.eventId)
       }
-      blueToothId = parsed.blueToothId || parsed.bluetoothId || null
+      // blueToothId = parsed.blueToothId || parsed.bluetoothId || null
     }
   } catch {
     // Keep raw text when QR content is not JSON.
@@ -59,41 +59,19 @@ function resolveScanPayload(decodedText, fallbackEventId) {
     throw new Error('Không đọc được eventId từ mã QR.')
   }
 
-  return { qrData, eventId, blueToothId }
+  return { qrData, eventId }
+  // return { qrData, eventId, blueToothId }
 }
 
-const handleCheckinSubmit = async ({ qrData, eventId, blueToothId }) => {
-  const response = await qrcodeApi.scanQRCode({ qrData, eventId, blueToothId })
+const handleCheckinSubmit = async ({ qrData, eventId }) => {
+  const response = await qrcodeApi.scanQRCode({
+    qrData,
+    eventId,
+    // blueToothId, // Temporarily disabled: Bluetooth integration is not ready yet.
+  })
   return {
     success: true,
     message: response.message || 'Điểm danh thành công'
-  }
-}
-
-/**
- * Quét BLE để xác nhận sinh viên ở gần giảng viên.
- * Web Bluetooth API yêu cầu UUID ở dạng lowercase.
- * @param {string} targetUuid - UUID nhận từ QR payload (blueToothId)
- * @returns {Promise<BluetoothDevice>}
- */
-async function verifyBluetooth(targetUuid) {
-  if (!navigator.bluetooth) {
-    throw new Error('Trình duyệt không hỗ trợ Bluetooth. Hãy dùng Chrome hoặc Edge trên Android/PC.')
-  }
-  const uuid = targetUuid.toLowerCase()
-  try {
-    const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [uuid] }],
-    })
-    return device
-  } catch (err) {
-    if (err.name === 'NotFoundError') {
-      throw new Error('Không tìm thấy Bluetooth của giảng viên. Hãy đến gần hơn và thử lại.')
-    }
-    if (err.name === 'NotAllowedError') {
-      throw new Error('Bạn đã từ chối quyền Bluetooth. Vui lòng cho phép và thử lại.')
-    }
-    throw new Error(err.message || 'Lỗi khi quét Bluetooth.')
   }
 }
 
@@ -110,11 +88,6 @@ function QRScanner() {
   const [pinDigits, setPinDigits] = useState(() => Array(6).fill(''))
   const toastTimerRef = useRef(null)
   const pinInputRefs = useRef([])
-
-  // BLE verification state
-  const [pendingPayload, setPendingPayload] = useState(null)  // Payload QR chờ xác nhận BLE
-  const [isBleVerifying, setIsBleVerifying] = useState(false) // Đang quét BLE
-  const [bleError, setBleError] = useState('')                // Lỗi BLE cụ thể
 
   const scannerRef = useRef(null)
   const scanLockRef = useRef(false)
@@ -181,52 +154,15 @@ function QRScanner() {
 
     try {
       const payload = resolveScanPayload(decodedText, fallbackEventId)
-
-      if (payload.blueToothId) {
-        // Có blueToothId → yêu cầu xác nhận BLE qua User Gesture
-        setBleError('')
-        setPendingPayload(payload)
-        setNotice({ type: '', message: '' })
-      } else {
-        // Không có blueToothId → điểm danh trực tiếp (mode không BLE)
-        await processCheckin({ ...payload })
-        scanLockRef.current = false
-      }
+      // BLE confirmation flow is intentionally commented out for now.
+      // if (payload.blueToothId) { ... }
+      await processCheckin({ ...payload })
+      scanLockRef.current = false
     } catch (error) {
       setNotice({ type: 'error', message: error.message || 'Mã QR không hợp lệ hoặc đã hết hạn.' })
       scanLockRef.current = false
     }
   }, [fallbackEventId, isProcessing, processCheckin, scanCompleted, stopScanner])
-
-  /**
-   * Xử lý khi user bấm nút "Xác nhận hiện diện" — đây là User Gesture
-   * Web Bluetooth API BẮT BUỘC phải được gọi trong user gesture handler.
-   */
-  const handleBleConfirm = useCallback(async () => {
-    if (!pendingPayload || isBleVerifying) return
-
-    setIsBleVerifying(true)
-    setBleError('')
-
-    try {
-      await verifyBluetooth(pendingPayload.blueToothId)
-      // Tìm thấy thiết bị BLE → tiến hành checkin
-      await processCheckin({ ...pendingPayload })
-      setPendingPayload(null)
-    } catch (error) {
-      setBleError(error.message || 'Xác thực Bluetooth thất bại.')
-      scanLockRef.current = false
-    } finally {
-      setIsBleVerifying(false)
-    }
-  }, [isBleVerifying, pendingPayload, processCheckin])
-
-  const handleCancelBle = useCallback(() => {
-    setPendingPayload(null)
-    setBleError('')
-    scanLockRef.current = false
-    setNotice({ type: '', message: '' })
-  }, [])
 
   const startScanner = useCallback(async () => {
     try {
@@ -305,8 +241,6 @@ function QRScanner() {
     setPinDigits(Array(6).fill(''))
     setScanCompleted(false)
     setNotice({ type: '', message: '' })
-    setPendingPayload(null)
-    setBleError('')
     scanLockRef.current = false
     if (permissionStatus === 'granted') {
       await startScanner()
@@ -435,7 +369,7 @@ function QRScanner() {
                         className={`absolute inset-0 z-0 [&>div]:!h-full [&>div]:!w-full [&_video]:!h-full [&_video]:!w-full [&_video]:!object-cover ${isScanning ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                       />
 
-                      {!isScanning && !scanCompleted && !pendingPayload && (
+                      {!isScanning && !scanCompleted && (
                         <>
                           <div
                             className="absolute inset-0 bg-cover bg-center opacity-50 transition-transform group-hover:scale-110"
@@ -460,7 +394,7 @@ function QRScanner() {
                         </>
                       )}
 
-                      {isScanning && !isProcessing && !pendingPayload && (
+                      {isScanning && !isProcessing && (
                         <div className="absolute top-4 right-4 z-20">
                           <button onClick={stopScanner} className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur transition-all flex items-center justify-center">
                             <span className="material-symbols-outlined text-lg">close</span>
@@ -469,7 +403,7 @@ function QRScanner() {
                       )}
 
                       {/* Scanning frame overlay */}
-                      {isScanning && !pendingPayload && (
+                      {isScanning && (
                         <div className="absolute inset-0 pointer-events-none z-10">
                           <div className="w-full h-full p-8 flex items-center justify-center relative">
                             <div className="w-full max-w-[240px] aspect-square relative shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]">
@@ -487,68 +421,6 @@ function QRScanner() {
                         </div>
                       )}
 
-                      {/* ─── BLE Confirmation Block ─── */}
-                      {pendingPayload && !scanCompleted && (
-                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-slate-900/95 backdrop-blur-sm rounded-2xl p-6">
-                          {/* Icon phát sóng BLE */}
-                          <div className="relative flex items-center justify-center">
-                            <span className="absolute size-20 rounded-full bg-blue-500/20 animate-ping" />
-                            <span className="relative flex size-14 items-center justify-center rounded-full bg-blue-600 shadow-lg shadow-blue-600/40">
-                              <span className="material-symbols-outlined text-white text-2xl">bluetooth_searching</span>
-                            </span>
-                          </div>
-
-                          <div className="text-center">
-                            <p className="text-base font-bold text-white">Xác nhận hiện diện</p>
-                            <p className="text-xs text-slate-300 mt-1 max-w-[220px]">Bấm nút bên dưới để xác nhận bạn đang ở gần giảng viên qua Bluetooth.</p>
-                          </div>
-
-                          {/* Lỗi BLE */}
-                          {bleError && (
-                            <div className="w-full rounded-lg bg-red-900/50 border border-red-700 px-3 py-2.5 flex items-start gap-2">
-                              <span className="material-symbols-outlined text-red-400 text-sm shrink-0 mt-0.5">error</span>
-                              <p className="text-xs text-red-300 leading-relaxed">{bleError}</p>
-                            </div>
-                          )}
-
-                          {/* Warning nếu không hỗ trợ Web Bluetooth */}
-                          {typeof navigator.bluetooth === 'undefined' && (
-                            <div className="w-full rounded-lg bg-amber-900/50 border border-amber-700 px-3 py-2.5 flex items-start gap-2">
-                              <span className="material-symbols-outlined text-amber-400 text-sm shrink-0 mt-0.5">warning</span>
-                              <p className="text-xs text-amber-300 leading-relaxed">Trình duyệt không hỗ trợ Bluetooth. Hãy dùng <strong>Chrome</strong> hoặc <strong>Edge</strong>.</p>
-                            </div>
-                          )}
-
-                          <div className="flex w-full gap-2">
-                            <button
-                              id="ble-cancel-btn"
-                              onClick={handleCancelBle}
-                              disabled={isBleVerifying}
-                              className="flex-1 rounded-lg border border-slate-600 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-700 transition-colors disabled:opacity-40"
-                            >
-                              Quét lại
-                            </button>
-                            <button
-                              id="ble-confirm-btn"
-                              onClick={handleBleConfirm}
-                              disabled={isBleVerifying || typeof navigator.bluetooth === 'undefined'}
-                              className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 py-2.5 text-sm font-bold text-white transition-colors disabled:opacity-50 shadow-lg shadow-blue-600/30"
-                            >
-                              {isBleVerifying ? (
-                                <>
-                                  <span className="material-symbols-outlined text-sm animate-spin">sync</span>
-                                  Đang quét...
-                                </>
-                              ) : (
-                                <>
-                                  <span className="material-symbols-outlined text-sm">bluetooth</span>
-                                  Xác nhận hiện diện
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
 

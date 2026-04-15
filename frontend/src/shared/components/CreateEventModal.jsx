@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { eventApi } from '../api/eventApi'
 import { criteriaApi } from '../api/criteriaApi'
 import { semesterApi } from '../api/semesterApi'
+import { useAuth } from '../../context/AuthContext'
+import { apiRequest } from '../api/http'
+
+const CLASS_MEETING_CRITERIA_LABEL = '2.4. Họp lớp'
 
 const toDateTimeLocal = (value) => {
   if (!value) return ''
@@ -17,8 +21,37 @@ const toDateTimeLocal = (value) => {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+const formatDateVi = (date) => {
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
+const isClassMeetingCriteria = (criteria) => {
+  if (!criteria) return false
+  const code = String(criteria.code || '').trim()
+  const name = String(criteria.name || '').trim()
+  return name === CLASS_MEETING_CRITERIA_LABEL || (code === '2.4' && name === 'Họp lớp') || name === 'Họp lớp'
+}
+
+const toClassOption = (item) => {
+  const classCode = String(item?.classCode || '').trim()
+  const className = String(item?.className || item?.name || '').trim()
+  if (!classCode) return null
+  return {
+    value: classCode,
+    label: className ? `${classCode} - ${className}` : classCode,
+    className: className || classCode,
+  }
+}
+
+const resolveLecturerId = (user) => user?.backendUserId || user?.userId || user?.profileCode || ''
+
 function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
   const isEditMode = Boolean(initialEvent?.id)
+  const { user } = useAuth()
+  const wasClassMeetingRef = useRef(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -34,6 +67,25 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
   const [error, setError] = useState('')
   const [criterias, setCriterias] = useState([])
   const [semesters, setSemesters] = useState([])
+  const [lecturerClasses, setLecturerClasses] = useState([])
+  const [classOptionsError, setClassOptionsError] = useState('')
+
+  const selectedCriteria = useMemo(
+    () => criterias.find((criteria) => String(criteria.id) === String(formData.criteriaId)),
+    [criterias, formData.criteriaId],
+  )
+  const isClassMeeting = useMemo(() => isClassMeetingCriteria(selectedCriteria), [selectedCriteria])
+  const classMeetingOptions = useMemo(
+    () => lecturerClasses.map(toClassOption).filter(Boolean),
+    [lecturerClasses],
+  )
+  const classOptionByCode = useMemo(
+    () => Object.fromEntries(classMeetingOptions.map((item) => [item.value, item])),
+    [classMeetingOptions],
+  )
+
+  const resolvedClassCode = user?.classCode || ''
+  const resolvedClassName = user?.className || resolvedClassCode || ''
 
   const resetForm = () => {
     setFormData({
@@ -54,12 +106,33 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
       try {
         setError('')
 
-        const [criteriaData, semesterData] = await Promise.all([
+        const [criteriaPayload, semesterPayload] = await Promise.all([
           criteriaApi.fetchCriterias(),
           semesterApi.fetchSemesters()
         ])
+        const criteriaData = Array.isArray(criteriaPayload) ? criteriaPayload : []
+        const semesterData = Array.isArray(semesterPayload) ? semesterPayload : []
+
         setCriterias(criteriaData);
         setSemesters(semesterData);
+
+        const lecturerId = resolveLecturerId(user)
+        if (lecturerId) {
+          try {
+            const classRes = await apiRequest(`/lecturer/students/options?lecturerId=${encodeURIComponent(lecturerId)}`)
+            const rawClassPayload = classRes?.data || classRes
+            const classData = Array.isArray(rawClassPayload?.classes) ? rawClassPayload.classes : []
+            setLecturerClasses(classData)
+            setClassOptionsError('')
+          } catch (classErr) {
+            console.error('Failed to load lecturer classes:', classErr)
+            setLecturerClasses([])
+            setClassOptionsError('Không tải được danh sách lớp phụ trách.')
+          }
+        } else {
+          setLecturerClasses([])
+          setClassOptionsError('')
+        }
 
         if (isEditMode) {
           setFormData({
@@ -89,11 +162,72 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
     } else {
       resetForm()
     }
-  }, [initialEvent, isEditMode, isOpen]);
+  }, [initialEvent, isEditMode, isOpen, user]);
+
+  useEffect(() => {
+    if (!isOpen || isEditMode) {
+      wasClassMeetingRef.current = false
+      return
+    }
+
+    if (isClassMeeting) {
+      const now = new Date()
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000)
+      const todayLabel = formatDateVi(now)
+
+      setFormData((prev) => ({
+        ...prev,
+        organizer:
+          classOptionByCode[prev.organizer]?.value
+          || classOptionByCode[resolvedClassCode]?.value
+          || classMeetingOptions[0]?.value
+          || resolvedClassCode,
+        title: `Họp lớp ${
+          classOptionByCode[prev.organizer]?.className
+          || classOptionByCode[resolvedClassCode]?.className
+          || classMeetingOptions[0]?.className
+          || resolvedClassName
+          || 'chưa rõ lớp'
+        } ngày ${todayLabel}`,
+        startTime: toDateTimeLocal(now),
+        endTime: toDateTimeLocal(oneHourLater),
+      }))
+    } else if (wasClassMeetingRef.current) {
+      setFormData((prev) => ({
+        ...prev,
+        organizer: '',
+        title: '',
+        startTime: '',
+        endTime: '',
+      }))
+    }
+
+    wasClassMeetingRef.current = isClassMeeting
+  }, [isClassMeeting, isEditMode, isOpen, resolvedClassCode, resolvedClassName, classMeetingOptions, classOptionByCode])
+
+  useEffect(() => {
+    if (!isOpen || isEditMode || !isClassMeeting || !formData.organizer) {
+      return
+    }
+
+    const selectedClass = classOptionByCode[formData.organizer]
+    if (!selectedClass) {
+      return
+    }
+
+    const now = new Date()
+    const todayLabel = formatDateVi(now)
+    const nextTitle = `Họp lớp ${selectedClass.className} ngày ${todayLabel}`
+    if (formData.title !== nextTitle) {
+      setFormData((prev) => ({ ...prev, title: nextTitle }))
+    }
+  }, [classOptionByCode, formData.organizer, formData.title, isClassMeeting, isEditMode, isOpen])
 
   if (!isOpen) {
     return null
   }
+
+  const isClassMeetingOrganizerInvalid = isClassMeeting && (!formData.organizer || classMeetingOptions.length === 0)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -116,6 +250,11 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
 
     if (new Date(formData.endTime) <= new Date(formData.startTime)) {
       setError('Thời gian kết thúc phải sau thời gian bắt đầu.')
+      return
+    }
+
+    if (isClassMeetingOrganizerInvalid) {
+      setError('Vui lòng chọn lớp phụ trách cho sự kiện họp lớp.')
       return
     }
 
@@ -205,12 +344,13 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
                 Tên sự kiện <span className="text-red-500">*</span>
               </label>
               <input
-                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5"
+                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5 disabled:opacity-60 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                 id="event-name"
                 placeholder="Ví dụ: Hội thảo Phát triển Kỹ năng số"
                 type="text"
                 value={formData.title}
                 onChange={handleChange}
+                disabled={isClassMeeting}
               />
             </div>
 
@@ -222,16 +362,39 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
                 Ban tổ chức <span className="text-red-500">*</span>
               </label>
               <select
-                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5"
+                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5 disabled:opacity-60 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                 id="event-organizer"
                 value={formData.organizer}
                 onChange={handleChange}
+                disabled={isClassMeeting && classMeetingOptions.length === 0}
               >
-                <option value="">Chọn đơn vị tổ chức</option>
-                <option>Khoa CNTT</option>
-                <option>CLB Kỹ năng</option>
-                <option>Phòng Đào tạo</option>
+                {isClassMeeting ? (
+                  <>
+                    <option value="">{classMeetingOptions.length ? 'Chọn lớp phụ trách' : 'Chưa có lớp phụ trách'}</option>
+                    {classMeetingOptions.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <option value="">Chọn đơn vị tổ chức</option>
+                    <option>Khoa CNTT</option>
+                    <option>CLB Kỹ năng</option>
+                    <option>Phòng Đào tạo</option>
+                  </>
+                )}
               </select>
+              {isClassMeeting && (
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  Ban tổ chức được lấy từ danh sách lớp bạn đang phụ trách.
+                </p>
+              )}
+              {isClassMeeting && classOptionsError && (
+                <p className="mt-1 text-xs text-red-500">{classOptionsError}</p>
+              )}
+              {isClassMeeting && classMeetingOptions.length === 0 && !classOptionsError && (
+                <p className="mt-1 text-xs text-red-500">Bạn chưa có lớp phụ trách để tạo sự kiện họp lớp.</p>
+              )}
             </div>
 
             <div>
@@ -299,11 +462,12 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
                 Thời gian bắt đầu
               </label>
               <input
-                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5"
+                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5 disabled:opacity-60 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                 id="event-start-time"
                 type="datetime-local"
                 value={formData.startTime}
                 onChange={handleChange}
+                disabled={isClassMeeting}
               />
             </div>
 
@@ -315,11 +479,12 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
                 Thời gian kết thúc
               </label>
               <input
-                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5"
+                className="w-full border-slate-200 dark:border-slate-800 dark:bg-slate-800 rounded-lg focus:ring-primary focus:border-primary px-4 py-2.5 disabled:opacity-60 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 disabled:cursor-not-allowed"
                 id="event-end-time"
                 type="datetime-local"
                 value={formData.endTime}
                 onChange={handleChange}
+                disabled={isClassMeeting}
               />
             </div>
 
@@ -352,7 +517,7 @@ function CreateEventModal({ isOpen, onClose, onSuccess, initialEvent = null }) {
             <button
               className="bg-[#d23232] hover:bg-[#d23232]/90 text-white px-8 py-2.5 rounded-lg font-bold shadow-lg shadow-[#d23232]/20 transition-all"
               type="submit"
-              disabled={loading}
+              disabled={loading || isClassMeetingOrganizerInvalid}
             >
               {loading ? 'Đang lưu...' : (isEditMode ? 'Cập nhật' : 'Lưu sự kiện')}
             </button>

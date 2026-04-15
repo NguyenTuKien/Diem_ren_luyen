@@ -22,6 +22,7 @@ data:
   RABBITMQ_SSL_ENABLED: "{{ .Values.backend.environment.RABBITMQ_SSL_ENABLED }}"
   # CORS
   CORS_ALLOWED_ORIGINS: "{{ .Values.backend.environment.CORS_ALLOWED_ORIGINS }}"
+  APP_SEEDER_ENABLED: "{{ .Values.backend.environment.APP_SEEDER_ENABLED }}"
   # OAuth2 & Device
   OAUTH2_REDIRECT_URL: "{{ .Values.backend.environment.OAUTH2_REDIRECT_URL }}"
   OAUTH2_REDIRECT_URI: "{{ .Values.backend.environment.OAUTH2_REDIRECT_URI }}"

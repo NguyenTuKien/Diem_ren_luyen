@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
@@ -55,13 +56,13 @@ public class QrCodeServiceImpl implements QrCodeService {
     public GenerateQrResponse generateQr(Long eventId) {
         String token = UUID.randomUUID().toString();
         String pinCode = generateUniquePinCode(eventId);
-        String bluetoothId = UUID.randomUUID().toString();
+        // String bluetoothId = UUID.randomUUID().toString(); // Temporarily disabled.
 
         QrCodeEntity qrcode = QrCodeEntity.builder()
                 .qrToken(token)
                 .eventId(eventId)
                 .pinCode(pinCode)
-                .bluetoothId(bluetoothId)
+                .bluetoothId(null)
                 .timeToLive(PIN_CODE_TTL_SECONDS) // 11 giây trên Redis (để buffer 1s cho mạng)
                 .build();
                 
@@ -71,7 +72,7 @@ public class QrCodeServiceImpl implements QrCodeService {
         return GenerateQrResponse.builder()
                 .qrToken(token)
                 .pinCode(pinCode)
-                .bluetoothId(bluetoothId)
+                .bluetoothId(null)
                 .timeToLive(10L) // Báo với frontend là 5s
                 .build();
     }
@@ -89,9 +90,9 @@ public class QrCodeServiceImpl implements QrCodeService {
         if (deviceId == null || deviceId.trim().isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Thiếu deviceId");
         }
-        if (request.getBlueToothId() == null || request.getBlueToothId().isEmpty()) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn phải bật Bluetooth và ở gần giảng viên để điểm danh");
-        }
+        // if (request.getBlueToothId() == null || request.getBlueToothId().isEmpty()) {
+        //     throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn phải bật Bluetooth và ở gần giảng viên để điểm danh");
+        // }
 
         String normalizedDeviceId = deviceId.trim();
 
@@ -103,11 +104,11 @@ public class QrCodeServiceImpl implements QrCodeService {
         }
         StudentEntity student = studentRepository.findByUserEntityId(studentUserId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên"));
-        if (!qrCode.getBluetoothId().equals(request.getBlueToothId())) {
-            log.warn("Bluetooth mismatch: expected={}, detected={}, student={}",
-                    qrCode.getBluetoothId(), request.getBlueToothId(), studentUserId);
-            throw new ApiException(HttpStatus.FORBIDDEN, "Xác thực vị trí thất bại. Vui lòng lại gần giảng viên hơn.");
-        }
+        // if (!qrCode.getBluetoothId().equals(request.getBlueToothId())) {
+        //     log.warn("Bluetooth mismatch: expected={}, detected={}, student={}",
+        //             qrCode.getBluetoothId(), request.getBlueToothId(), studentUserId);
+        //     throw new ApiException(HttpStatus.FORBIDDEN, "Xác thực vị trí thất bại. Vui lòng lại gần giảng viên hơn.");
+        // }
         performCheckin(qrCode.getEventId(), student, normalizedDeviceId);
     }
 
@@ -191,6 +192,8 @@ public class QrCodeServiceImpl implements QrCodeService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Sự kiện đã kết thúc, không thể điểm danh");
         }
 
+        validateStudentClassForClassMeeting(event, student);
+
         Optional<AttendenceEntity> existing = attendenceRepository.findByEventIdAndStudentId(eventId, student.getId());
         if (existing.isPresent()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Bạn đã điểm danh sự kiện này rồi!");
@@ -223,6 +226,45 @@ public class QrCodeServiceImpl implements QrCodeService {
             log.error("Check-in enqueue failed: eventId={}, studentId={}, deviceId={}", eventId, student.getId(), deviceId, ex);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "Hệ thống đang bận, vui lòng thử lại");
         }
+    }
+
+    private void validateStudentClassForClassMeeting(EventEntity event, StudentEntity student) {
+        if (!isClassMeetingEvent(event)) {
+            return;
+        }
+
+        String eventClassCode = normalizeText(event.getOrganizer());
+        if (eventClassCode.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Sự kiện họp lớp chưa được gán lớp tổ chức");
+        }
+
+        String studentClassCode = student.getClassEntity() == null
+                ? ""
+                : normalizeText(student.getClassEntity().getClassCode());
+
+        if (!eventClassCode.equals(studentClassCode)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Sinh viên không thuộc lớp đó");
+        }
+    }
+
+    private boolean isClassMeetingEvent(EventEntity event) {
+        if (event == null || event.getCriteria() == null) {
+            return false;
+        }
+
+        String criteriaName = normalizeText(event.getCriteria().getName());
+        String criteriaCode = normalizeText(event.getCriteria().getCode());
+
+        return criteriaName.contains("họp lớp")
+                || criteriaName.contains("hop lop")
+                || "2.4".equals(criteriaCode);
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 
     private String generateUniquePinCode(Long eventId) {
